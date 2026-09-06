@@ -6,12 +6,14 @@ on:
       - apple
     paths:
       - "native-ios/**"
+      - ".swiftlint.yml"
       - ".github/workflows/native-ios-ci.yml"
   push:
     branches:
       - apple
     paths:
       - "native-ios/**"
+      - ".swiftlint.yml"
       - ".github/workflows/native-ios-ci.yml"
   workflow_dispatch:
 
@@ -23,21 +25,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: build-and-test
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run SwiftLint on Ubuntu
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ghcr.io/realm/swiftlint:0.65.1 \
+            lint --strict --config .swiftlint.yml
+
+  test-core:
+    name: test-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run host-independent Swift tests on Linux
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            swift:6.0-noble \
+            swift test \
+              --package-path native-ios \
+              --configuration debug \
+              --parallel
+
+  build-apple:
+    name: build-apple
     runs-on: xcode-27
+    needs:
+      - lint
+      - test-core
     timeout-minutes: 20
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Show toolchain
+      - name: Show Apple toolchain
         run: |
           set -euo pipefail
           sw_vers
           xcodebuild -version
-          swift --version
           xcodebuild -showsdks
 
       - name: Inspect project
@@ -58,21 +101,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
-      - name: Run deterministic bridge XCTest suite
-        run: |
-          set -euo pipefail
-          swift test \
-            --package-path native-ios \
-            --configuration debug
-
-      - name: Record hardware-only validation boundary
+      - name: Record validation boundaries
         run: |
           cat <<'EOF'
-          Native iOS CI validates the iOS app build against Xcode 27 and runs deterministic XCTest coverage
-          for the exact WhatsAppBridgeSupport.swift source compiled into the app. The bridge tests are host-independent
-          and use no WhatsApp credentials, session material, or network-dependent acceptance flow.
+          Ubuntu CI validates Swift style and all current host-independent deterministic Swift tests,
+          including WhatsApp bridge parsing/session-contract tests and translation/context logic.
+          The Xcode runner is reserved for compiling the Apple-specific application against the
+          iOS Simulator SDK.
 
-          CI still does not validate Foundation Models inference, Apple Intelligence availability, WhatsApp Web
-          authentication, linked-device persistence, force-quit restoration, or offline resync on a physical iPhone.
+          Neither Linux tests nor the Simulator build validate Foundation Models inference,
+          Apple Intelligence availability, real WhatsApp Web authentication, linked-device
+          persistence, force-quit restoration, offline resync, or other physical-iPhone behavior.
           Those acceptance gates remain open in their dedicated roadmap issues.
           EOF
