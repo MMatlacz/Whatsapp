@@ -27,6 +27,11 @@ final class WhatsAppBridgeSupportTests: XCTestCase {
         )
         XCTAssertNil(
             WhatsAppBridgeResultParser.pairingCode(
+                from: ["status": "pairing-code-found", "code": "TOO-SHORT"]
+            )
+        )
+        XCTAssertNil(
+            WhatsAppBridgeResultParser.pairingCode(
                 from: ["status": "pairing-code-found", "code": "ABCD💥123"]
             )
         )
