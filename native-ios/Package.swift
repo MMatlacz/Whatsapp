@@ -15,11 +15,14 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "TranslationCore.swift",
+                "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppTransportCore.swift",
                 "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppTranslatorApp.swift",
+                "WhatsAppWebKitBridgeRuntime.swift",
                 "WhatsAppWebProbeView.swift",
+                "WhatsAppWebTransportCore.swift",
             ],
             sources: ["WhatsAppDomain.swift"]
         ),
@@ -29,15 +32,18 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
                 "TranslationCore.swift",
                 "WhatsAppTranslatorApp.swift",
+                "WhatsAppWebKitBridgeRuntime.swift",
                 "WhatsAppWebProbeView.swift",
             ],
             sources: [
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppTransportCore.swift",
                 "WhatsAppTransportDomainMapper.swift",
+                "WhatsAppWebTransportCore.swift",
             ]
         ),
         .target(
@@ -45,12 +51,15 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppDomain.swift",
                 "WhatsAppTransportCore.swift",
                 "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppTranslatorApp.swift",
+                "WhatsAppWebKitBridgeRuntime.swift",
                 "WhatsAppWebProbeView.swift",
+                "WhatsAppWebTransportCore.swift",
             ],
             sources: ["TranslationCore.swift"]
         ),

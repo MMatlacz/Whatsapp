@@ -15,6 +15,9 @@
 		A10000000000000000000006 /* WhatsAppTransportCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* WhatsAppTransportCore.swift */; };
 		A10000000000000000000007 /* WhatsAppDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* WhatsAppDomain.swift */; };
 		A10000000000000000000008 /* WhatsAppTransportDomainMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* WhatsAppTransportDomainMapper.swift */; };
+		A10000000000000000000009 /* WhatsAppWebTransportCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* WhatsAppWebTransportCore.swift */; };
+		A1000000000000000000000A /* WhatsAppWebKitBridgeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */; };
+		A1000000000000000000000B /* WhatsAppBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* WhatsAppBridge.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +30,9 @@
 		A10000000000000000000016 /* WhatsAppTransportCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTransportCore.swift; sourceTree = "<group>"; };
 		A10000000000000000000017 /* WhatsAppDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppDomain.swift; sourceTree = "<group>"; };
 		A10000000000000000000018 /* WhatsAppTransportDomainMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTransportDomainMapper.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* WhatsAppWebTransportCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebTransportCore.swift; sourceTree = "<group>"; };
+		A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebKitBridgeRuntime.swift; sourceTree = "<group>"; };
+		A1000000000000000000001B /* WhatsAppBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = WhatsAppBridge.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +64,9 @@
 				A10000000000000000000016 /* WhatsAppTransportCore.swift */,
 				A10000000000000000000017 /* WhatsAppDomain.swift */,
 				A10000000000000000000018 /* WhatsAppTransportDomainMapper.swift */,
+				A10000000000000000000019 /* WhatsAppWebTransportCore.swift */,
+				A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */,
+				A1000000000000000000001B /* WhatsAppBridge.js */,
 				A10000000000000000000015 /* TranslationCore.swift */,
 			);
 			path = WhatsAppTranslator;
@@ -129,6 +138,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1000000000000000000000B /* WhatsAppBridge.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +157,8 @@
 				A10000000000000000000006 /* WhatsAppTransportCore.swift in Sources */,
 				A10000000000000000000007 /* WhatsAppDomain.swift in Sources */,
 				A10000000000000000000008 /* WhatsAppTransportDomainMapper.swift in Sources */,
+				A10000000000000000000009 /* WhatsAppWebTransportCore.swift in Sources */,
+				A1000000000000000000000A /* WhatsAppWebKitBridgeRuntime.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
