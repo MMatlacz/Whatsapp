@@ -26,6 +26,18 @@
 - Use focused branches and commits that reference the relevant roadmap item when appropriate.
 - Open a pull request targeting `apple` for implementation, build, workflow, configuration, and documentation changes.
 - Before merging, confirm the PR is up to date enough to receive the current required checks and that those checks pass.
+- Use squash merge by default so `apple` receives one clean commit per PR.
+- Do not require contributors to manually squash their branch before review; the merge operation should produce the clean branch history.
+
+## Issue and pull request closure discipline
+
+- Normal implementation PRs should close exactly one GitHub issue.
+- Use a supported GitHub closing keyword in the PR body, preferably `Closes #<issue-number>`.
+- Use `Fixes #<issue-number>` for bug fixes and `Resolves #<issue-number>` for decisions or workflow/process issues when that wording is clearer.
+- Do not use a closing keyword unless the PR satisfies every acceptance criterion in the issue.
+- If a PR only helps with an issue but does not complete it, use `Related to #<issue-number>` and create or update a smaller follow-up issue before merging implementation work.
+- If an issue is too large for one PR, split it into smaller issues before implementation. The PR should close the smaller issue, not partially close the oversized parent.
+- Draft PRs may be used for exploration, but they should be converted to a normal PR only after their target issue is clear and small enough to close.
 
 ## Secret and sensitive-data policy
 

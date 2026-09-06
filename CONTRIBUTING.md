@@ -22,8 +22,36 @@ Because the owner intends to distribute a paid App Store version, accepted code 
 - Do not merge until all required checks pass, especially `Secret checks`.
 - Keep pull requests small enough to review carefully.
 - Reference the relevant GitHub issue when the change implements roadmap work.
+- Use squash merge by default so each merged PR becomes one clean commit on `apple`.
 
 Direct pushes to `apple` are reserved for emergency repository maintenance only.
+
+## Issue discipline
+
+Every normal implementation PR should close exactly one issue.
+
+Use a GitHub closing keyword in the PR body:
+
+```text
+Closes #<issue-number>
+```
+
+Other acceptable closing keywords are `Fixes #<issue-number>` and `Resolves #<issue-number>` when those read better.
+
+Only use a closing keyword when the PR satisfies every acceptance criterion in the linked issue. GitHub automatically closes linked issues when a merged PR or commit uses supported closing keywords.
+
+If the PR is only related to an issue, but does not complete it, use plain context instead:
+
+```text
+Related to #<issue-number>
+```
+
+A partial PR should not silently close a larger issue. If an issue is too large to finish in one reviewable PR, split it first:
+
+1. Keep or convert the large issue into a parent/tracking issue.
+2. Create smaller implementation issues with concrete acceptance criteria.
+3. Open each PR against one smaller issue.
+4. Close the parent only when all child issues are complete.
 
 ## Local setup
 
