@@ -1,0 +1,46 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks-protect
+        name: gitleaks protect staged changes
+        entry: gitleaks protect --staged --redact --verbose
+        language: system
+        pass_filenames: false
+
+      - id: forbid-sensitive-paths
+        name: forbid sensitive file paths
+        language: system
+        pass_filenames: false
+        entry: >-
+          bash -c '
+          set -euo pipefail;
+          pattern="(^|/)\.pi(/|$)|(^|/)\.env($|\.)|(^|/)(auth\.json|provider-keys\.json|credentials\.json)$|\.(pem|p12|pfx|key|mobileprovision)$";
+          matches="$(git diff --cached --name-only --diff-filter=ACMR | grep -Ei "$pattern" || true)";
+          if [[ -n "$matches" ]]; then
+            echo "Forbidden sensitive file path(s) staged:";
+            printf "%s\n" "$matches";
+            exit 1;
+          fi'
+
+      - id: no-large-files
+        name: reject files larger than 5 MiB
+        language: system
+        pass_filenames: false
+        entry: >-
+          bash -c '
+          set -euo pipefail;
+          git diff --cached --name-only --diff-filter=ACM -z |
+          while IFS= read -r -d "" file; do
+            [[ -f "$file" ]] || continue;
+            size=$(wc -c < "$file");
+            if [[ "$size" -gt 5242880 ]]; then
+              echo "File too large for normal source commit: $file ($size bytes)";
+              exit 1;
+            fi;
+          done'
+
+      - id: check-json
+        name: validate staged JSON files
+        language: system
+        types: [json]
+        entry: python3 -m json.tool

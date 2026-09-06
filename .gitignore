@@ -7,6 +7,21 @@ whatsapp-translator/.wwebjs_cache/
 # Local agent/task state
 .pi/
 
+# Environment and local credential files
+.env
+.env.*
+*.local
+credentials.json
+auth.json
+provider-keys.json
+
+# Private keys, certificates and signing material
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+
 # Xcode / native iOS
 DerivedData/
 *.xcuserstate
