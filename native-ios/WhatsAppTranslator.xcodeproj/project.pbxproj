@@ -11,18 +11,7 @@
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
 		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
 		A10000000000000000000004 /* WhatsAppBridgeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* WhatsAppBridgeSupport.swift */; };
-		B20000000000000000000001 /* WhatsAppBridgeSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* WhatsAppBridgeSupportTests.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		B20000000000000000000051 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A10000000000000000000050 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A10000000000000000000040;
-			remoteInfo = WhatsAppTranslator;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000010 /* WhatsAppTranslator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhatsAppTranslator.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -30,19 +19,10 @@
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* WhatsAppWebProbeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebProbeView.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* WhatsAppBridgeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppBridgeSupport.swift; sourceTree = "<group>"; };
-		B20000000000000000000010 /* WhatsAppTranslatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhatsAppTranslatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		B20000000000000000000011 /* WhatsAppBridgeSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppBridgeSupportTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000020 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B20000000000000000000020 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -56,7 +36,6 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000031 /* WhatsAppTranslator */,
-				B20000000000000000000031 /* WhatsAppTranslatorTests */,
 				A10000000000000000000032 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -72,19 +51,10 @@
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
 		};
-		B20000000000000000000031 /* WhatsAppTranslatorTests */ = {
-			isa = PBXGroup;
-			children = (
-				B20000000000000000000011 /* WhatsAppBridgeSupportTests.swift */,
-			);
-			path = WhatsAppTranslatorTests;
-			sourceTree = "<group>";
-		};
 		A10000000000000000000032 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000010 /* WhatsAppTranslator.app */,
-				B20000000000000000000010 /* WhatsAppTranslatorTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,24 +79,6 @@
 			productReference = A10000000000000000000010 /* WhatsAppTranslator.app */;
 			productType = "com.apple.product-type.application";
 		};
-		B20000000000000000000040 /* WhatsAppTranslatorTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = B20000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslatorTests" */;
-			buildPhases = (
-				B20000000000000000000021 /* Sources */,
-				B20000000000000000000020 /* Frameworks */,
-				B20000000000000000000022 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				B20000000000000000000050 /* PBXTargetDependency */,
-			);
-			name = WhatsAppTranslatorTests;
-			productName = WhatsAppTranslatorTests;
-			productReference = B20000000000000000000010 /* WhatsAppTranslatorTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -139,10 +91,6 @@
 				TargetAttributes = {
 					A10000000000000000000040 = {
 						CreatedOnToolsVersion = 27.0;
-					};
-					B20000000000000000000040 = {
-						CreatedOnToolsVersion = 27.0;
-						TestTargetID = A10000000000000000000040;
 					};
 				};
 			};
@@ -160,20 +108,12 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000040 /* WhatsAppTranslator */,
-				B20000000000000000000040 /* WhatsAppTranslatorTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000022 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B20000000000000000000022 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -194,23 +134,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B20000000000000000000021 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B20000000000000000000001 /* WhatsAppBridgeSupportTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		B20000000000000000000050 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A10000000000000000000040 /* WhatsAppTranslator */;
-			targetProxy = B20000000000000000000051 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000070 /* Debug */ = {
@@ -290,48 +214,6 @@
 			};
 			name = Release;
 		};
-		B20000000000000000000072 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslatorTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhatsAppTranslator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WhatsAppTranslator";
-			};
-			name = Debug;
-		};
-		B20000000000000000000073 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslatorTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhatsAppTranslator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WhatsAppTranslator";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -349,15 +231,6 @@
 			buildConfigurations = (
 				A10000000000000000000072 /* Debug */,
 				A10000000000000000000073 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		B20000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslatorTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B20000000000000000000072 /* Debug */,
-				B20000000000000000000073 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
