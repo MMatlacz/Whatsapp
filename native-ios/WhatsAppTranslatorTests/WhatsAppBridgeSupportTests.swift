@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import WhatsAppTranslator
+@testable import WhatsAppBridgeCore
 
 final class WhatsAppBridgeSupportTests: XCTestCase {
     func testPairingCodeParserNormalizesValidCode() {
@@ -174,12 +174,10 @@ final class WhatsAppBridgeSupportTests: XCTestCase {
         )
     }
 
-    @MainActor
-    func testProfileIdentifierIsStableAcrossControllerInstances() {
-        let first = WhatsAppSessionController()
-        let second = WhatsAppSessionController()
-
-        XCTAssertEqual(first.profileIdentifier, second.profileIdentifier)
-        XCTAssertEqual(first.profileIdentifier, "6F856F49-F202-4637-946A-75075B7A2A22")
+    func testProfileIdentifierIsStable() {
+        XCTAssertEqual(
+            WhatsAppSessionContract.profileIdentifier.uuidString,
+            "6F856F49-F202-4637-946A-75075B7A2A22"
+        )
     }
 }
