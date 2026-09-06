@@ -115,7 +115,7 @@ struct WhatsAppWebProbeView: View {
 }
 
 enum WhatsAppWebProfile {
-    static let identifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
+    static let identifier = WhatsAppSessionContract.profileIdentifier
     static let webURL = URL(string: "https://web.whatsapp.com")!
     static let desktopSafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
@@ -482,37 +482,5 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
 
     private func recordDiagnostic(_ message: String) {
         diagnostics = WhatsAppDiagnosticsBuffer.appending(message, to: diagnostics)
-    }
-}
-
-struct BrowserPrimitiveStatus: Equatable {
-    var indexedDB: Bool?
-    var webSocket: Bool?
-    var cryptoSubtle: Bool?
-    var serviceWorker: Bool?
-
-    init(
-        indexedDB: Bool? = nil,
-        webSocket: Bool? = nil,
-        cryptoSubtle: Bool? = nil,
-        serviceWorker: Bool? = nil
-    ) {
-        self.indexedDB = indexedDB
-        self.webSocket = webSocket
-        self.cryptoSubtle = cryptoSubtle
-        self.serviceWorker = serviceWorker
-    }
-}
-
-private extension Optional where Wrapped == Bool {
-    var displayValue: String {
-        switch self {
-        case .some(true):
-            return "available"
-        case .some(false):
-            return "unavailable"
-        case .none:
-            return "not evaluated"
-        }
     }
 }
