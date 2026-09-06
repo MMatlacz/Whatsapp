@@ -4,15 +4,32 @@ import PackageDescription
 let package = Package(
     name: "WhatsAppTranslatorCore",
     products: [
+        .library(name: "WhatsAppDomainCore", targets: ["WhatsAppDomainCore"]),
         .library(name: "WhatsAppBridgeCore", targets: ["WhatsAppBridgeCore"]),
         .library(name: "TranslationCore", targets: ["TranslationCore"]),
     ],
     targets: [
         .target(
-            name: "WhatsAppBridgeCore",
+            name: "WhatsAppDomainCore",
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "TranslationCore.swift",
+                "WhatsAppBridgeSupport.swift",
+                "WhatsAppTransportCore.swift",
+                "WhatsAppTransportDomainMapper.swift",
+                "WhatsAppTranslatorApp.swift",
+                "WhatsAppWebProbeView.swift",
+            ],
+            sources: ["WhatsAppDomain.swift"]
+        ),
+        .target(
+            name: "WhatsAppBridgeCore",
+            dependencies: ["WhatsAppDomainCore"],
+            path: "WhatsAppTranslator",
+            exclude: [
+                "DiagnosticsView.swift",
+                "WhatsAppDomain.swift",
                 "TranslationCore.swift",
                 "WhatsAppTranslatorApp.swift",
                 "WhatsAppWebProbeView.swift",
@@ -20,6 +37,7 @@ let package = Package(
             sources: [
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppTransportCore.swift",
+                "WhatsAppTransportDomainMapper.swift",
             ]
         ),
         .target(
@@ -28,15 +46,22 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "WhatsAppBridgeSupport.swift",
+                "WhatsAppDomain.swift",
                 "WhatsAppTransportCore.swift",
+                "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppTranslatorApp.swift",
                 "WhatsAppWebProbeView.swift",
             ],
             sources: ["TranslationCore.swift"]
         ),
         .testTarget(
+            name: "WhatsAppDomainCoreTests",
+            dependencies: ["WhatsAppDomainCore"],
+            path: "WhatsAppDomainTests"
+        ),
+        .testTarget(
             name: "WhatsAppBridgeCoreTests",
-            dependencies: ["WhatsAppBridgeCore"],
+            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore"],
             path: "WhatsAppTranslatorTests"
         ),
         .testTarget(
