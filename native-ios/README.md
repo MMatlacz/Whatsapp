@@ -12,6 +12,7 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - P0.3/P0.4 off-screen WhatsApp Web session probe using a dedicated persistent WebKit profile
 - defensive phone-number-linking bridge, transient pairing-code probe, session-state heuristic, and dedicated-profile disconnect action
 - deterministic Swift-side bridge parsing and session-contract tests
+- transport-independent WhatsApp transport DTOs, protocol, versioned bridge envelope decoding, and mockable contract tests
 - host-independent bounded-context and benchmark-fixture logic shared with the iOS app
 
 WhatsApp Web is **not** loaded automatically. The diagnostics session controller loads `https://web.whatsapp.com` only after an explicit user action.
@@ -34,7 +35,7 @@ The inexpensive host-independent jobs run first on `ubuntu-latest`:
 
 - `lint` runs SwiftLint against the native Swift sources;
 - `test-core` runs `swift test --package-path native-ios` on Linux;
-- the package tests exercise both the WhatsApp bridge contract and translation/context logic using the same Swift source files that are compiled into the iOS app.
+- the package tests exercise both the WhatsApp bridge/transport contracts and translation/context logic using the same Swift source files that are compiled into the iOS app.
 
 The Xcode job depends on both Ubuntu jobs, so lint or deterministic-test failures stop before consuming Apple runner time.
 
@@ -64,7 +65,7 @@ Those hardware-dependent checks remain open in their dedicated roadmap issues an
 
 `native-ios/Package.swift` exposes small host-independent targets backed by the exact production Swift source files compiled into the app:
 
-- `WhatsAppBridgeCore` uses `WhatsAppTranslator/WhatsAppBridgeSupport.swift`;
+- `WhatsAppBridgeCore` uses `WhatsAppTranslator/WhatsAppBridgeSupport.swift` and `WhatsAppTranslator/WhatsAppTransportCore.swift`;
 - `TranslationCore` uses `WhatsAppTranslator/TranslationCore.swift`.
 
 This keeps transport/session interpretation separate from translation/context logic while allowing both to be tested cheaply on Linux.
@@ -122,6 +123,17 @@ The bridge intentionally avoids depending on WhatsApp internal JavaScript object
 - stability of the dedicated WebKit profile identifier.
 
 The tests use only synthetic payloads. They do not connect to WhatsApp, use credentials, inspect cookies, or validate a linked-device session.
+
+## Transport contract tests
+
+`WhatsAppTransportCore.swift` defines the WebKit-independent contract that higher layers can use without depending on one concrete transport implementation. It contains:
+
+- the `WhatsAppTransport` protocol for connection state, chats, paginated messages, send, reply, and async events;
+- explicit chat, message, quote, media, cursor, and connection-state DTOs;
+- a versioned bridge contract and typed response/event decoder;
+- validation that rejects unsupported bridge versions, unknown event/response kinds, invalid identifiers/ranges, invalid cursors, and inconsistent history-sync chat IDs.
+
+The host-independent tests use a synthetic JSON bridge and a replaceable stub transport. They do not implement or validate `WhatsAppWebTransport`, inject WhatsApp JavaScript, connect to a live account, or satisfy the real-message acceptance criterion in parent issue #7. Physical pairing/session validation remains in issue #6.
 
 ## Translation/context tests
 
