@@ -17,7 +17,10 @@ let package = Package(
                 "WhatsAppTranslatorApp.swift",
                 "WhatsAppWebProbeView.swift",
             ],
-            sources: ["WhatsAppBridgeSupport.swift"]
+            sources: [
+                "WhatsAppBridgeSupport.swift",
+                "WhatsAppTransportCore.swift",
+            ]
         ),
         .target(
             name: "TranslationCore",
@@ -25,6 +28,7 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "WhatsAppBridgeSupport.swift",
+                "WhatsAppTransportCore.swift",
                 "WhatsAppTranslatorApp.swift",
                 "WhatsAppWebProbeView.swift",
             ],
