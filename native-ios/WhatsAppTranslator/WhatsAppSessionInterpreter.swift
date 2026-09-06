@@ -1,5 +1,9 @@
 import Foundation
 
+enum WhatsAppWebProfileIdentity {
+    static let identifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
+}
+
 enum WhatsAppSessionPayloadStatus: Equatable {
     case value(String)
     case malformed
@@ -33,7 +37,11 @@ enum WhatsAppSessionInterpreter {
 
         guard
             let values = payload as? [String: Any],
-            let rawCode = values["code"] as? String
+            let rawCode = values["code"] as? String,
+            rawCode.range(
+                of: #"^[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}$"#,
+                options: .regularExpression
+            ) != nil
         else {
             return WhatsAppPairingCodeResult(status: status, code: nil)
         }
@@ -41,10 +49,6 @@ enum WhatsAppSessionInterpreter {
         let normalized = rawCode
             .filter { $0.isLetter || $0.isNumber }
             .uppercased()
-
-        guard normalized.count == 8 else {
-            return WhatsAppPairingCodeResult(status: status, code: nil)
-        }
 
         return WhatsAppPairingCodeResult(status: status, code: normalized)
     }
