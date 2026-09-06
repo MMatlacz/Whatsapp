@@ -1,0 +1,44 @@
+name: PR hygiene
+
+on:
+  pull_request:
+    branches:
+      - apple
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  closing-issue-reference:
+    name: closing-issue-reference
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require exactly one closing issue reference
+        shell: bash
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          body="${PR_BODY:-}"
+          pattern='\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#[0-9]+'
+          matches="$(printf '%s\n' "$body" | grep -Eio "$pattern" || true)"
+          count="$(printf '%s\n' "$matches" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          if [[ "$count" != "1" ]]; then
+            echo "Expected exactly one GitHub closing reference in the PR body."
+            echo "Use one of: Closes #<issue>, Fixes #<issue>, Resolves #<issue>."
+            echo "If the issue is too broad, split it before implementation and close the smaller issue instead."
+            echo "Found $count closing reference(s)."
+            exit 1
+          fi
+
+          echo "Found exactly one closing issue reference:"
+          printf '%s\n' "$matches"
