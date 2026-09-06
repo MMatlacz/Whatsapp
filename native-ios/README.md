@@ -12,6 +12,7 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - P0.3/P0.4 off-screen WhatsApp Web session probe using a dedicated persistent WebKit profile
 - defensive phone-number-linking bridge, transient pairing-code probe, session-state heuristic, and dedicated-profile disconnect action
 - deterministic Swift-side bridge parsing and session-contract tests
+- host-independent bounded-context and benchmark-fixture logic shared with the iOS app
 
 WhatsApp Web is **not** loaded automatically. The diagnostics session controller loads `https://web.whatsapp.com` only after an explicit user action.
 
@@ -25,17 +26,31 @@ WhatsApp Web is **not** loaded automatically. The diagnostics session controller
 
 `.github/workflows/native-ios-ci.yml` runs for native iOS pull requests targeting `apple`, relevant pushes to `apple`, and manual dispatches.
 
-CI currently:
+CI is intentionally split by actual platform requirements rather than by the platform of the production app.
 
-- runs on GitHub's `xcode-27` hosted runner;
-- records the macOS, Xcode, Swift, and installed SDK versions;
+### Ubuntu validation
+
+The inexpensive host-independent jobs run first on `ubuntu-latest`:
+
+- `lint` runs SwiftLint against the native Swift sources;
+- `test-core` runs `swift test --package-path native-ios` on Linux;
+- the package tests exercise both the WhatsApp bridge contract and translation/context logic using the same Swift source files that are compiled into the iOS app.
+
+The Xcode job depends on both Ubuntu jobs, so lint or deterministic-test failures stop before consuming Apple runner time.
+
+`Secret checks` and `PR hygiene` are separate repository workflows and remain on Ubuntu with their existing required check names and behavior.
+
+### Apple validation
+
+The `build-apple` job is reserved for work that actually requires Xcode and Apple SDKs. It:
+
+- records the macOS, Xcode, and installed SDK versions;
 - inspects `native-ios/WhatsAppTranslator.xcodeproj`;
-- builds the `WhatsAppTranslator` target against the iOS Simulator SDK with code signing disabled;
-- runs the deterministic bridge XCTest suite with `swift test --package-path native-ios`.
+- builds the `WhatsAppTranslator` target against the iOS Simulator SDK with code signing disabled.
 
-The bridge tests are host-independent: `native-ios/Package.swift` creates a small `WhatsAppBridgeCore` target backed by the exact `native-ios/WhatsAppTranslator/WhatsAppBridgeSupport.swift` source that is also compiled into the iOS app. The test suite therefore exercises the production Swift-side bridge contract without booting an iOS Simulator or loading WhatsApp Web.
+SwiftUI, WebKit, Foundation Models integration, iOS lifecycle code, and other genuine Apple-SDK behavior stay on the Apple side. CI must not introduce fake Linux implementations merely to increase Linux coverage.
 
-CI is the default validation path for work that does not depend on physical iPhone hardware. It does **not** satisfy acceptance criteria that explicitly require a physical device. In particular, CI does not prove:
+CI is the default validation path for work that does not depend on physical iPhone hardware. It does **not** satisfy acceptance criteria that explicitly require a physical device. In particular, neither Linux tests nor Simulator builds prove:
 
 - Apple Intelligence / `SystemLanguageModel` availability or inference behavior on an iPhone;
 - real on-device translation quality, latency, memory, thermal, or battery behavior;
@@ -44,6 +59,21 @@ CI is the default validation path for work that does not depend on physical iPho
 - missed-message synchronization after time offline.
 
 Those hardware-dependent checks remain open in their dedicated roadmap issues and can be completed later without blocking CI-validatable implementation work.
+
+## Host-independent Swift package
+
+`native-ios/Package.swift` exposes small host-independent targets backed by the exact production Swift source files compiled into the app:
+
+- `WhatsAppBridgeCore` uses `WhatsAppTranslator/WhatsAppBridgeSupport.swift`;
+- `TranslationCore` uses `WhatsAppTranslator/TranslationCore.swift`.
+
+This keeps transport/session interpretation separate from translation/context logic while allowing both to be tested cheaply on Linux.
+
+Run all current host-independent tests locally with:
+
+```bash
+swift test --package-path native-ios
+```
 
 ## Open
 
@@ -91,13 +121,18 @@ The bridge intentionally avoids depending on WhatsApp internal JavaScript object
 - bounded/truncated diagnostics;
 - stability of the dedicated WebKit profile identifier.
 
-Run them locally without an iOS Simulator:
-
-```bash
-swift test --package-path native-ios
-```
-
 The tests use only synthetic payloads. They do not connect to WhatsApp, use credentials, inspect cookies, or validate a linked-device session.
+
+## Translation/context tests
+
+`TranslationCore.swift` contains deterministic logic that does not depend on SwiftUI, WebKit, Foundation Models, or another Apple-only framework. Current Linux coverage verifies:
+
+- bounded recent-context selection;
+- non-positive and oversized context windows;
+- the benchmark matrix for 0, 3, 8, and 16 context messages;
+- that contextual prompts use the most recent messages rather than unlimited history.
+
+The iOS P0.1 benchmark consumes these same fixtures directly, so CI is not testing a separate mock implementation.
 
 ## P0.1 benchmark
 
