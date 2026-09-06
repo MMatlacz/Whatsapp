@@ -11,6 +11,7 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - P0.1 benchmark harness for contextual Indonesian -> Polish translation experiments
 - P0.3/P0.4 off-screen WhatsApp Web session probe using a dedicated persistent WebKit profile
 - defensive phone-number-linking bridge, transient pairing-code probe, session-state heuristic, and dedicated-profile disconnect action
+- deterministic Swift-side bridge parsing and session-contract tests
 
 WhatsApp Web is **not** loaded automatically. The diagnostics session controller loads `https://web.whatsapp.com` only after an explicit user action.
 
@@ -27,9 +28,12 @@ WhatsApp Web is **not** loaded automatically. The diagnostics session controller
 CI currently:
 
 - runs on GitHub's `xcode-27` hosted runner;
-- records the macOS, Xcode, and installed SDK versions;
+- records the macOS, Xcode, Swift, and installed SDK versions;
 - inspects `native-ios/WhatsAppTranslator.xcodeproj`;
-- builds the `WhatsAppTranslator` target against the iOS Simulator SDK with code signing disabled.
+- builds the `WhatsAppTranslator` target against the iOS Simulator SDK with code signing disabled;
+- runs the deterministic bridge XCTest suite with `swift test --package-path native-ios`.
+
+The bridge tests are host-independent: `native-ios/Package.swift` creates a small `WhatsAppBridgeCore` target backed by the exact `native-ios/WhatsAppTranslator/WhatsAppBridgeSupport.swift` source that is also compiled into the iOS app. The test suite therefore exercises the production Swift-side bridge contract without booting an iOS Simulator or loading WhatsApp Web.
 
 CI is the default validation path for work that does not depend on physical iPhone hardware. It does **not** satisfy acceptance criteria that explicitly require a physical device. In particular, CI does not prove:
 
@@ -74,6 +78,26 @@ The session controller can:
 - release its `WKWebView` and remove the dedicated profile when **Disconnect WhatsApp** is used.
 
 The bridge intentionally avoids depending on WhatsApp internal JavaScript objects. DOM selectors are treated as experimental and may need adjustment after physical-device testing. Pairing codes are memory-only and are cleared on new-session/disconnect paths. Page contents, cookies, and authentication material are not copied into app persistence or logs.
+
+## Deterministic bridge tests
+
+`WhatsAppBridgeSupport.swift` contains the Swift-side contract that interprets JavaScript results and transient session state. Its tests cover:
+
+- pairing-code normalization and malformed-code rejection;
+- explicit whitelisting of phone-link and session-state statuses;
+- browser-primitive decoding from JavaScript-compatible values;
+- malformed and unexpected payload handling;
+- new-session and disconnect reset values;
+- bounded/truncated diagnostics;
+- stability of the dedicated WebKit profile identifier.
+
+Run them locally without an iOS Simulator:
+
+```bash
+swift test --package-path native-ios
+```
+
+The tests use only synthetic payloads. They do not connect to WhatsApp, use credentials, inspect cookies, or validate a linked-device session.
 
 ## P0.1 benchmark
 
