@@ -3,10 +3,10 @@
 ## Repository direction
 
 - `apple` is the canonical/default development branch for the Apple-native implementation.
-- New implementation work should be based on and pushed directly to `apple` unless explicitly instructed otherwise.
-- Pull requests are **not required** for normal development in this repository. Do not create a PR unless the user explicitly asks for one.
-- `legacy-main` preserves the earlier Electron/desktop implementation and should be treated as reference/legacy code unless a task explicitly targets it.
-- `main` may exist for compatibility/history, but do not assume it is the active integration branch. Prefer `apple`.
+- Do not push implementation changes directly to `apple` during normal development.
+- Create a focused branch for each change and merge it into `apple` through a pull request.
+- A pull request must not be merged until all required CI checks pass, including the repository secret checks.
+- Do not bypass, disable, weaken, or mark secret checks as optional unless the user explicitly requests a security-policy change.
 
 ## Current implementation focus
 
@@ -23,10 +23,21 @@
 - Roadmap work is tracked with GitHub issues and milestones.
 - Update the relevant issue with meaningful implementation findings or blockers when useful.
 - Do not close an issue until its acceptance criteria are actually met.
-- Direct commits to `apple` are expected; use focused commit messages that reference the relevant roadmap item when appropriate.
+- Use focused branches and commits that reference the relevant roadmap item when appropriate.
+- Open a pull request targeting `apple` for implementation, build, workflow, configuration, and documentation changes.
+- Before merging, confirm the PR is up to date enough to receive the current required checks and that those checks pass.
+
+## Secret and sensitive-data policy
+
+- Never commit credentials, API keys, access tokens, refresh tokens, private keys, signing material, session state, WhatsApp pairing/authentication material, or local credential stores.
+- Never commit `.pi/`, `.env`/`.env.*`, provider auth files, private key/certificate files, or generated logs that may contain credentials or personal data.
+- The automated `Secret checks` GitHub Actions workflow is a required merge gate for `apple`.
+- If a secret check fails, investigate and remove the sensitive material rather than suppressing the finding. Add an allowlist only for a confirmed false positive and keep it as narrow as possible.
+- If a real secret reaches Git history, treat it as compromised: rotate/revoke it first, then purge it from history when appropriate.
+- Do not paste discovered secret values into issues, PR comments, commit messages, CI logs, or chat responses.
 
 ## Safety around existing work
 
 - Preserve unrelated user changes.
 - Do not rewrite or force-update shared history unless explicitly requested.
-- Do not delete `legacy-main` or other preserved branches without explicit instruction.
+- Do not delete branches or tags unless explicitly requested or the task specifically requires their cleanup.
