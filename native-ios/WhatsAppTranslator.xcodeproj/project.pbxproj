@@ -9,12 +9,14 @@
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* WhatsAppTranslatorApp.swift */; };
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
+		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000010 /* WhatsAppTranslator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhatsAppTranslator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000011 /* WhatsAppTranslatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTranslatorApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* WhatsAppWebProbeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebProbeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +43,7 @@
 			children = (
 				A10000000000000000000011 /* WhatsAppTranslatorApp.swift */,
 				A10000000000000000000012 /* DiagnosticsView.swift */,
+				A10000000000000000000013 /* WhatsAppWebProbeView.swift */,
 			);
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
@@ -123,6 +126,7 @@
 			files = (
 				A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */,
 				A10000000000000000000002 /* DiagnosticsView.swift in Sources */,
+				A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,7 +149,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-		};
+			};
 			name = Debug;
 		};
 		A10000000000000000000071 /* Release */ = {
@@ -161,7 +165,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
-		};
+			};
 			name = Release;
 		};
 		A10000000000000000000072 /* Debug */ = {
