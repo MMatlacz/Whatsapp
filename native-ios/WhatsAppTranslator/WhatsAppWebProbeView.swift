@@ -94,7 +94,7 @@ struct WhatsAppWebProbeView: View {
                 }
 
                 Section {
-                    Text("This controller keeps WhatsApp Web off-screen and only loads it after an explicit action. The DOM bridge is intentionally defensive and does not persist page contents or pairing codes. CI validates compilation only; real pairing, restart restoration, offline sync, and the P0.3/P0.4 go/no-go decisions remain physical-iPhone checks.")
+                    Text("This controller keeps WhatsApp Web off-screen and only loads it after an explicit action. The DOM bridge is intentionally defensive and does not persist page contents or pairing codes. CI validates compilation and deterministic bridge tests; real pairing, restart restoration, offline sync, and the P0.3/P0.4 go/no-go decisions remain physical-iPhone checks.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -115,7 +115,7 @@ struct WhatsAppWebProbeView: View {
 }
 
 enum WhatsAppWebProfile {
-    static let identifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
+    static let identifier = WhatsAppSessionContract.profileIdentifier
     static let webURL = URL(string: "https://web.whatsapp.com")!
     static let desktopSafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
@@ -137,8 +137,6 @@ enum WhatsAppWebProfile {
 
 @MainActor
 final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationDelegate {
-    private static let diagnosticsLimit = 20
-
     @Published private(set) var loadState = "not started"
     @Published private(set) var currentURL = "not loaded"
     @Published private(set) var javaScriptState = "not evaluated"
@@ -166,8 +164,9 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
 
     func loadWhatsAppWeb() {
         startPairingAfterLoad = false
-        pairingCode = nil
-        pairingFlowState = "not started"
+        apply(reset: .newLoad)
+        diagnostics = []
+        primitives = BrowserPrimitiveStatus()
         beginWhatsAppLoad()
     }
 
@@ -177,7 +176,10 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
 
         guard let webView, loadState == "finished", webView.url != nil else {
             startPairingAfterLoad = true
+            apply(reset: .newLoad)
             pairingFlowState = "waiting for WhatsApp Web"
+            diagnostics = []
+            primitives = BrowserPrimitiveStatus()
             beginWhatsAppLoad()
             return
         }
@@ -226,19 +228,15 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
                 return
             }
 
-            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+            guard let parsed = WhatsAppBridgeResultParser.pairingCode(from: result) else {
                 self.pairingCode = nil
                 self.pairingFlowState = "pairing-code-unexpected-result"
-                self.recordDiagnostic("Pairing-code probe returned an unexpected result type.")
+                self.recordDiagnostic("Pairing-code probe returned an unexpected result type or invalid code.")
                 return
             }
 
-            self.pairingFlowState = status
-            if status == "pairing-code-found", let code = values["code"] as? String, code.count == 8 {
-                self.pairingCode = code
-            } else {
-                self.pairingCode = nil
-            }
+            self.pairingFlowState = parsed.status
+            self.pairingCode = parsed.code
         }
     }
 
@@ -289,9 +287,12 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
                 return
             }
 
-            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+            guard let status = WhatsAppBridgeResultParser.status(
+                from: result,
+                allowed: WhatsAppBridgeResultParser.sessionStatuses
+            ) else {
                 self.sessionState = "session-state-unexpected-result"
-                self.recordDiagnostic("Session-state probe returned an unexpected result type.")
+                self.recordDiagnostic("Session-state probe returned an unexpected or unknown status.")
                 return
             }
 
@@ -303,24 +304,16 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         guard !isDisconnecting else { return }
 
         isDisconnecting = true
-        disconnectState = "releasing WebKit session"
         startPairingAfterLoad = false
-        pairingCode = nil
-        pairingFlowState = "cleared"
-        sessionState = "not evaluated"
+        apply(reset: .disconnect)
         primitives = BrowserPrimitiveStatus()
-        javaScriptState = "not evaluated"
-        currentURL = "not loaded"
-        loadState = "not started"
-        isLoading = false
-
         releaseWebView()
 
         disconnectState = "removing dedicated profile"
         do {
             try await WKWebsiteDataStore.remove(forIdentifier: WhatsAppWebProfile.identifier)
             disconnectState = "profile removed"
-            dataStoreRecreatedDiagnostic()
+            recordDiagnostic("Dedicated WebKit profile removed. The next load will create a clean profile with the same stable identifier.")
         } catch {
             disconnectState = "profile removal failed"
             recordDiagnostic("Dedicated WebKit profile removal failed: \(error.localizedDescription)")
@@ -361,15 +354,6 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     }
 
     private func beginWhatsAppLoad() {
-        diagnostics = []
-        primitives = BrowserPrimitiveStatus()
-        javaScriptState = "not evaluated"
-        sessionState = "not evaluated"
-        disconnectState = "not requested"
-        loadState = "starting"
-        currentURL = "not loaded"
-        isLoading = true
-
         let webView = ensureWebView()
         webView.load(URLRequest(url: WhatsAppWebProfile.webURL))
     }
@@ -430,9 +414,12 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
                 return
             }
 
-            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+            guard let status = WhatsAppBridgeResultParser.status(
+                from: result,
+                allowed: WhatsAppBridgeResultParser.phoneLinkStatuses
+            ) else {
                 self.pairingFlowState = "phone-link-entry-unexpected-result"
-                self.recordDiagnostic("Phone-link entry probe returned an unexpected result type.")
+                self.recordDiagnostic("Phone-link entry probe returned an unexpected or unknown status.")
                 return
             }
 
@@ -459,19 +446,14 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
                 return
             }
 
-            guard let values = result as? [String: Any] else {
+            guard let primitives = WhatsAppBridgeResultParser.primitives(from: result) else {
                 self.javaScriptState = "unexpected result"
                 self.recordDiagnostic("JavaScript probe returned an unexpected result type.")
                 return
             }
 
             self.javaScriptState = "success"
-            self.primitives = BrowserPrimitiveStatus(
-                indexedDB: Self.boolValue(values["indexedDB"]),
-                webSocket: Self.boolValue(values["webSocket"]),
-                cryptoSubtle: Self.boolValue(values["cryptoSubtle"]),
-                serviceWorker: Self.boolValue(values["serviceWorker"])
-            )
+            self.primitives = primitives
         }
     }
 
@@ -487,56 +469,18 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         currentURL = webView.url?.absoluteString ?? "not loaded"
     }
 
-    private func dataStoreRecreatedDiagnostic() {
-        recordDiagnostic("Dedicated WebKit profile removed. The next load will create a clean profile with the same stable identifier.")
+    private func apply(reset: WhatsAppSessionResetValues) {
+        loadState = reset.loadState
+        currentURL = reset.currentURL
+        javaScriptState = reset.javaScriptState
+        sessionState = reset.sessionState
+        pairingFlowState = reset.pairingFlowState
+        pairingCode = reset.pairingCode
+        disconnectState = reset.disconnectState
+        isLoading = reset.isLoading
     }
 
     private func recordDiagnostic(_ message: String) {
-        diagnostics.append(String(message.prefix(500)))
-        if diagnostics.count > Self.diagnosticsLimit {
-            diagnostics.removeFirst(diagnostics.count - Self.diagnosticsLimit)
-        }
-    }
-
-    private static func boolValue(_ value: Any?) -> Bool? {
-        if let value = value as? Bool {
-            return value
-        }
-        if let value = value as? NSNumber {
-            return value.boolValue
-        }
-        return nil
-    }
-}
-
-struct BrowserPrimitiveStatus {
-    var indexedDB: Bool?
-    var webSocket: Bool?
-    var cryptoSubtle: Bool?
-    var serviceWorker: Bool?
-
-    init(
-        indexedDB: Bool? = nil,
-        webSocket: Bool? = nil,
-        cryptoSubtle: Bool? = nil,
-        serviceWorker: Bool? = nil
-    ) {
-        self.indexedDB = indexedDB
-        self.webSocket = webSocket
-        self.cryptoSubtle = cryptoSubtle
-        self.serviceWorker = serviceWorker
-    }
-}
-
-private extension Optional where Wrapped == Bool {
-    var displayValue: String {
-        switch self {
-        case .some(true):
-            return "available"
-        case .some(false):
-            return "unavailable"
-        case .none:
-            return "not evaluated"
-        }
+        diagnostics = WhatsAppDiagnosticsBuffer.appending(message, to: diagnostics)
     }
 }

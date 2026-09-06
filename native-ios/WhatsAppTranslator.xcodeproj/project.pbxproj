@@ -10,6 +10,7 @@
 		A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* WhatsAppTranslatorApp.swift */; };
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
 		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
+		A10000000000000000000004 /* WhatsAppBridgeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* WhatsAppBridgeSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +18,7 @@
 		A10000000000000000000011 /* WhatsAppTranslatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTranslatorApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* WhatsAppWebProbeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebProbeView.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* WhatsAppBridgeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppBridgeSupport.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +46,7 @@
 				A10000000000000000000011 /* WhatsAppTranslatorApp.swift */,
 				A10000000000000000000012 /* DiagnosticsView.swift */,
 				A10000000000000000000013 /* WhatsAppWebProbeView.swift */,
+				A10000000000000000000014 /* WhatsAppBridgeSupport.swift */,
 			);
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
@@ -127,6 +130,7 @@
 				A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */,
 				A10000000000000000000002 /* DiagnosticsView.swift in Sources */,
 				A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */,
+				A10000000000000000000004 /* WhatsAppBridgeSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

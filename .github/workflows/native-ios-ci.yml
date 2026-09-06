@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: build
+  build-and-test:
+    name: build-and-test
     runs-on: xcode-27
     timeout-minutes: 20
 
@@ -37,6 +37,7 @@ jobs:
           set -euo pipefail
           sw_vers
           xcodebuild -version
+          swift --version
           xcodebuild -showsdks
 
       - name: Inspect project
@@ -57,11 +58,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
+      - name: Run deterministic bridge XCTest suite
+        run: |
+          set -euo pipefail
+          swift test \
+            --package-path native-ios \
+            --configuration debug
+
       - name: Record hardware-only validation boundary
         run: |
           cat <<'EOF'
-          Native iOS CI validates compilation against Xcode 27 and the iOS Simulator SDK.
-          It does not validate Foundation Models inference, Apple Intelligence availability,
-          WhatsApp Web authentication, or linked-device/session persistence on a physical iPhone.
+          Native iOS CI validates the iOS app build against Xcode 27 and runs deterministic XCTest coverage
+          for the exact WhatsAppBridgeSupport.swift source compiled into the app. The bridge tests are host-independent
+          and use no WhatsApp credentials, session material, or network-dependent acceptance flow.
+
+          CI still does not validate Foundation Models inference, Apple Intelligence availability, WhatsApp Web
+          authentication, linked-device persistence, force-quit restoration, or offline resync on a physical iPhone.
           Those acceptance gates remain open in their dedicated roadmap issues.
           EOF
