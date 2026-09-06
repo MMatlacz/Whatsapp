@@ -10,23 +10,33 @@
 		A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* WhatsAppTranslatorApp.swift */; };
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
 		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
+		A10000000000000000000004 /* WhatsAppSessionInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* WhatsAppSessionInterpreter.swift */; };
+		A10000000000000000000005 /* WhatsAppSessionInterpreterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* WhatsAppSessionInterpreterTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000080 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000050 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000040;
+			remoteInfo = WhatsAppTranslator;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000010 /* WhatsAppTranslator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhatsAppTranslator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000011 /* WhatsAppTranslatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTranslatorApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* WhatsAppWebProbeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebProbeView.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* WhatsAppSessionInterpreter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppSessionInterpreter.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* WhatsAppSessionInterpreterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppSessionInterpreterTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000016 /* WhatsAppTranslatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhatsAppTranslatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A10000000000000000000020 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+		A10000000000000000000020 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000024 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -34,6 +44,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000031 /* WhatsAppTranslator */,
+				A10000000000000000000033 /* WhatsAppTranslatorTests */,
 				A10000000000000000000032 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -44,14 +55,22 @@
 				A10000000000000000000011 /* WhatsAppTranslatorApp.swift */,
 				A10000000000000000000012 /* DiagnosticsView.swift */,
 				A10000000000000000000013 /* WhatsAppWebProbeView.swift */,
+				A10000000000000000000014 /* WhatsAppSessionInterpreter.swift */,
 			);
 			path = WhatsAppTranslator;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000033 /* WhatsAppTranslatorTests */ = {
+			isa = PBXGroup;
+			children = (A10000000000000000000015 /* WhatsAppSessionInterpreterTests.swift */,);
+			path = WhatsAppTranslatorTests;
 			sourceTree = "<group>";
 		};
 		A10000000000000000000032 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000010 /* WhatsAppTranslator.app */,
+				A10000000000000000000016 /* WhatsAppTranslatorTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -62,19 +81,24 @@
 		A10000000000000000000040 /* WhatsAppTranslator */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A10000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslator" */;
-			buildPhases = (
-				A10000000000000000000021 /* Sources */,
-				A10000000000000000000020 /* Frameworks */,
-				A10000000000000000000022 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
+			buildPhases = (A10000000000000000000021 /* Sources */, A10000000000000000000020 /* Frameworks */, A10000000000000000000022 /* Resources */,);
+			buildRules = ();
+			dependencies = ();
 			name = WhatsAppTranslator;
 			productName = WhatsAppTranslator;
 			productReference = A10000000000000000000010 /* WhatsAppTranslator.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000041 /* WhatsAppTranslatorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000062 /* Build configuration list for PBXNativeTarget "WhatsAppTranslatorTests" */;
+			buildPhases = (A10000000000000000000023 /* Sources */, A10000000000000000000024 /* Frameworks */, A10000000000000000000025 /* Resources */,);
+			buildRules = ();
+			dependencies = (A10000000000000000000081 /* PBXTargetDependency */,);
+			name = WhatsAppTranslatorTests;
+			productName = WhatsAppTranslatorTests;
+			productReference = A10000000000000000000016 /* WhatsAppTranslatorTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -86,151 +110,60 @@
 				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					A10000000000000000000040 = {
-						CreatedOnToolsVersion = 27.0;
-					};
+					A10000000000000000000040 = {CreatedOnToolsVersion = 27.0;};
+					A10000000000000000000041 = {CreatedOnToolsVersion = 27.0; TestTargetID = A10000000000000000000040;};
 				};
 			};
 			buildConfigurationList = A10000000000000000000060 /* Build configuration list for PBXProject "WhatsAppTranslator" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-				Base,
-			);
+			knownRegions = (en, Base,);
 			mainGroup = A10000000000000000000030;
 			productRefGroup = A10000000000000000000032 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (
-				A10000000000000000000040 /* WhatsAppTranslator */,
-			);
+			targets = (A10000000000000000000040 /* WhatsAppTranslator */, A10000000000000000000041 /* WhatsAppTranslatorTests */,);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A10000000000000000000022 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+		A10000000000000000000022 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000025 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000021 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (
-				A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */,
-				A10000000000000000000002 /* DiagnosticsView.swift in Sources */,
-				A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */,
-			);
+			files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000004,);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000023 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (A10000000000000000000005,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A10000000000000000000081 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A10000000000000000000040 /* WhatsAppTranslator */; targetProxy = A10000000000000000000080 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
-		A10000000000000000000070 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			};
-			name = Debug;
-		};
-		A10000000000000000000071 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
-			};
-			name = Release;
-		};
-		A10000000000000000000072 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslator;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		A10000000000000000000073 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslator;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
+		A10000000000000000000070 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; IPHONEOS_DEPLOYMENT_TARGET = 26.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)"; SWIFT_OPTIMIZATION_LEVEL = "-Onone";}; name = Debug; };
+		A10000000000000000000071 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; GCC_C_LANGUAGE_STANDARD = gnu17; IPHONEOS_DEPLOYMENT_TARGET = 26.0; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule;}; name = Release; };
+		A10000000000000000000072 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; IPHONEOS_DEPLOYMENT_TARGET = 26.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslator; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1;}; name = Debug; };
+		A10000000000000000000073 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; IPHONEOS_DEPLOYMENT_TARGET = 26.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslator; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1;}; name = Release; };
+		A10000000000000000000074 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslatorTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhatsAppTranslator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WhatsAppTranslator";}; name = Debug; };
+		A10000000000000000000075 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGNING_ALLOWED = NO; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 26.0; PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.WhatsAppTranslatorTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_VERSION = 6.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WhatsAppTranslator.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WhatsAppTranslator";}; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10000000000000000000060 /* Build configuration list for PBXProject "WhatsAppTranslator" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A10000000000000000000070 /* Debug */,
-				A10000000000000000000071 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A10000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslator" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A10000000000000000000072 /* Debug */,
-				A10000000000000000000073 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
+		A10000000000000000000060 /* Build configuration list for PBXProject "WhatsAppTranslator" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000070, A10000000000000000000071,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslator" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000072, A10000000000000000000073,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000062 /* Build configuration list for PBXNativeTarget "WhatsAppTranslatorTests" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000074, A10000000000000000000075,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = A10000000000000000000050 /* Project object */;
