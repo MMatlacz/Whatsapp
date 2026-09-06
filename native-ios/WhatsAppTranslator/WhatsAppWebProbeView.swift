@@ -4,42 +4,88 @@ import WebKit
 
 @MainActor
 struct WhatsAppWebProbeView: View {
-    @StateObject private var probe = WhatsAppWebProbe()
+    @StateObject private var session = WhatsAppSessionController()
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Persistent profile") {
-                    probeRow("Data store", value: probe.dataStoreState)
-                    probeRow("Profile ID", value: probe.profileIdentifier)
-                    probeRow("User agent", value: probe.userAgentState)
+                    sessionRow("Data store", value: session.dataStoreState)
+                    sessionRow("Profile ID", value: session.profileIdentifier)
+                    sessionRow("User agent", value: session.userAgentState)
                 }
 
                 Section("WhatsApp Web") {
-                    Button(probe.isLoading ? "Loading WhatsApp Web..." : "Load WhatsApp Web") {
-                        probe.loadWhatsAppWeb()
+                    Button(session.isLoading ? "Loading WhatsApp Web..." : "Load WhatsApp Web") {
+                        session.loadWhatsAppWeb()
                     }
-                    .disabled(probe.isLoading)
+                    .disabled(session.isLoading || session.isDisconnecting)
 
-                    probeRow("Load state", value: probe.loadState)
-                    probeRow("Current URL", value: probe.currentURL)
-                    probeRow("Swift -> JavaScript", value: probe.javaScriptState)
+                    sessionRow("Load state", value: session.loadState)
+                    sessionRow("Current URL", value: session.currentURL)
+                    sessionRow("Swift -> JavaScript", value: session.javaScriptState)
+                    sessionRow("Session UI", value: session.sessionState)
+                }
+
+                Section("Phone-number linking") {
+                    Button("Start phone-number linking") {
+                        session.startPhoneNumberLinking()
+                    }
+                    .disabled(session.isLoading || session.isDisconnecting)
+
+                    Button("Read pairing code") {
+                        session.refreshPairingCode()
+                    }
+                    .disabled(session.isLoading || session.isDisconnecting)
+
+                    Button("Refresh session state") {
+                        session.refreshSessionState()
+                    }
+                    .disabled(session.isLoading || session.isDisconnecting)
+
+                    sessionRow("Pairing flow", value: session.pairingFlowState)
+
+                    if let pairingCode = session.pairingCode {
+                        LabeledContent("Pairing code") {
+                            Text(pairingCode)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+
+                        Text("The pairing code exists only in memory and is cleared when a new session starts or the profile is disconnected.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        sessionRow("Pairing code", value: "not captured")
+                    }
                 }
 
                 Section("Browser primitives") {
-                    probeRow("indexedDB", value: probe.primitives.indexedDB.displayValue)
-                    probeRow("WebSocket", value: probe.primitives.webSocket.displayValue)
-                    probeRow("crypto.subtle", value: probe.primitives.cryptoSubtle.displayValue)
-                    probeRow("serviceWorker", value: probe.primitives.serviceWorker.displayValue)
+                    sessionRow("indexedDB", value: session.primitives.indexedDB.displayValue)
+                    sessionRow("WebSocket", value: session.primitives.webSocket.displayValue)
+                    sessionRow("crypto.subtle", value: session.primitives.cryptoSubtle.displayValue)
+                    sessionRow("serviceWorker", value: session.primitives.serviceWorker.displayValue)
+                }
+
+                Section("Disconnect") {
+                    Button("Disconnect WhatsApp", role: .destructive) {
+                        Task {
+                            await session.disconnect()
+                        }
+                    }
+                    .disabled(session.isDisconnecting)
+
+                    sessionRow("Disconnect state", value: session.disconnectState)
                 }
 
                 Section("Diagnostics") {
-                    if probe.diagnostics.isEmpty {
+                    if session.diagnostics.isEmpty {
                         Text("No navigation or JavaScript errors recorded in this run.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(Array(probe.diagnostics.enumerated()), id: \.offset) { _, message in
+                        ForEach(Array(session.diagnostics.enumerated()), id: \.offset) { _, message in
                             Text(message)
                                 .font(.footnote)
                                 .textSelection(.enabled)
@@ -48,17 +94,17 @@ struct WhatsAppWebProbeView: View {
                 }
 
                 Section {
-                    Text("This probe is intentionally off-screen and only loads web.whatsapp.com after you tap the button. CI validates compilation only. Authentication, linked-device behavior, and the WebKit go/no-go decision remain physical-iPhone checks in P0.3.")
+                    Text("This controller keeps WhatsApp Web off-screen and only loads it after an explicit action. The DOM bridge is intentionally defensive and does not persist page contents or pairing codes. CI validates compilation only; real pairing, restart restoration, offline sync, and the P0.3/P0.4 go/no-go decisions remain physical-iPhone checks.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("P0.3 WebKit Probe")
+            .navigationTitle("WhatsApp Web Session")
         }
     }
 
     @ViewBuilder
-    private func probeRow(_ title: String, value: String) -> some View {
+    private func sessionRow(_ title: String, value: String) -> some View {
         LabeledContent(title) {
             Text(value)
                 .foregroundStyle(.secondary)
@@ -68,50 +114,219 @@ struct WhatsAppWebProbeView: View {
     }
 }
 
+enum WhatsAppWebProfile {
+    static let identifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
+    static let webURL = URL(string: "https://web.whatsapp.com")!
+    static let desktopSafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
+
+    @MainActor
+    static func makeDataStore() -> WKWebsiteDataStore {
+        WKWebsiteDataStore(forIdentifier: identifier)
+    }
+
+    @MainActor
+    static func makeWebView() -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = makeDataStore()
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.customUserAgent = desktopSafariUserAgent
+        return webView
+    }
+}
+
 @MainActor
-final class WhatsAppWebProbe: NSObject, ObservableObject, WKNavigationDelegate {
-    private static let profileID = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
-    private static let whatsAppWebURL = URL(string: "https://web.whatsapp.com")!
-    private static let desktopSafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
+final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationDelegate {
     private static let diagnosticsLimit = 20
 
     @Published private(set) var loadState = "not started"
     @Published private(set) var currentURL = "not loaded"
     @Published private(set) var javaScriptState = "not evaluated"
+    @Published private(set) var sessionState = "not evaluated"
+    @Published private(set) var pairingFlowState = "not started"
+    @Published private(set) var pairingCode: String?
+    @Published private(set) var disconnectState = "not requested"
     @Published private(set) var primitives = BrowserPrimitiveStatus()
     @Published private(set) var diagnostics: [String] = []
     @Published private(set) var isLoading = false
+    @Published private(set) var isDisconnecting = false
 
-    let profileIdentifier = profileID.uuidString
+    let profileIdentifier = WhatsAppWebProfile.identifier.uuidString
     let userAgentState = "desktop Safari"
     let dataStoreState: String
 
-    private let webView: WKWebView
+    private var webView: WKWebView?
+    private var startPairingAfterLoad = false
 
     override init() {
-        let configuration = WKWebViewConfiguration()
-        let dataStore = WKWebsiteDataStore(forIdentifier: Self.profileID)
-        configuration.websiteDataStore = dataStore
-
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.customUserAgent = Self.desktopSafariUserAgent
-
-        self.webView = webView
+        let dataStore = WhatsAppWebProfile.makeDataStore()
         self.dataStoreState = dataStore.isPersistent ? "dedicated persistent profile" : "unexpected nonpersistent profile"
-
         super.init()
-        webView.navigationDelegate = self
     }
 
     func loadWhatsAppWeb() {
-        diagnostics = []
+        startPairingAfterLoad = false
+        pairingCode = nil
+        pairingFlowState = "not started"
+        beginWhatsAppLoad()
+    }
+
+    func startPhoneNumberLinking() {
+        pairingCode = nil
+        disconnectState = "not requested"
+
+        guard let webView, loadState == "finished", webView.url != nil else {
+            startPairingAfterLoad = true
+            pairingFlowState = "waiting for WhatsApp Web"
+            beginWhatsAppLoad()
+            return
+        }
+
+        evaluatePhoneLinkEntryPoint(in: webView)
+    }
+
+    func refreshPairingCode() {
+        guard let webView else {
+            pairingFlowState = "WhatsApp Web not loaded"
+            return
+        }
+
+        let script = """
+        (() => {
+            const visible = (element) => {
+                const style = globalThis.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            };
+
+            const candidates = Array.from(document.querySelectorAll('code, span, div'))
+                .filter(visible)
+                .map((element) => (element.textContent || '').replace(/\\s+/g, ' ').trim())
+                .filter((text) => text.length >= 8 && text.length <= 12);
+
+            const exact = candidates.find((text) => /^[A-Z0-9]{4}[\\s-]?[A-Z0-9]{4}$/i.test(text));
+            if (!exact) {
+                return { status: 'pairing-code-not-found' };
+            }
+
+            return {
+                status: 'pairing-code-found',
+                code: exact.replace(/[\\s-]/g, '').toUpperCase()
+            };
+        })()
+        """
+
+        webView.evaluateJavaScript(script) { [weak self] result, error in
+            guard let self else { return }
+
+            if let error {
+                self.pairingCode = nil
+                self.pairingFlowState = "pairing-code-read-failed"
+                self.recordDiagnostic("Pairing-code probe failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+                self.pairingCode = nil
+                self.pairingFlowState = "pairing-code-unexpected-result"
+                self.recordDiagnostic("Pairing-code probe returned an unexpected result type.")
+                return
+            }
+
+            self.pairingFlowState = status
+            if status == "pairing-code-found", let code = values["code"] as? String, code.count == 8 {
+                self.pairingCode = code
+            } else {
+                self.pairingCode = nil
+            }
+        }
+    }
+
+    func refreshSessionState() {
+        guard let webView else {
+            sessionState = "WhatsApp Web not loaded"
+            return
+        }
+
+        let script = """
+        (() => {
+            const normalizedText = (element) => (element.innerText || element.textContent || element.getAttribute('aria-label') || '')
+                .replace(/\\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+            const visible = (element) => {
+                const style = globalThis.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            };
+
+            const interactive = Array.from(document.querySelectorAll('button, [role="button"], a')).filter(visible);
+            const hasPhoneLinkEntry = interactive.some((element) => {
+                const text = normalizedText(element);
+                return text.includes('link with phone number') || text.includes('link with a phone number');
+            });
+
+            const hasChatUI = Boolean(
+                document.querySelector('[aria-label*="Chat list" i], [aria-label*="Chats" i], [role="grid"]')
+            );
+
+            if (hasChatUI) {
+                return { status: 'authenticated-ui-heuristic' };
+            }
+            if (hasPhoneLinkEntry) {
+                return { status: 'authentication-ui-heuristic' };
+            }
+            return { status: 'unknown-ui' };
+        })()
+        """
+
+        webView.evaluateJavaScript(script) { [weak self] result, error in
+            guard let self else { return }
+
+            if let error {
+                self.sessionState = "session-state-read-failed"
+                self.recordDiagnostic("Session-state probe failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+                self.sessionState = "session-state-unexpected-result"
+                self.recordDiagnostic("Session-state probe returned an unexpected result type.")
+                return
+            }
+
+            self.sessionState = status
+        }
+    }
+
+    func disconnect() async {
+        guard !isDisconnecting else { return }
+
+        isDisconnecting = true
+        disconnectState = "releasing WebKit session"
+        startPairingAfterLoad = false
+        pairingCode = nil
+        pairingFlowState = "cleared"
+        sessionState = "not evaluated"
         primitives = BrowserPrimitiveStatus()
         javaScriptState = "not evaluated"
-        loadState = "starting"
         currentURL = "not loaded"
-        isLoading = true
+        loadState = "not started"
+        isLoading = false
 
-        webView.load(URLRequest(url: Self.whatsAppWebURL))
+        releaseWebView()
+
+        disconnectState = "removing dedicated profile"
+        do {
+            try await WKWebsiteDataStore.remove(forIdentifier: WhatsAppWebProfile.identifier)
+            disconnectState = "profile removed"
+            dataStoreRecreatedDiagnostic()
+        } catch {
+            disconnectState = "profile removal failed"
+            recordDiagnostic("Dedicated WebKit profile removal failed: \(error.localizedDescription)")
+        }
+
+        isDisconnecting = false
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -128,7 +343,13 @@ final class WhatsAppWebProbe: NSObject, ObservableObject, WKNavigationDelegate {
         loadState = "finished"
         isLoading = false
         updateCurrentURL(from: webView)
-        runBrowserPrimitiveProbe()
+        runBrowserPrimitiveProbe(in: webView)
+        refreshSessionState()
+
+        if startPairingAfterLoad {
+            startPairingAfterLoad = false
+            evaluatePhoneLinkEntryPoint(in: webView)
+        }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -139,14 +360,87 @@ final class WhatsAppWebProbe: NSObject, ObservableObject, WKNavigationDelegate {
         finishWithNavigationError(prefix: "Provisional navigation failed", webView: webView, error: error)
     }
 
-    private func finishWithNavigationError(prefix: String, webView: WKWebView, error: Error) {
-        loadState = "failed"
-        isLoading = false
-        updateCurrentURL(from: webView)
-        recordDiagnostic("\(prefix): \(error.localizedDescription)")
+    private func beginWhatsAppLoad() {
+        diagnostics = []
+        primitives = BrowserPrimitiveStatus()
+        javaScriptState = "not evaluated"
+        sessionState = "not evaluated"
+        disconnectState = "not requested"
+        loadState = "starting"
+        currentURL = "not loaded"
+        isLoading = true
+
+        let webView = ensureWebView()
+        webView.load(URLRequest(url: WhatsAppWebProfile.webURL))
     }
 
-    private func runBrowserPrimitiveProbe() {
+    private func ensureWebView() -> WKWebView {
+        if let webView {
+            return webView
+        }
+
+        let webView = WhatsAppWebProfile.makeWebView()
+        webView.navigationDelegate = self
+        self.webView = webView
+        return webView
+    }
+
+    private func releaseWebView() {
+        webView?.stopLoading()
+        webView?.navigationDelegate = nil
+        webView = nil
+    }
+
+    private func evaluatePhoneLinkEntryPoint(in webView: WKWebView) {
+        pairingFlowState = "searching for phone-number linking"
+
+        let script = """
+        (() => {
+            const normalizedText = (element) => (element.innerText || element.textContent || element.getAttribute('aria-label') || '')
+                .replace(/\\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+            const visible = (element) => {
+                const style = globalThis.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            };
+
+            const candidates = Array.from(document.querySelectorAll('button, [role="button"], a')).filter(visible);
+            const entry = candidates.find((element) => {
+                const text = normalizedText(element);
+                return text.includes('link with phone number') || text.includes('link with a phone number');
+            });
+
+            if (!entry) {
+                return { status: 'phone-link-entry-not-found' };
+            }
+
+            entry.click();
+            return { status: 'phone-link-entry-clicked' };
+        })()
+        """
+
+        webView.evaluateJavaScript(script) { [weak self] result, error in
+            guard let self else { return }
+
+            if let error {
+                self.pairingFlowState = "phone-link-entry-probe-failed"
+                self.recordDiagnostic("Phone-link entry probe failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard let values = result as? [String: Any], let status = values["status"] as? String else {
+                self.pairingFlowState = "phone-link-entry-unexpected-result"
+                self.recordDiagnostic("Phone-link entry probe returned an unexpected result type.")
+                return
+            }
+
+            self.pairingFlowState = status
+        }
+    }
+
+    private func runBrowserPrimitiveProbe(in webView: WKWebView) {
         let script = """
         (() => ({
             indexedDB: typeof globalThis.indexedDB !== 'undefined',
@@ -181,8 +475,20 @@ final class WhatsAppWebProbe: NSObject, ObservableObject, WKNavigationDelegate {
         }
     }
 
+    private func finishWithNavigationError(prefix: String, webView: WKWebView, error: Error) {
+        loadState = "failed"
+        isLoading = false
+        startPairingAfterLoad = false
+        updateCurrentURL(from: webView)
+        recordDiagnostic("\(prefix): \(error.localizedDescription)")
+    }
+
     private func updateCurrentURL(from webView: WKWebView) {
         currentURL = webView.url?.absoluteString ?? "not loaded"
+    }
+
+    private func dataStoreRecreatedDiagnostic() {
+        recordDiagnostic("Dedicated WebKit profile removed. The next load will create a clean profile with the same stable identifier.")
     }
 
     private func recordDiagnostic(_ message: String) {
