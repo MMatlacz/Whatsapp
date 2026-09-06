@@ -1,0 +1,17 @@
+included:
+  - native-ios
+
+excluded:
+  - native-ios/.build
+
+only_rules:
+  - duplicate_imports
+  - empty_count
+  - force_cast
+  - force_try
+  - trailing_newline
+  - trailing_semicolon
+  - trailing_whitespace
+  - vertical_whitespace
+
+reporter: xcode
