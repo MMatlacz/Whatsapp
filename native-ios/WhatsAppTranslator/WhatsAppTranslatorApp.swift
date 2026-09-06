@@ -4,7 +4,17 @@ import SwiftUI
 struct WhatsAppTranslatorApp: App {
     var body: some Scene {
         WindowGroup {
-            DiagnosticsView()
+            TabView {
+                DiagnosticsView()
+                    .tabItem {
+                        Label("Diagnostics", systemImage: "stethoscope")
+                    }
+
+                WhatsAppWebProbeView()
+                    .tabItem {
+                        Label("WebKit Probe", systemImage: "globe")
+                    }
+            }
         }
     }
 }
