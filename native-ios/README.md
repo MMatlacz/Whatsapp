@@ -7,10 +7,10 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - native SwiftUI iPhone app target
 - Apple `FoundationModels` linked through `SystemLanguageModel.default`
 - native WebKit linked through `WebPage`
-- diagnostics for model availability, context size, advertised Indonesian/Polish support, and WebKit initialization
+- diagnostics for model availability, context size, advertised Indonesian/Polish support, WebKit initialization, and explicit WhatsApp login state
 - P0.1 benchmark harness for contextual Indonesian -> Polish translation experiments
 
-This intentionally does **not** load WhatsApp Web yet. WhatsApp loading and transport persistence are separate architecture spikes.
+This intentionally does **not** load WhatsApp Web yet. Until P0.3 loads it, diagnostics report the WhatsApp login state as `not evaluated (P0.3)`. WhatsApp loading and transport persistence are separate architecture spikes.
 
 ## Requirements
 
@@ -36,7 +36,8 @@ The launch screen shows:
 2. Foundation Models availability and context size;
 3. advertised `id_ID` and `pl_PL` support through `supportsLocale(_:)`;
 4. WebKit `WebPage` initialization state;
-5. a link to the P0.1 SystemLanguageModel benchmark.
+5. explicit WhatsApp login state, reported as not evaluated until P0.3;
+6. a link to the P0.1 SystemLanguageModel benchmark.
 
 ## P0.1 benchmark
 
@@ -59,7 +60,8 @@ Before closing issue #2, verify on a physical device that:
 2. the diagnostics screen renders OS and bundle data;
 3. Foundation Models availability and context size are displayed;
 4. Indonesian and Polish locale-support checks execute;
-5. `WebPage` initializes successfully.
+5. `WebPage` initializes successfully;
+6. the WhatsApp login-state diagnostic renders as `not evaluated (P0.3)` until the separate WhatsApp Web spike is implemented.
 
 Do not treat simulator-only success as completion of the physical-device acceptance criterion.
 
