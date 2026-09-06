@@ -1,0 +1,25 @@
+{
+  "name": "whatsapp-translator",
+  "version": "0.1.0",
+  "description": "Desktop WhatsApp client: group messages translated to Polish, original below, language-learning tools",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && esbuild renderer/app.ts --bundle --format=iife --outfile=dist/renderer/bundle.js --target=chrome120 --log-level=warning",
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "check": "npm run build && node dist/test/self_check.js && node dist/test/regression.js && node dist/test/free_translation.js",
+    "benchmark": "npm run build && node dist/test/benchmark.js",
+    "check:electron": "npm run build && electron dist/test/electron_smoke.js"
+  },
+  "dependencies": {
+    "baileys": "^7.0.0-rc14",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/qrcode": "^1.5.6",
+    "electron": "^36.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

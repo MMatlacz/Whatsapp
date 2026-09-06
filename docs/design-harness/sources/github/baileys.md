@@ -1,0 +1,5 @@
+# Baileys — personal-account WhatsApp Web bridge via QR (WebSockets TS lib)
+
+Baileys is a WebSockets-based TypeScript library for interacting with the WhatsApp Web API as a second client, authenticated by scanning a QR code or pairing code. Fits the personal-account judgment because it avoids the official Cloud API business number and runs as the human's own account.
+
+Provenance: [WhiskeySockets/Baileys on GitHub](https://github.com/WhiskeySockets/Baileys) (accessed 2026-09-05); additional docs at [history sync](https://baileys.wiki/advanced/history-sync), [FAQ](https://baileys.wiki/faq), and [Mintlify intro](https://whiskeysockets-baileys-94.mintlify.app/introduction). Grade: strong fit for personal-account QR bridge and asynchronous full-history sync via `messaging-history.set`; unofficial reverse-engineered API so session logout/ban risk applies. Compatibility note: Baileys issue [#2677](https://github.com/WhiskeySockets/Baileys/issues/2677) reports WhatsApp rejecting Darwin/Windows Desktop sub-platforms with 428 before QR; use `Browsers.ubuntu('Chrome')`/`WEB_BROWSER` with `syncFullHistory: true`.

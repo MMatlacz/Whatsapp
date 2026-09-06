@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <title>WhatsApp Translator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="qr-overlay" class="hidden">
+    <div class="qr-card">
+      <h2>Pair WhatsApp</h2>
+      <p>Scan this with WhatsApp → Linked devices</p>
+      <img id="qr-img" alt="QR code" />
+    </div>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <h1>Groups</h1>
+      <div id="groups"></div>
+      <div id="known-panel">
+        <h2>Known words <span id="known-count"></span></h2>
+        <div id="known-words"></div>
+      </div>
+      <button id="export-btn">Export learning data</button>
+      <div id="toast" class="hidden"></div>
+    </aside>
+
+    <main id="chat">
+      <div id="chat-empty">Pick a group</div>
+      <header id="chat-header" class="hidden">
+        <span id="chat-title"></span>
+      </header>
+      <button id="load-older" class="hidden" type="button">Load older messages</button>
+      <div id="messages"></div>
+      <form id="compose" class="hidden">
+        <input id="compose-input" placeholder="Message (sent as typed)" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="../dist/renderer/bundle.js"></script>
+</body>
+</html>

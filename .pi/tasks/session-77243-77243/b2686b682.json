@@ -1,0 +1,20 @@
+{
+  "id": "b2686b682",
+  "name": "start WhatsApp app",
+  "command": "cd whatsapp-translator && npm start",
+  "description": "Launch Electron so Baileys can pair and sync full history.",
+  "status": "completed",
+  "outputPath": ".pi/tasks/session-77243-77243/b2686b682.output",
+  "cwd": "/Users/marcinmatlacz/Projects/Whatsapp",
+  "startTime": 1788634158818,
+  "endTime": 1788634223588,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 52315,
+  "bytesWritten": 44661,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

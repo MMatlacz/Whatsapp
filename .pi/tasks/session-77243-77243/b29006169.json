@@ -1,0 +1,18 @@
+{
+  "id": "b29006169",
+  "name": "npm install deps",
+  "command": "cd /Users/marcinmatlacz/Projects/Whatsapp/whatsapp-translator && npm install 2>&1",
+  "status": "completed",
+  "outputPath": ".pi/tasks/session-77243-77243/b29006169.output",
+  "cwd": "/Users/marcinmatlacz/Projects/Whatsapp",
+  "startTime": 1788605891076,
+  "endTime": 1788605911844,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 99488,
+  "bytesWritten": 803,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true
+}
