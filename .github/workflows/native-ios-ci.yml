@@ -23,10 +23,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: build
+  build-and-test:
+    name: build-and-test
     runs-on: xcode-27
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Check out repository
@@ -39,7 +39,7 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Inspect project
+      - name: Inspect project and shared scheme
         run: |
           set -euo pipefail
           xcodebuild \
@@ -57,11 +57,49 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
+      - name: Select available iPhone simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_udid="$({
+            xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime in sorted(data.get("devices", {}).keys(), reverse=True):
+              for device in data["devices"][runtime]:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit(0)
+          raise SystemExit(1)
+          '
+          })"
+
+          if [[ -z "$simulator_udid" ]]; then
+            echo "No available iPhone simulator found on the Xcode 27 runner."
+            exit 1
+          fi
+
+          echo "udid=$simulator_udid" >> "$GITHUB_OUTPUT"
+          echo "Selected simulator: $simulator_udid"
+
+      - name: Run deterministic native iOS unit tests
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/WhatsAppTranslator.xcodeproj \
+            -scheme WhatsAppTranslator \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
       - name: Record hardware-only validation boundary
         run: |
           cat <<'EOF'
-          Native iOS CI validates compilation against Xcode 27 and the iOS Simulator SDK.
-          It does not validate Foundation Models inference, Apple Intelligence availability,
-          WhatsApp Web authentication, or linked-device/session persistence on a physical iPhone.
-          Those acceptance gates remain open in their dedicated roadmap issues.
+          Native iOS CI validates compilation and deterministic XCTest coverage against Xcode 27
+          and an iOS Simulator. The tests do not use WhatsApp credentials, session material, or network-dependent
+          acceptance flows. CI still does not validate Foundation Models inference, Apple Intelligence availability,
+          WhatsApp Web authentication, linked-device persistence, force-quit restoration, or offline resync on a
+          physical iPhone. Those acceptance gates remain open in their dedicated roadmap issues.
           EOF
