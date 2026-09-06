@@ -1,0 +1,67 @@
+name: Native iOS CI
+
+on:
+  pull_request:
+    branches:
+      - apple
+    paths:
+      - "native-ios/**"
+      - ".github/workflows/native-ios-ci.yml"
+  push:
+    branches:
+      - apple
+    paths:
+      - "native-ios/**"
+      - ".github/workflows/native-ios-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build
+    runs-on: xcode-27
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          set -euo pipefail
+          sw_vers
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Inspect project
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/WhatsAppTranslator.xcodeproj \
+            -list
+
+      - name: Build native iOS target for Simulator SDK
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/WhatsAppTranslator.xcodeproj \
+            -target WhatsAppTranslator \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Record hardware-only validation boundary
+        run: |
+          cat <<'EOF'
+          Native iOS CI validates compilation against Xcode 27 and the iOS Simulator SDK.
+          It does not validate Foundation Models inference, Apple Intelligence availability,
+          WhatsApp Web authentication, or linked-device/session persistence on a physical iPhone.
+          Those acceptance gates remain open in their dedicated roadmap issues.
+          EOF

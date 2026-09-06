@@ -18,6 +18,26 @@ This intentionally does **not** load WhatsApp Web yet. Until P0.3 loads it, diag
 - iOS 26.0+ deployment target
 - a physical Apple-Intelligence-capable iPhone for Foundation Models acceptance tests
 
+## Continuous integration
+
+`.github/workflows/native-ios-ci.yml` runs for native iOS pull requests targeting `apple`, relevant pushes to `apple`, and manual dispatches.
+
+CI currently:
+
+- runs on GitHub's `xcode-27` hosted runner;
+- records the macOS, Xcode, and installed SDK versions;
+- inspects `native-ios/WhatsAppTranslator.xcodeproj`;
+- builds the `WhatsAppTranslator` target against the iOS Simulator SDK with code signing disabled.
+
+CI is the default validation path for work that does not depend on physical iPhone hardware. It does **not** satisfy acceptance criteria that explicitly require a physical device. In particular, CI does not prove:
+
+- Apple Intelligence / `SystemLanguageModel` availability or inference behavior on an iPhone;
+- real on-device translation quality, latency, memory, thermal, or battery behavior;
+- WhatsApp Web authentication behavior on iPhone WebKit;
+- linked-device session persistence or reconnect behavior after an iPhone app restart.
+
+Those hardware-dependent checks remain open in their dedicated roadmap issues and can be completed later without blocking CI-validatable implementation work.
+
 ## Open
 
 Open:
