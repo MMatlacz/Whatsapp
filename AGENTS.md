@@ -37,9 +37,15 @@
 - If a real secret reaches Git history, treat it as compromised: rotate/revoke it first, then purge it from history when appropriate.
 - Do not paste discovered secret values into issues, PR comments, commit messages, CI logs, or chat responses.
 
-## Open-source governance
+## Source-available governance
 
-- The project is licensed under the MIT License in `LICENSE`.
+- The project is source-available, not open source.
+- The repository is licensed under the PolyForm Noncommercial License 1.0.0 in `LICENSE`.
+- Noncommercial personal self-building, study, testing, and hobby use are permitted by the repository license.
+- Commercial use, resale, paid hosting, App Store or marketplace redistribution, inclusion in commercial products, or use by or for a business requires a separate written commercial license from the copyright holder.
+- The copyright holder reserves the right to distribute paid App Store or commercial builds under separate proprietary/commercial terms.
+- Do not accept unsolicited code contributions unless the user explicitly requests them.
+- Before merging external code contributions, ensure the contribution terms preserve the owner's ability to use the contribution in future paid/commercial releases.
 - Contributor and security process docs live in `CONTRIBUTING.md` and `SECURITY.md`.
 - Do not add files, dependencies, assets, copied code, model weights, datasets, or generated artifacts unless their license and redistribution terms are compatible with this repository.
 - Preserve copyright and license notices when importing third-party code.
