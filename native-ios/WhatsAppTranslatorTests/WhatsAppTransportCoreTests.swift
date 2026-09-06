@@ -69,7 +69,7 @@ final class WhatsAppTransportCoreTests: XCTestCase {
     func testUnsupportedBridgeVersionIsRejected() {
         XCTAssertThrowsError(
             try WhatsAppBridgeDecoder.decodeEvent(
-                from: json("""{"version":2,"kind":"ready","payload":{}}""")
+                from: json(#"{"version":2,"kind":"ready","payload":{}}"#)
             )
         ) { error in
             XCTAssertEqual(error as? WhatsAppBridgeDecodingError, .unsupportedVersion(2))
@@ -79,7 +79,7 @@ final class WhatsAppTransportCoreTests: XCTestCase {
     func testUnknownEventAndResponseKindsAreRejected() {
         XCTAssertThrowsError(
             try WhatsAppBridgeDecoder.decodeEvent(
-                from: json("""{"version":1,"kind":"rawInternalThing","payload":{}}""")
+                from: json(#"{"version":1,"kind":"rawInternalThing","payload":{}}"#)
             )
         ) { error in
             XCTAssertEqual(
@@ -90,7 +90,7 @@ final class WhatsAppTransportCoreTests: XCTestCase {
 
         XCTAssertThrowsError(
             try WhatsAppBridgeDecoder.decodeResponse(
-                from: json("""{"version":1,"kind":"privateStoreDump","payload":{}}""")
+                from: json(#"{"version":1,"kind":"privateStoreDump","payload":{}}"#)
             )
         ) { error in
             XCTAssertEqual(
@@ -234,10 +234,12 @@ final class WhatsAppTransportCoreTests: XCTestCase {
         let transport: any WhatsAppTransport = StubWhatsAppTransport()
 
         try await transport.connect()
-        XCTAssertEqual(try await transport.connectionState(), .ready)
-        XCTAssertEqual(try await transport.listChats().count, 1)
-
+        let state = try await transport.connectionState()
+        let chats = try await transport.listChats()
         let sent = try await transport.sendText("hello", to: "group-1")
+
+        XCTAssertEqual(state, .ready)
+        XCTAssertEqual(chats.count, 1)
         XCTAssertEqual(sent.body, "hello")
         XCTAssertTrue(sent.fromMe)
     }
