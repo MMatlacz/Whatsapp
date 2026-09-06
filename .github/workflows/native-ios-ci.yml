@@ -34,6 +34,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check WhatsApp bridge JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check native-ios/WhatsAppTranslator/WhatsAppBridge.js
+
       - name: Run SwiftLint on Ubuntu
         run: |
           set -euo pipefail
@@ -104,13 +109,15 @@ jobs:
       - name: Record validation boundaries
         run: |
           cat <<'EOF'
-          Ubuntu CI validates Swift style and all current host-independent deterministic Swift tests,
-          including WhatsApp bridge parsing/session-contract tests and translation/context logic.
-          The Xcode runner is reserved for compiling the Apple-specific application against the
-          iOS Simulator SDK.
+          Ubuntu CI validates Swift style, WhatsAppBridge.js syntax, and all current
+          host-independent deterministic Swift tests, including bridge/session contracts,
+          WhatsAppWebTransport request/response/event orchestration, and translation/context logic.
+          The Xcode runner compiles the Apple-specific WebKit runtime and application against
+          the iOS Simulator SDK.
 
           Neither Linux tests nor the Simulator build validate Foundation Models inference,
-          Apple Intelligence availability, real WhatsApp Web authentication, linked-device
-          persistence, force-quit restoration, offline resync, or other physical-iPhone behavior.
+          Apple Intelligence availability, real WhatsApp Web authentication, the current
+          WhatsApp-private runtime adapter, linked-device persistence, force-quit restoration,
+          offline resync, or a real group message arriving through WebKit on a physical iPhone.
           Those acceptance gates remain open in their dedicated roadmap issues.
           EOF
