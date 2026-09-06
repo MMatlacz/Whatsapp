@@ -26,7 +26,7 @@ jobs:
   build:
     name: build
     runs-on: xcode-27
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -38,6 +38,7 @@ jobs:
           sw_vers
           xcodebuild -version
           xcodebuild -showsdks
+          xcrun simctl list runtimes
 
       - name: Inspect project
         run: |
@@ -60,14 +61,34 @@ jobs:
       - name: Run deterministic unit tests
         run: |
           set -euo pipefail
-          DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for runtime in d.values() for x in runtime if x.get("isAvailable") and x.get("name", "").startswith("iPhone")))')"
-          echo "Using iOS Simulator $DEVICE_ID"
+          DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          devices = json.load(sys.stdin)["devices"]
+          candidates = []
+          for runtime, entries in devices.items():
+              match = re.search(r"iOS-(\d+)-(\d+)(?:-(\d+))?$", runtime)
+              if not match:
+                  continue
+              version = tuple(int(part or 0) for part in match.groups())
+              for device in entries:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      candidates.append((version, device["name"], device["udid"]))
+          if not candidates:
+              raise SystemExit("No available iPhone Simulator found")
+          candidates.sort(reverse=True)
+          print(candidates[0][2])
+          ')"
+          echo "Using newest available iOS Simulator: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEVICE_ID" -b
           xcodebuild \
             -project native-ios/WhatsAppTranslator.xcodeproj \
             -scheme WhatsAppTranslator \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=$DEVICE_ID" \
-            CODE_SIGNING_ALLOWED=NO \
+            -destination-timeout 60 \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
             test
 
       - name: Record hardware-only validation boundary
