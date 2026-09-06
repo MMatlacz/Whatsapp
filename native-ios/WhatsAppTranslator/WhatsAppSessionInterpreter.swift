@@ -1,9 +1,5 @@
 import Foundation
 
-enum WhatsAppWebProfileIdentity {
-    static let identifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
-}
-
 enum WhatsAppSessionPayloadStatus: Equatable {
     case value(String)
     case malformed
