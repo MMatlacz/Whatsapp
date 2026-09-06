@@ -1,6 +1,18 @@
 # Contributing
 
-Thanks for helping improve WhatsApp Translator.
+Thanks for your interest in WhatsApp Translator.
+
+This repository is **source-available**, not open source. The code is published so people can inspect it, learn from it, and self-build it for noncommercial purposes under the PolyForm Noncommercial License 1.0.0.
+
+Commercial use, resale, paid hosting, App Store or marketplace redistribution, inclusion in a commercial product, or use by or for a business requires a separate written commercial license from the copyright holder.
+
+## Contribution policy
+
+This project is not accepting unsolicited code contributions by default.
+
+Small documentation fixes, issue reports, and reproducible bug reports are welcome. Code changes should only be opened when the repository owner has explicitly requested them or when they implement an agreed roadmap item.
+
+Because the owner intends to distribute a paid App Store version, accepted code contributions may require a separate contributor agreement or written license grant that allows the owner to use, modify, distribute, sublicense, and commercially license the contribution. Do not submit code you are not prepared to license on those terms.
 
 ## Branch and pull request workflow
 
@@ -73,4 +85,6 @@ If CI reports a real secret, rotate/revoke it first, then remove it from the rep
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the MIT License in this repository.
+By contributing to this repository, you agree that your contribution is provided under the PolyForm Noncommercial License 1.0.0 unless a separate written agreement says otherwise.
+
+For code contributions, the repository owner may require an additional contributor agreement before merging so the contribution can be used in a future paid App Store release.
