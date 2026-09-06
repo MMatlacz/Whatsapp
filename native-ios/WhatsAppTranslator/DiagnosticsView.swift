@@ -24,6 +24,16 @@ struct DiagnosticsView: View {
                     diagnosticRow("Polish (pl_PL)", value: model.supportsLocale(Locale(identifier: "pl_PL")) ? "supported" : "not advertised")
                 }
 
+                Section("Benchmarks") {
+                    NavigationLink("P0.1 SystemLanguageModel benchmark") {
+                        P01BenchmarkView()
+                    }
+
+                    Text("Runs synthetic Indonesian/Polish translation prompts and exports a Markdown result table for docs/native/.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("WebKit") {
                     diagnosticRow("WebPage", value: "initialized")
                     diagnosticRow("Current URL", value: page.url?.absoluteString ?? "not loaded")
@@ -31,7 +41,7 @@ struct DiagnosticsView: View {
                 }
 
                 Section {
-                    Text("This screen only verifies that the native app, Foundation Models, and WebKit are wired correctly. WhatsApp loading and translation prompts are separate architecture spikes.")
+                    Text("This screen verifies that the native app, Foundation Models, and WebKit are wired correctly. WhatsApp loading and transport experiments are separate architecture spikes.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
