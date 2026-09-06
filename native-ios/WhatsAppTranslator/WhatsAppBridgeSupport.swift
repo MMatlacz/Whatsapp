@@ -1,5 +1,28 @@
 import Foundation
 
+enum WhatsAppSessionContract {
+    static let profileIdentifier = UUID(uuidString: "6F856F49-F202-4637-946A-75075B7A2A22")!
+}
+
+struct BrowserPrimitiveStatus: Equatable {
+    var indexedDB: Bool?
+    var webSocket: Bool?
+    var cryptoSubtle: Bool?
+    var serviceWorker: Bool?
+
+    init(
+        indexedDB: Bool? = nil,
+        webSocket: Bool? = nil,
+        cryptoSubtle: Bool? = nil,
+        serviceWorker: Bool? = nil
+    ) {
+        self.indexedDB = indexedDB
+        self.webSocket = webSocket
+        self.cryptoSubtle = cryptoSubtle
+        self.serviceWorker = serviceWorker
+    }
+}
+
 struct WhatsAppPairingCodeResult: Equatable {
     let status: String
     let code: String?
@@ -143,5 +166,18 @@ enum WhatsAppDiagnosticsBuffer {
         }
 
         return updated
+    }
+}
+
+extension Optional where Wrapped == Bool {
+    var displayValue: String {
+        switch self {
+        case .some(true):
+            return "available"
+        case .some(false):
+            return "unavailable"
+        case .none:
+            return "not evaluated"
+        }
     }
 }
