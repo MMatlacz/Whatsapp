@@ -1,0 +1,13 @@
+whatsapp-translator/node_modules/
+whatsapp-translator/data/
+whatsapp-translator/dist/
+whatsapp-translator/.wwebjs_cache/
+.DS_Store
+
+# Local agent/task state
+.pi/
+
+# Xcode / native iOS
+DerivedData/
+*.xcuserstate
+**/xcuserdata/

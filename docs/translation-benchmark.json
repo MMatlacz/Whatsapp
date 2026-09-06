@@ -1,0 +1,116 @@
+{
+  "at": "2026-09-06T07:45:11.376Z",
+  "syntheticOnly": true,
+  "fixtureCount": 60,
+  "requestedPerModel": 6,
+  "liveWhatsAppTested": false,
+  "runs": [
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "caseId": 1,
+      "latencyMs": 177,
+      "status": "error",
+      "error": "Free translation unavailable. google/gemma-4-31b-it:free: OpenRouter HTTP 429"
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 1,
+      "tag": "idiom",
+      "source": "Aku nggak enak badan.",
+      "reference": "Źle się czuję.",
+      "context": [],
+      "names": [],
+      "output": "Mam dziś nieprzyjemne samopoczucie.",
+      "latencyMs": 822,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 2,
+      "tag": "negation",
+      "source": "Aku belum makan, bukan nggak mau makan.",
+      "reference": "Jeszcze nie jadłem, a nie że nie chcę jeść.",
+      "context": [],
+      "names": [],
+      "output": "Jeszcze nie zjadłam, nie znaczy, że nie chcę.",
+      "latencyMs": 778,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 3,
+      "tag": "context",
+      "source": "Udah sampai?",
+      "reference": "Już dotarłeś?",
+      "context": [
+        "Aku lagi di jalan ke rumahmu."
+      ],
+      "names": [],
+      "output": "Czy już dojechałeś?",
+      "latencyMs": 582,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 4,
+      "tag": "slang",
+      "source": "Gue lagi mager banget.",
+      "reference": "Strasznie mi się nic nie chce.",
+      "context": [],
+      "names": [],
+      "output": "Jestem zmęczony do granic możliwości.",
+      "latencyMs": 558,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 5,
+      "tag": "irony",
+      "source": "Rajin banget, datang pas acaranya selesai 😂",
+      "reference": "Ale pracowity, przyszedł, kiedy impreza się skończyła 😂",
+      "context": [],
+      "names": [],
+      "output": "Bardzo chętny, przychodzi na czas, gdy skończy się masaż 😂",
+      "latencyMs": 809,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "id": 6,
+      "tag": "privacy",
+      "source": "Łukasz, kabari @用户 ya.",
+      "reference": "Łukasz, daj znać @用户.",
+      "context": [],
+      "names": [
+        "Łukasz"
+      ],
+      "output": "Łukasz, oddaj @用户 proszę.",
+      "latencyMs": 726,
+      "status": "success",
+      "humanReviewed": false
+    }
+  ],
+  "summary": [
+    {
+      "model": "google/gemma-4-31b-it:free",
+      "attempted": 1,
+      "successful": 0,
+      "medianMs": null,
+      "p95Ms": null,
+      "quality": "References supplied for review; no native-speaker score claimed."
+    },
+    {
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "attempted": 6,
+      "successful": 6,
+      "medianMs": 778,
+      "p95Ms": 822,
+      "quality": "References supplied for review; no native-speaker score claimed."
+    }
+  ]
+}

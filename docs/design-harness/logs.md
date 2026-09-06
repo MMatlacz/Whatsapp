@@ -1,0 +1,135 @@
+# logs — append-only change ledger (covers both the ideas and output layers)
+
+Convention: each line is `- date · card/doc · action · delta (minimal old → new) · reason`;
+record the **delta itself**; once output exists, one line per layer per change;
+append only, never rewrite old lines.
+- 2026-09-05 · ideas/translate-incoming-to-polish.md · create · (none → Incoming group messages are shown translated to Polish) · transcribe human judgment
+- 2026-09-05 · ideas/translate-outgoing-to-chosen-language.md · create · (none → Outgoing messages auto-translate to chosen language, default Indonesian) · transcribe human judgment
+- 2026-09-05 · ideas/index.md · update · (empty → 2 unclassified cards listed) · index regeneration
+- 2026-09-05 · ideas/whatsapp-personal-account-qr.md · create · (none → personal-account QR bridge, not Cloud API) · transcribe human judgment
+- 2026-09-05 · ideas/translation-via-chatgpt.md · create · (none → translation uses human's ChatGPT) · transcribe human judgment
+- 2026-09-05 · ideas/pick-any-group.md · create · (none → pick any group at runtime, tentative) · transcribe human judgment
+- 2026-09-05 · sources/github/baileys.md · create · (none → Baileys QR bridge card + provenance) · ingest evidence
+- 2026-09-05 · sources/github/whatsapp-web-js.md · create · (none → whatsapp-web.js group send/receive card + provenance) · ingest evidence
+- 2026-09-05 · sources/api/openai-multilingual.md · create · (none → OpenAI multilingual card + provenance) · ingest evidence
+- 2026-09-05 · ideas/whatsapp-personal-account-qr.md · update · (no refs → +links to baileys, whatsapp-web-js) · derive references
+- 2026-09-05 · ideas/translation-via-chatgpt.md · update · (no refs → +link to openai-multilingual) · derive references
+- 2026-09-05 · ideas/pick-any-group.md · update · (no refs → +link to whatsapp-web-js) · derive references
+- 2026-09-05 · ideas/index.md · update · (2 → 5 unclassified cards listed) · index regeneration
+- 2026-09-05 · sources/index.md · update · (empty → 3 unclassified cards listed) · index regeneration
+- 2026-09-05 · ideas/whatsapp-personal-account-qr.md · fix · (../../sources → ../sources) · dangling-link repair
+- 2026-09-05 · ideas/translation-via-chatgpt.md · fix · (../../sources → ../sources) · dangling-link repair
+- 2026-09-05 · ideas/pick-any-group.md · fix · (../../sources → ../sources) · dangling-link repair
+- 2026-09-05 · ideas/chatgpt-account-no-api-key.md · create · (none → paid ChatGPT account, no API key) · transcribe human judgment
+- 2026-09-05 · ideas/index.md · update · (5 → 6 unclassified cards listed) · index regeneration
+- 2026-09-05 · sources/api/pi-codex-oauth.md · create · (none → Pi Codex OAuth mechanism card) · ingest evidence
+- 2026-09-05 · ideas/chatgpt-account-no-api-key.md · update · (+Codex-OAuth mechanism ref, ToS caveat) · refine judgment from human's question
+- 2026-09-05 · sources/index.md · update · (3 → 4 unclassified cards listed) · index regeneration
+- 2026-09-05 · target.md · update · (blank → purpose + 5 checkable requirements) · transcribe human target
+- 2026-09-05 · ideas/translate-incoming-to-polish.md · update · (+already-translated on open, original below) · target refinement
+- 2026-09-05 · ideas/translations-cached-locally.md · create · (none → local cache) · transcribe human judgment
+- 2026-09-05 · ideas/translations-contextual.md · create · (none → contextual translation) · transcribe human judgment
+- 2026-09-05 · ideas/retranslate-edit-translations.md · create · (none → retranslate w/ comment, manual edit+save) · transcribe human judgment
+- 2026-09-05 · ideas/no-auto-outgoing-translation.md · create · (none → no auto-translate on send) · transcribe human judgment
+- 2026-09-05 · ideas/translate-outgoing-to-chosen-language.md · archive · (live → archived) · adjudicated by human's latest word
+- 2026-09-05 · ideas/index.md · update · (6 live → 9 live, outgoing card dropped) · index regeneration
+- 2026-09-05 · ideas/no-auto-outgoing-translation.md · update · (translation app → external app, paste back; app does nothing) · human adjudication
+- 2026-09-05 · ideas/index.md · update · (outgoing line description refined) · index regeneration
+- 2026-09-05 · ideas/full-chat-features.md · create · (none → full chat feature parity: replies, images, quote-replies, timestamps, names, photos) · transcribe human judgment
+- 2026-09-05 · target.md · update · (+chat-features requirement line) · human requirement
+- 2026-09-05 · ideas/index.md · update · (9 live → 10 live) · index regeneration
+- 2026-09-05 · ideas/commit-whatsapp-web-js.md · create · (none → commit to whatsapp-web.js) · human adjudication
+- 2026-09-05 · ideas/desktop-app-form.md · create · (none → desktop app) · human adjudication
+- 2026-09-05 · ideas/free-engine-fallback.md · create · (none → free engine fallback) · human adjudication
+- 2026-09-05 · ideas/pick-any-group.md · update · (tentative → confirmed) · human adjudication
+- 2026-09-05 · ideas/index.md · update · (10 live → 13 live) · index regeneration
+- 2026-09-05 · output/index.md · create · (none → entry point) · first assembly
+- 2026-09-05 · output/system.md · create · (none → flowchart + architecture spine) · first assembly
+- 2026-09-05 · output/file-structure.md · create · (none → annotated tree + module→file map) · first assembly
+- 2026-09-05 · output/modules/wa-gateway.md · create · (none → gateway module) · first assembly
+- 2026-09-05 · output/modules/translator.md · create · (none → translator module) · first assembly
+- 2026-09-05 · output/modules/cache.md · create · (none → cache module) · first assembly
+- 2026-09-05 · output/modules/ui.md · create · (none → UI module) · first assembly
+- 2026-09-05 · target.md · update · (empty map → 6-line fulfilment map) · first assembly
+- 2026-09-05 · output/modules/*.md · fix · (../ideas, ../sources → ../../ideas, ../../sources) · dangling-link repair
+- 2026-09-05 · ideas/retranslate-overwrites-edit.md · create · (none → retranslate overwrites edit, per message) · human adjudication
+- 2026-09-05 · ideas/export-language-learning.md · create · (none → export sentences + word list) · human judgment
+- 2026-09-05 · ideas/index.md · update · (13 live → 15 live) · index regeneration
+- 2026-09-05 · output/modules/cache.md · update · (open decision → adjudicated overwrite rule) · sync on human's word
+- 2026-09-05 · output/modules/export.md · create · (none → export module) · sync on human's word
+- 2026-09-05 · output/system.md · update · (+export nodes in both diagrams) · sync on human's word
+- 2026-09-05 · output/file-structure.md · update · (+export.js, +map entry) · sync on human's word
+- 2026-09-05 · output/index.md · update · (+Export module link) · sync on human's word
+- 2026-09-05 · target.md · update · (+export requirement, +fulfilment map line) · sync on human's word
+- 2026-09-05 · ideas/keep-known-words-untranslated.md · create · (none → known words stay untranslated in translation) · human judgment
+- 2026-09-05 · ideas/index.md · update · (15 live → 16 live) · index regeneration
+- 2026-09-05 · output/modules/translator.md · update · (+keep-known-words-untranslated bullet) · sync on human's word
+- 2026-09-05 · output/modules/ui.md · update · (+word-selection bullet) · sync on human's word
+- 2026-09-05 · output/modules/cache.md · update · (+per-message known-word set) · sync on human's word
+- 2026-09-05 · output/system.md · update · (+H8 node, A4 label, known-word edges) · sync on human's word
+- 2026-09-05 · target.md · update · (+known-words requirement, +fulfilment map line) · sync on human's word
+- 2026-09-05 · ideas/keep-known-words-untranslated.md · update · (per-message → global list) · human adjudication
+- 2026-09-05 · output/modules/cache.md · update · (per-message set → global known-word list) · sync on human's word
+- 2026-09-05 · output/modules/translator.md · update · (marked words → global list wording) · sync on human's word
+- 2026-09-05 · output/modules/ui.md · update · (selection joins global list) · sync on human's word
+- 2026-09-05 · target.md · update · (requirement line → global list wording) · sync on human's word
+- 2026-09-05 · ideas/index.md · update · (card description → global list) · index regeneration
+- 2026-09-05 · ideas/export-language-learning.md · update · (word list → unfamiliar words, excludes known list) · human adjudication
+- 2026-09-05 · output/modules/export.md · update · (word list from unfamiliar words) · sync on human's word
+- 2026-09-05 · target.md · update · (export requirement → unfamiliar words) · sync on human's word
+- 2026-09-05 · ideas/index.md · update · (export card description) · index regeneration
+- 2026-09-05 · sources/api/mymemory.md · create · (none → MyMemory keyless API card) · ingest evidence
+- 2026-09-05 · sources/api/libretranslate.md · create · (none → LibreTranslate self-hosted card) · ingest evidence
+- 2026-09-05 · sources/github/chatgpt-backend-api.md · create · (none → backend-api translate path card) · ingest evidence
+- 2026-09-05 · sources/index.md · update · (4 → 7 unclassified cards listed) · index regeneration
+- 2026-09-05 · ideas/ban-safe-free-model-translation.md · create · (none → free-model provider, no bannable tricks) · human adjudication
+- 2026-09-05 · ideas/translation-via-chatgpt.md · archive · (live → archived) · human ban-safety adjudication
+- 2026-09-05 · ideas/chatgpt-account-no-api-key.md · archive · (live → archived) · human ban-safety adjudication
+- 2026-09-05 · ideas/free-engine-fallback.md · update · (ChatGPT-path fallback → keyless fallback for free-model provider) · sync on human's word
+- 2026-09-05 · output/modules/translator.md · update · (ChatGPT account → ban-safe free-model provider) · sync on human's word
+- 2026-09-05 · output/system.md · update · (TR label → free model · keyless fallback) · sync on human's word
+- 2026-09-05 · sources/api/openrouter-free.md · create · (none → OpenRouter :free card) · ingest evidence
+- 2026-09-05 · sources/api/opencode-zen-free.md · create · (none → OpenCode Zen free models card) · ingest evidence
+- 2026-09-05 · ideas/index.md · update · (16 live → 15 live, ChatGPT cards dropped) · index regeneration
+- 2026-09-05 · sources/index.md · update · (7 → 9 unclassified cards listed) · index regeneration
+- 2026-09-05 · ideas/ban-safe-free-model-translation.md · update · (provider pick → chain with fallback) · human adjudication
+- 2026-09-05 · ideas/free-engine-fallback.md · update · (keyless only → across free models first, then keyless) · human adjudication
+- 2026-09-05 · ideas/whatsapp-personal-account-qr.md · update · (+ban risk accepted on adjudication) · human adjudication
+- 2026-09-05 · output/modules/translator.md · update · (two bullets → one chain bullet) · sync on human's word
+- 2026-09-05 · output/system.md · update · (TR label → free-model chain) · sync on human's word
+- 2026-09-05 · ideas/index.md · update · (ban-safe description → chain) · index regeneration
+- 2026-09-05 · ideas/privacy-name-masking.md · create · (none → mask names/handles, restore after) · human judgment
+- 2026-09-05 · ideas/index.md · update · (15 live → 16 live) · index regeneration
+- 2026-09-05 · output/modules/translator.md · update · (+masking bullet) · sync on human's word
+- 2026-09-05 · target.md · update · (+privacy requirement, +fulfilment map line) · sync on human's word
+- 2026-09-05 · ideas/commit-baileys.md · create · (none → switch bridge to Baileys after upstream break) · human adjudication
+- 2026-09-05 · ideas/commit-whatsapp-web-js.md · archive · (live → archived) · human adjudication
+- 2026-09-05 · output/modules/wa-gateway.md · update · (whatsapp-web.js → Baileys) · sync on human's word
+- 2026-09-05 · output/system.md · update · (GW label → Baileys) · sync on human's word
+- 2026-09-05 · output/file-structure.md · update · (package.json deps → baileys) · sync on human's word
+- 2026-09-05 · sources/github/whatsapp-web-js.md · update · (+upstream break facts) · ingest evidence
+- 2026-09-05 · ideas/old-history-context.md · create · (none → persist/sync old context) · user clarification
+- 2026-09-05 · target.md · update · (+old-history acceptance) · user clarification
+- 2026-09-05 · output/modules/wa-gateway.md · update · (+history sync/persistence) · sync on human's word
+- 2026-09-05 · sources/github/baileys.md · update · (+history-sync evidence) · ingest evidence
+- 2026-09-05 · src/gateway.js · update · (Darwin Desktop → Ubuntu/Chrome WEB_BROWSER) · Baileys #2677 428 diagnosis
+- 2026-09-05 · README.md · update · (+WEB_BROWSER compatibility note) · troubleshooting
+- 2026-09-05 · ideas/translate-incoming-to-polish.md · update · (automatic all-message translation → per-message Translate button) · user change
+- 2026-09-05 · target.md · update · (+manual translation/context acceptance) · user change
+- 2026-09-05 · output/modules/ui.md · update · (auto translation surface → manual Translate control) · sync on human's word
+- 2026-09-05 · output/modules/translator.md · update · (+previous/related context) · sync on human's word
+- 2026-09-05 · main.js · update · (automatic translation → manual per-message IPC + history context) · user change
+- 2026-09-05 · renderer/app.js · update · (retranslate-only action → Translate action for unprocessed messages) · user change
+- 2026-09-05 · preload.js · update · (+wa.translate IPC) · user change
+- 2026-09-05 · output/file-structure.md · update · (+history.js/manual UI) · sync on human's word
+- 2026-09-05 · output/system.md · update · (auto incoming flow → selected-message translation) · sync on human's word
+- 2026-09-05 · ideas/index.md · update · (commit card → Baileys) · index regeneration
+- 2026-09-05 · sources/api/kilo-auto-free.md · create · (none → verified Kilo auto free contextual smoke test and key-boundary evidence) · ingest live synthetic test
+- 2026-09-05 · board/kilo-auto-free-integration.md · create · (none → transport, configuration, chain-placement, logging, and acceptance-test design) · human requested integration design
+- 2026-09-05 · sources/index.md · update · (9 → 10 unclassified cards listed) · index regeneration
+- 2026-09-05 · sources/api/pi-codex-oauth.md · fix · (dangling absolute local links → plain local paths) · document-link validator repair
+- 2026-09-05 · src/translator.js · update · (no Kilo provider → loopback Kilo session/message adapter before OpenRouter) · implement Kilo auto free integration
+- 2026-09-05 · README.md · update · (no Kilo runtime instructions → `kilo serve --pure` and Kilo configuration) · document implementation
+- 2026-09-05 · package.json · update · (start/check only → added `kilo:serve`) · expose local Kilo server command
+- 2026-09-05 · sources/api/kilo-auto-free.md · update · (CLI-only evidence → verified loopback HTTP transport) · implementation evidence
+- 2026-09-05 · board/kilo-auto-free-integration.md · update · (proposal → implemented transport and remaining choices) · implementation sync

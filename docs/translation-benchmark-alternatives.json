@@ -1,0 +1,95 @@
+{
+  "at": "2026-09-06T07:47:46.987Z",
+  "syntheticOnly": true,
+  "fixtureCount": 60,
+  "requestedPerModel": 6,
+  "liveWhatsAppTested": false,
+  "runs": [
+    {
+      "model": "z-ai/glm-5.2:free",
+      "caseId": 1,
+      "latencyMs": 583,
+      "status": "error",
+      "error": "Free translation unavailable. z-ai/glm-5.2:free: OpenRouter HTTP 429"
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "id": 1,
+      "tag": "idiom",
+      "source": "Aku nggak enak badan.",
+      "reference": "Źle się czuję.",
+      "context": [],
+      "names": [],
+      "output": "Źle się czuję.",
+      "latencyMs": 1627,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "id": 2,
+      "tag": "negation",
+      "source": "Aku belum makan, bukan nggak mau makan.",
+      "reference": "Jeszcze nie jadłem, a nie że nie chcę jeść.",
+      "context": [],
+      "names": [],
+      "output": "Jeszcze nie jadłem, to nie znaczy, że nie chcę jeść.",
+      "latencyMs": 1146,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "id": 3,
+      "tag": "context",
+      "source": "Udah sampai?",
+      "reference": "Już dotarłeś?",
+      "context": [
+        "Aku lagi di jalan ke rumahmu."
+      ],
+      "names": [],
+      "output": "Już dotarłeś?",
+      "latencyMs": 1986,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "id": 4,
+      "tag": "slang",
+      "source": "Gue lagi mager banget.",
+      "reference": "Strasznie mi się nic nie chce.",
+      "context": [],
+      "names": [],
+      "output": "Jestem strasznie leniwy.",
+      "latencyMs": 2094,
+      "status": "success",
+      "humanReviewed": false
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "caseId": 5,
+      "latencyMs": 12004,
+      "status": "error",
+      "error": "Free translation unavailable. minimax/minimax-m3:free: timeout"
+    }
+  ],
+  "summary": [
+    {
+      "model": "z-ai/glm-5.2:free",
+      "attempted": 1,
+      "successful": 0,
+      "medianMs": null,
+      "p95Ms": null,
+      "quality": "References supplied for review; no native-speaker score claimed."
+    },
+    {
+      "model": "minimax/minimax-m3:free",
+      "attempted": 5,
+      "successful": 4,
+      "medianMs": 1986,
+      "p95Ms": 2094,
+      "quality": "References supplied for review; no native-speaker score claimed."
+    }
+  ]
+}
