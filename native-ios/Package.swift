@@ -10,6 +10,11 @@ let package = Package(
         .target(
             name: "WhatsAppBridgeCore",
             path: "WhatsAppTranslator",
+            exclude: [
+                "DiagnosticsView.swift",
+                "WhatsAppTranslatorApp.swift",
+                "WhatsAppWebProbeView.swift",
+            ],
             sources: ["WhatsAppBridgeSupport.swift"]
         ),
         .testTarget(
