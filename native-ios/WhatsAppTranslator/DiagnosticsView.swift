@@ -40,8 +40,12 @@ struct DiagnosticsView: View {
                     diagnosticRow("Persistent store", value: "default WKWebsiteDataStore")
                 }
 
+                Section("WhatsApp") {
+                    diagnosticRow("Login state", value: "not evaluated (P0.3)")
+                }
+
                 Section {
-                    Text("This screen verifies that the native app, Foundation Models, and WebKit are wired correctly. WhatsApp loading and transport experiments are separate architecture spikes.")
+                    Text("This screen verifies that the native app, Foundation Models, and WebKit are wired correctly. WhatsApp login is reported explicitly as not evaluated until the separate P0.3 transport spike loads WhatsApp Web.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
