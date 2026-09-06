@@ -89,11 +89,21 @@ enum WhatsAppBridgeResultParser {
     }
 
     private static func normalizePairingCode(_ value: String) -> String? {
+        guard value.range(
+            of: #"^[A-Za-z0-9]{4}[\s-]?[A-Za-z0-9]{4}$"#,
+            options: .regularExpression
+        ) != nil else {
+            return nil
+        }
+
         let normalized = value
             .filter { $0.isLetter || $0.isNumber }
             .uppercased()
 
-        guard normalized.count == 8, normalized.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) }) else {
+        guard
+            normalized.count == 8,
+            normalized.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber) })
+        else {
             return nil
         }
 
