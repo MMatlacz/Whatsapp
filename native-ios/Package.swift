@@ -27,6 +27,7 @@ let package = Package(
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationCore.swift",
+                "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppTransportCore.swift",
@@ -49,6 +50,7 @@ let package = Package(
                 "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
                 "TranslationCore.swift",
+                "TranslationEngineCore.swift",
                 "WhatsAppTranslatorApp.swift",
                 "WhatsAppWebKitBridgeRuntime.swift",
                 "WhatsAppWebProbeView.swift",
@@ -78,7 +80,10 @@ let package = Package(
                 "WhatsAppWebProbeView.swift",
                 "WhatsAppWebTransportCore.swift",
             ],
-            sources: ["TranslationCore.swift"]
+            sources: [
+                "TranslationCore.swift",
+                "TranslationEngineCore.swift",
+            ]
         ),
         .target(
             name: "PersistenceCore",
@@ -87,6 +92,7 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "TranslationCore.swift",
+                "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppDomain.swift",
