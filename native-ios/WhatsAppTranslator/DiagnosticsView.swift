@@ -209,6 +209,7 @@ final class P01BenchmarkRunner: ObservableObject {
         - Supported languages count: \(model.supportedLanguages.count)
         - Supports Indonesian id_ID: \(model.supportsLocale(Locale(identifier: "id_ID")) ? "yes" : "no / not advertised")
         - Supports Polish pl_PL: \(model.supportsLocale(Locale(identifier: "pl_PL")) ? "yes" : "no / not advertised")
+        - Translation prompt version: \(TranslationPromptBuilder.currentVersion.rawValue)
 
         ## Results
 
@@ -273,7 +274,7 @@ final class P01BenchmarkRunner: ObservableObject {
             let started = Date()
 
             do {
-                let session = LanguageModelSession(instructions: instructions(for: request))
+                let session = LanguageModelSession(instructions: request.instructions)
                 let response = try await session.respond(to: request.prompt)
                 let elapsed = Int(Date().timeIntervalSince(started) * 1000)
                 results.append(
@@ -300,22 +301,6 @@ final class P01BenchmarkRunner: ObservableObject {
         }
 
         status = "Completed \(results.count) benchmark cases. Review output quality manually."
-    }
-
-    private func instructions(for request: P01BenchmarkRequest) -> String {
-        """
-        You are running a deterministic translation benchmark for a private local-first chat translation app.
-        Translate faithfully. Preserve speaker identity, implied subject, tone, jokes, family terms, and quoted replies when context makes them clear.
-        Do not add facts that are not in the input or context.
-        Do not explain general translation theory.
-        Return exactly this structure:
-        Translation: <translated text>
-        Confidence: high|medium|low
-        Ambiguities: <short note, or none>
-
-        Benchmark route: \(request.route)
-        Evaluation focus: \(request.focus)
-        """
     }
 
     private func classify(_ error: Error) -> String {
