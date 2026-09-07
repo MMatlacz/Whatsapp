@@ -20,11 +20,13 @@ xcodebuild \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath .xcodebuild \
   -skipPackagePluginValidation \
+  -skipMacroValidation \
   build
 ```
 
-Do not use the resulting `swift build` executable for runtime inference; it may
-compile but omit the MLX Metal resource bundle.
+`-skipMacroValidation` is required for the MLX Hugging Face package macro when
+building noninteractively. Do not use the resulting `swift build` executable for
+runtime inference; it may compile but omit the MLX Metal resource bundle.
 
 ## Run
 
