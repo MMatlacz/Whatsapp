@@ -10,6 +10,19 @@ public struct TranslationRequestID: RawRepresentable, Equatable, Hashable, Senda
     }
 }
 
+public struct TranslationLanguagePair: Equatable, Hashable, Sendable {
+    public let sourceLanguage: String
+    public let targetLanguage: String
+
+    public init?(sourceLanguage: String, targetLanguage: String) {
+        let source = sourceLanguage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let target = targetLanguage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !source.isEmpty, !target.isEmpty else { return nil }
+        self.sourceLanguage = source
+        self.targetLanguage = target
+    }
+}
+
 public struct TranslationModelDescriptor: Equatable, Hashable, Sendable {
     public let identifier: String
     public let version: String
@@ -26,12 +39,19 @@ public struct TranslationModelDescriptor: Equatable, Hashable, Sendable {
 public struct TranslationRequest: Equatable, Sendable {
     public let id: TranslationRequestID
     public let revision: Int
+    public let languages: TranslationLanguagePair
     public let prompt: TranslationPrompt
 
-    public init?(id: TranslationRequestID, revision: Int, prompt: TranslationPrompt) {
+    public init?(
+        id: TranslationRequestID,
+        revision: Int,
+        languages: TranslationLanguagePair,
+        prompt: TranslationPrompt
+    ) {
         guard revision > 0 else { return nil }
         self.id = id
         self.revision = revision
+        self.languages = languages
         self.prompt = prompt
     }
 }
