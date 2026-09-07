@@ -3,6 +3,9 @@ import PackageDescription
 
 let package = Package(
     name: "WhatsAppTranslatorCore",
+    platforms: [
+        .macOS(.v13),
+    ],
     products: [
         .library(name: "WhatsAppDomainCore", targets: ["WhatsAppDomainCore"]),
         .library(name: "WhatsAppBridgeCore", targets: ["WhatsAppBridgeCore"]),
