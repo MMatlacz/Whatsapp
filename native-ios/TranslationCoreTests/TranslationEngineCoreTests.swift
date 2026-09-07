@@ -31,14 +31,16 @@ final class TranslationEngineCoreTests: XCTestCase {
         let router = try TranslationEngineRouter(engines: [primary, fallback])
 
         let result = try await router.translate(request)
+        let primaryRequests = await primaryRecorder.requests()
+        let fallbackRequests = await fallbackRecorder.requests()
 
         XCTAssertEqual(result.requestID, request.id)
         XCTAssertEqual(result.revision, 3)
         XCTAssertEqual(result.promptVersion, request.prompt.version)
         XCTAssertEqual(result.model, primary.model)
         XCTAssertEqual(result.translatedText, "Tłumaczenie")
-        XCTAssertEqual(await primaryRecorder.requests(), [request])
-        XCTAssertTrue(await fallbackRecorder.requests().isEmpty)
+        XCTAssertEqual(primaryRequests, [request])
+        XCTAssertTrue(fallbackRequests.isEmpty)
     }
 
     func testUnavailablePrimaryFallsBackWithoutInvokingPrimaryTranslate() async throws {
@@ -59,10 +61,12 @@ final class TranslationEngineCoreTests: XCTestCase {
         let router = try TranslationEngineRouter(engines: [primary, fallback])
 
         let result = try await router.translate(request)
+        let primaryRequests = await primaryRecorder.requests()
+        let fallbackRequests = await fallbackRecorder.requests()
 
         XCTAssertEqual(result.model, fallback.model)
-        XCTAssertTrue(await primaryRecorder.requests().isEmpty)
-        XCTAssertEqual(await fallbackRecorder.requests(), [request])
+        XCTAssertTrue(primaryRequests.isEmpty)
+        XCTAssertEqual(fallbackRequests, [request])
     }
 
     func testTransientAndUnsupportedFailuresFallBackWithSameRequest() async throws {
@@ -83,10 +87,12 @@ final class TranslationEngineCoreTests: XCTestCase {
             let router = try TranslationEngineRouter(engines: [primary, fallback])
 
             let result = try await router.translate(request)
+            let primaryRequests = await primaryRecorder.requests()
+            let fallbackRequests = await fallbackRecorder.requests()
 
             XCTAssertEqual(result.model, fallback.model)
-            XCTAssertEqual(await primaryRecorder.requests(), [request])
-            XCTAssertEqual(await fallbackRecorder.requests(), [request])
+            XCTAssertEqual(primaryRequests, [request])
+            XCTAssertEqual(fallbackRequests, [request])
         }
     }
 
@@ -115,7 +121,8 @@ final class TranslationEngineCoreTests: XCTestCase {
                 )
             }
 
-            XCTAssertTrue(await fallbackRecorder.requests().isEmpty)
+            let fallbackRequests = await fallbackRecorder.requests()
+            XCTAssertTrue(fallbackRequests.isEmpty)
         }
     }
 
@@ -137,7 +144,8 @@ final class TranslationEngineCoreTests: XCTestCase {
             XCTAssertEqual(error, .cancelled)
         }
 
-        XCTAssertTrue(await fallbackRecorder.requests().isEmpty)
+        let fallbackRequests = await fallbackRecorder.requests()
+        XCTAssertTrue(fallbackRequests.isEmpty)
     }
 
     func testUnexpectedUntypedEngineErrorIsContractViolationAndDoesNotFallback() async throws {
@@ -164,7 +172,8 @@ final class TranslationEngineCoreTests: XCTestCase {
             )
         }
 
-        XCTAssertTrue(await fallbackRecorder.requests().isEmpty)
+        let fallbackRequests = await fallbackRecorder.requests()
+        XCTAssertTrue(fallbackRequests.isEmpty)
     }
 
     func testMismatchedResultMetadataFailsClosedWithoutFallback() async throws {
@@ -197,7 +206,8 @@ final class TranslationEngineCoreTests: XCTestCase {
             )
         }
 
-        XCTAssertTrue(await fallbackRecorder.requests().isEmpty)
+        let fallbackRequests = await fallbackRecorder.requests()
+        XCTAssertTrue(fallbackRequests.isEmpty)
     }
 
     func testDuplicateModelDescriptorsAreRejected() throws {
@@ -259,9 +269,12 @@ final class TranslationEngineCoreTests: XCTestCase {
     }
 
     private func makeRequest(revision: Int = 1) throws -> TranslationRequest {
-        try XCTUnwrap(
+        let requestID = try XCTUnwrap(
+            TranslationRequestID(rawValue: "request-\(revision)")
+        )
+        return try XCTUnwrap(
             TranslationRequest(
-                id: XCTUnwrap(TranslationRequestID(rawValue: "request-\(revision)")),
+                id: requestID,
                 revision: revision,
                 prompt: makePrompt()
             )
