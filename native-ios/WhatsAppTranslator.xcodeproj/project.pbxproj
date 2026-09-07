@@ -19,6 +19,7 @@
 		A1000000000000000000000A /* WhatsAppWebKitBridgeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */; };
 		A1000000000000000000000B /* WhatsAppBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* WhatsAppBridge.js */; };
 		A1000000000000000000000C /* SQLitePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* SQLitePersistence.swift */; };
+		A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* SQLiteContextPersistence.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 		A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppWebKitBridgeRuntime.swift; sourceTree = "<group>"; };
 		A1000000000000000000001B /* WhatsAppBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = WhatsAppBridge.js; sourceTree = "<group>"; };
 		A1000000000000000000001C /* SQLitePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLitePersistence.swift; sourceTree = "<group>"; };
+		A1000000000000000000001D /* SQLiteContextPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteContextPersistence.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				A10000000000000000000019 /* WhatsAppWebTransportCore.swift */,
 				A1000000000000000000001A /* WhatsAppWebKitBridgeRuntime.swift */,
 				A1000000000000000000001C /* SQLitePersistence.swift */,
+				A1000000000000000000001D /* SQLiteContextPersistence.swift */,
 				A1000000000000000000001B /* WhatsAppBridge.js */,
 				A10000000000000000000015 /* TranslationCore.swift */,
 			);
@@ -163,6 +166,7 @@
 				A10000000000000000000009 /* WhatsAppWebTransportCore.swift in Sources */,
 				A1000000000000000000000A /* WhatsAppWebKitBridgeRuntime.swift in Sources */,
 				A1000000000000000000000C /* SQLitePersistence.swift in Sources */,
+				A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

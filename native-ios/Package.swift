@@ -24,6 +24,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationCore.swift",
                 "WhatsAppBridge.js",
@@ -43,6 +44,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
@@ -63,6 +65,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
@@ -93,7 +96,10 @@ let package = Package(
                 "WhatsAppWebProbeView.swift",
                 "WhatsAppWebTransportCore.swift",
             ],
-            sources: ["SQLitePersistence.swift"]
+            sources: [
+                "SQLiteContextPersistence.swift",
+                "SQLitePersistence.swift",
+            ]
         ),
         .testTarget(
             name: "WhatsAppDomainCoreTests",
