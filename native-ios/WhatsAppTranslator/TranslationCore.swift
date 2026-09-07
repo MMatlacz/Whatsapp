@@ -1,3 +1,244 @@
+import Foundation
+
+#if SWIFT_PACKAGE
+import WhatsAppDomainCore
+#endif
+
+public struct TranslationSpeakerAlias: RawRepresentable, Equatable, Hashable, Sendable, Comparable {
+    public let rawValue: String
+
+    public init?(rawValue: String) {
+        guard !rawValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        self.rawValue = rawValue
+    }
+
+    public static let localUser = TranslationSpeakerAlias(rawValue: "SELF")!
+    public static let unknown = TranslationSpeakerAlias(rawValue: "UNKNOWN")!
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
+public struct TranslationContextTurn: Equatable, Sendable {
+    public let speaker: TranslationSpeakerAlias
+    public let body: String
+
+    public init(speaker: TranslationSpeakerAlias, body: String) {
+        self.speaker = speaker
+        self.body = body
+    }
+}
+
+public struct TranslationQuotedTurn: Equatable, Sendable {
+    public let speaker: TranslationSpeakerAlias
+    public let body: String
+
+    public init(speaker: TranslationSpeakerAlias, body: String) {
+        self.speaker = speaker
+        self.body = body
+    }
+}
+
+public struct TranslationContextSummary: Equatable, Sendable {
+    public let version: Int
+    public let body: String
+    public let sourceMessageCount: Int
+
+    public init?(version: Int, body: String, sourceMessageCount: Int) {
+        guard
+            version > 0,
+            sourceMessageCount > 0,
+            !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return nil
+        }
+
+        self.version = version
+        self.body = body
+        self.sourceMessageCount = sourceMessageCount
+    }
+}
+
+public struct TranslationTarget: Equatable, Sendable {
+    public let speaker: TranslationSpeakerAlias
+    public let body: String
+
+    public init(speaker: TranslationSpeakerAlias, body: String) {
+        self.speaker = speaker
+        self.body = body
+    }
+}
+
+public struct TranslationContext: Equatable, Sendable {
+    public let target: TranslationTarget
+    public let recentTurns: [TranslationContextTurn]
+    public let quotedTurn: TranslationQuotedTurn?
+    public let summary: TranslationContextSummary?
+
+    public init(
+        target: TranslationTarget,
+        recentTurns: [TranslationContextTurn],
+        quotedTurn: TranslationQuotedTurn?,
+        summary: TranslationContextSummary?
+    ) {
+        self.target = target
+        self.recentTurns = recentTurns
+        self.quotedTurn = quotedTurn
+        self.summary = summary
+    }
+}
+
+public enum TranslationContextBuilderError: Error, Equatable, Sendable {
+    case invalidRecentTurnLimit(Int)
+    case targetHasNoText
+}
+
+public struct TranslationContextBuilder: Sendable {
+    public static let defaultRecentTurnLimit = 8
+    public static let maximumRecentTurnLimit = 16
+
+    public init() {}
+
+    public func build(
+        target: WhatsAppMessage,
+        conversation: [WhatsAppMessage],
+        summary: TranslationContextSummary? = nil,
+        recentTurnLimit: Int = Self.defaultRecentTurnLimit
+    ) throws -> TranslationContext {
+        guard (0...Self.maximumRecentTurnLimit).contains(recentTurnLimit) else {
+            throw TranslationContextBuilderError.invalidRecentTurnLimit(recentTurnLimit)
+        }
+        guard let targetBody = textualBody(target.body) else {
+            throw TranslationContextBuilderError.targetHasNoText
+        }
+
+        let priorMessages = conversation
+            .filter { $0.chatID == target.chatID && comesBefore($0, target: target) }
+            .sorted(by: messageOrder)
+
+        let aliases = aliasMap(for: priorMessages, target: target)
+        let quoted = quotedTurn(
+            target: target,
+            priorMessages: priorMessages,
+            aliases: aliases
+        )
+
+        let quotedMessageID = quoted == nil ? nil : target.quote?.messageID
+        let recentMessages = priorMessages
+            .filter { message in
+                message.id != quotedMessageID && textualBody(message.body) != nil
+            }
+        let selectedRecent = BoundedContext.recent(recentMessages, limit: recentTurnLimit)
+
+        return TranslationContext(
+            target: TranslationTarget(
+                speaker: speakerAlias(for: target, aliases: aliases),
+                body: targetBody
+            ),
+            recentTurns: selectedRecent.compactMap { message in
+                guard let body = textualBody(message.body) else { return nil }
+                return TranslationContextTurn(
+                    speaker: speakerAlias(for: message, aliases: aliases),
+                    body: body
+                )
+            },
+            quotedTurn: quoted,
+            summary: summary
+        )
+    }
+
+    private func aliasMap(
+        for priorMessages: [WhatsAppMessage],
+        target: WhatsAppMessage
+    ) -> [WhatsAppParticipantID: TranslationSpeakerAlias] {
+        var participantIDs = Set<WhatsAppParticipantID>()
+
+        for message in priorMessages + [target] {
+            if !message.fromMe, let senderID = message.senderID {
+                participantIDs.insert(senderID)
+            }
+            if let quoteSenderID = message.quote?.senderID {
+                participantIDs.insert(quoteSenderID)
+            }
+        }
+
+        if let quoteSenderID = target.quote?.senderID {
+            participantIDs.insert(quoteSenderID)
+        }
+
+        let sortedIDs = participantIDs.sorted { $0.rawValue < $1.rawValue }
+        var aliases: [WhatsAppParticipantID: TranslationSpeakerAlias] = [:]
+        aliases.reserveCapacity(sortedIDs.count)
+
+        for (index, participantID) in sortedIDs.enumerated() {
+            aliases[participantID] = TranslationSpeakerAlias(rawValue: "P\(index + 1)")!
+        }
+
+        return aliases
+    }
+
+    private func quotedTurn(
+        target: WhatsAppMessage,
+        priorMessages: [WhatsAppMessage],
+        aliases: [WhatsAppParticipantID: TranslationSpeakerAlias]
+    ) -> TranslationQuotedTurn? {
+        guard let quote = target.quote else { return nil }
+
+        let matchedMessage = priorMessages.first { $0.id == quote.messageID }
+        let body = textualBody(matchedMessage?.body) ?? textualBody(quote.body)
+        guard let body else { return nil }
+
+        let speaker: TranslationSpeakerAlias
+        if let matchedMessage {
+            speaker = speakerAlias(for: matchedMessage, aliases: aliases)
+        } else if let senderID = quote.senderID {
+            speaker = aliases[senderID] ?? .unknown
+        } else {
+            speaker = .unknown
+        }
+
+        return TranslationQuotedTurn(speaker: speaker, body: body)
+    }
+
+    private func speakerAlias(
+        for message: WhatsAppMessage,
+        aliases: [WhatsAppParticipantID: TranslationSpeakerAlias]
+    ) -> TranslationSpeakerAlias {
+        if message.fromMe {
+            return .localUser
+        }
+        guard let senderID = message.senderID else {
+            return .unknown
+        }
+        return aliases[senderID] ?? .unknown
+    }
+
+    private func comesBefore(_ message: WhatsAppMessage, target: WhatsAppMessage) -> Bool {
+        guard message.id != target.id else { return false }
+        if message.timestamp != target.timestamp {
+            return message.timestamp < target.timestamp
+        }
+        return message.id.rawValue < target.id.rawValue
+    }
+
+    private func messageOrder(_ lhs: WhatsAppMessage, _ rhs: WhatsAppMessage) -> Bool {
+        if lhs.timestamp != rhs.timestamp {
+            return lhs.timestamp < rhs.timestamp
+        }
+        return lhs.id.rawValue < rhs.id.rawValue
+    }
+
+    private func textualBody(_ body: String?) -> String? {
+        guard let body, !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return body
+    }
+}
+
 enum BoundedContext {
     static func recent<Message>(
         _ messages: [Message],
