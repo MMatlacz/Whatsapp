@@ -64,10 +64,12 @@ jobs:
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace \
             swift:6.0-noble \
-            swift test \
-              --package-path native-ios \
-              --configuration debug \
-              --parallel
+            bash -lc 'apt-get update >/dev/null && \
+              apt-get install -y --no-install-recommends libsqlite3-dev >/dev/null && \
+              swift test \
+                --package-path native-ios \
+                --configuration debug \
+                --parallel'
 
   build-apple:
     name: build-apple
@@ -111,9 +113,9 @@ jobs:
           cat <<'EOF'
           Ubuntu CI validates Swift style, WhatsAppBridge.js syntax, and all current
           host-independent deterministic Swift tests, including bridge/session contracts,
-          WhatsAppWebTransport request/response/event orchestration, and translation/context logic.
-          The Xcode runner compiles the Apple-specific WebKit runtime and application against
-          the iOS Simulator SDK.
+          WhatsAppWebTransport request/response/event orchestration, translation/context logic,
+          and the SQLite domain persistence layer. The Xcode runner compiles the Apple-specific
+          WebKit runtime, SQLite persistence source, and application against the iOS Simulator SDK.
 
           Neither Linux tests nor the Simulator build validate Foundation Models inference,
           Apple Intelligence availability, real WhatsApp Web authentication, the current
