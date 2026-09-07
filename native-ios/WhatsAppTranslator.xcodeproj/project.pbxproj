@@ -20,6 +20,7 @@
 		A1000000000000000000000B /* WhatsAppBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* WhatsAppBridge.js */; };
 		A1000000000000000000000C /* SQLitePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* SQLitePersistence.swift */; };
 		A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* SQLiteContextPersistence.swift */; };
+		A1000000000000000000000E /* TranslationEngineCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* TranslationEngineCore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		A1000000000000000000001B /* WhatsAppBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = WhatsAppBridge.js; sourceTree = "<group>"; };
 		A1000000000000000000001C /* SQLitePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLitePersistence.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* SQLiteContextPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteContextPersistence.swift; sourceTree = "<group>"; };
+		A1000000000000000000001E /* TranslationEngineCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationEngineCore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +76,7 @@
 				A1000000000000000000001D /* SQLiteContextPersistence.swift */,
 				A1000000000000000000001B /* WhatsAppBridge.js */,
 				A10000000000000000000015 /* TranslationCore.swift */,
+				A1000000000000000000001E /* TranslationEngineCore.swift */,
 			);
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
@@ -160,6 +163,7 @@
 				A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */,
 				A10000000000000000000004 /* WhatsAppBridgeSupport.swift in Sources */,
 				A10000000000000000000005 /* TranslationCore.swift in Sources */,
+				A1000000000000000000000E /* TranslationEngineCore.swift in Sources */,
 				A10000000000000000000006 /* WhatsAppTransportCore.swift in Sources */,
 				A10000000000000000000007 /* WhatsAppDomain.swift in Sources */,
 				A10000000000000000000008 /* WhatsAppTransportDomainMapper.swift in Sources */,
