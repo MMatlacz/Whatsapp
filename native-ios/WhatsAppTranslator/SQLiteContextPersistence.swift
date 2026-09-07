@@ -912,8 +912,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
 
     private func decodeTranslation(_ statement: OpaquePointer) throws -> StoredTranslation {
         guard
-            let chatID = columnText(statement, at: 0).flatMap(WhatsAppChatID.init),
-            let messageID = columnText(statement, at: 1).flatMap(WhatsAppMessageID.init),
+            let chatID = columnText(statement, at: 0).flatMap { WhatsAppChatID($0) },
+            let messageID = columnText(statement, at: 1).flatMap { WhatsAppMessageID($0) },
             let targetLanguage = columnText(statement, at: 3),
             let rawKind = columnText(statement, at: 5),
             let kind = TranslationRevisionKind(rawValue: rawKind),
@@ -954,8 +954,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
     private func decodeVocabulary(_ statement: OpaquePointer) throws -> StoredVocabularyEntry {
         guard
             let id = columnText(statement, at: 0),
-            let chatID = columnText(statement, at: 1).flatMap(WhatsAppChatID.init),
-            let messageID = columnText(statement, at: 2).flatMap(WhatsAppMessageID.init),
+            let chatID = columnText(statement, at: 1).flatMap { WhatsAppChatID($0) },
+            let messageID = columnText(statement, at: 2).flatMap { WhatsAppMessageID($0) },
             let sourceLanguage = columnText(statement, at: 3),
             let targetLanguage = columnText(statement, at: 4),
             let sourceText = columnText(statement, at: 6),
@@ -1005,8 +1005,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
 
     private func decodeSummary(_ statement: OpaquePointer) throws -> StoredConversationSummary {
         guard
-            let chatID = columnText(statement, at: 0).flatMap(WhatsAppChatID.init),
-            let messageID = columnText(statement, at: 2).flatMap(WhatsAppMessageID.init),
+            let chatID = columnText(statement, at: 0).flatMap { WhatsAppChatID($0) },
+            let messageID = columnText(statement, at: 2).flatMap { WhatsAppMessageID($0) },
             let throughTimestamp = timestamp(statement, at: 3),
             let contextHash = columnText(statement, at: 5),
             let summaryText = columnText(statement, at: 6),
