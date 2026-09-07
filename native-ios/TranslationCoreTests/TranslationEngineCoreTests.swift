@@ -4,14 +4,35 @@ import XCTest
 final class TranslationEngineCoreTests: XCTestCase {
     func testValidatedRequestAndModelMetadataRejectInvalidValues() throws {
         XCTAssertNil(TranslationRequestID(rawValue: "   "))
+        XCTAssertNil(TranslationLanguagePair(sourceLanguage: "", targetLanguage: "pl"))
+        XCTAssertNil(TranslationLanguagePair(sourceLanguage: "id", targetLanguage: "   "))
         XCTAssertNil(TranslationModelDescriptor(identifier: "", version: "1"))
         XCTAssertNil(TranslationModelDescriptor(identifier: "model", version: "  "))
 
         let prompt = try makePrompt()
         let requestID = try XCTUnwrap(TranslationRequestID(rawValue: "request-1"))
+        let languages = try XCTUnwrap(
+            TranslationLanguagePair(sourceLanguage: " id ", targetLanguage: " pl ")
+        )
 
-        XCTAssertNil(TranslationRequest(id: requestID, revision: 0, prompt: prompt))
-        XCTAssertNotNil(TranslationRequest(id: requestID, revision: 1, prompt: prompt))
+        XCTAssertEqual(languages.sourceLanguage, "id")
+        XCTAssertEqual(languages.targetLanguage, "pl")
+        XCTAssertNil(
+            TranslationRequest(
+                id: requestID,
+                revision: 0,
+                languages: languages,
+                prompt: prompt
+            )
+        )
+        XCTAssertNotNil(
+            TranslationRequest(
+                id: requestID,
+                revision: 1,
+                languages: languages,
+                prompt: prompt
+            )
+        )
     }
 
     func testPrimarySuccessReturnsExactProvenanceWithoutCallingFallback() async throws {
@@ -69,8 +90,12 @@ final class TranslationEngineCoreTests: XCTestCase {
         XCTAssertEqual(fallbackRequests, [request])
     }
 
-    func testTransientAndUnsupportedFailuresFallBackWithSameRequest() async throws {
-        for failure in [TranslationEngineFailure.transient, .unsupported] {
+    func testRetryableExecutionFailuresFallBackWithSameRequest() async throws {
+        for failure in [
+            TranslationEngineFailure.unavailable,
+            .transient,
+            .unsupported,
+        ] {
             let request = try makeRequest(revision: 5)
             let primaryRecorder = EngineRecorder()
             let fallbackRecorder = EngineRecorder()
@@ -272,10 +297,14 @@ final class TranslationEngineCoreTests: XCTestCase {
         let requestID = try XCTUnwrap(
             TranslationRequestID(rawValue: "request-\(revision)")
         )
+        let languages = try XCTUnwrap(
+            TranslationLanguagePair(sourceLanguage: "id", targetLanguage: "pl")
+        )
         return try XCTUnwrap(
             TranslationRequest(
                 id: requestID,
                 revision: revision,
+                languages: languages,
                 prompt: makePrompt()
             )
         )
