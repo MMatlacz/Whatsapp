@@ -118,6 +118,7 @@ jobs:
             -destination 'platform=macOS,arch=arm64' \
             -derivedDataPath "$PWD/.xcodebuild" \
             -skipPackagePluginValidation \
+            -skipMacroValidation \
             build
 
       - name: Smoke-test Qwen MLX inference
