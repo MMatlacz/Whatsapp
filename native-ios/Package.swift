@@ -62,6 +62,7 @@ let package = Package(
         ),
         .target(
             name: "TranslationCore",
+            dependencies: ["WhatsAppDomainCore"],
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
@@ -113,7 +114,7 @@ let package = Package(
         ),
         .testTarget(
             name: "TranslationCoreTests",
-            dependencies: ["TranslationCore"],
+            dependencies: ["TranslationCore", "WhatsAppDomainCore"],
             path: "TranslationCoreTests"
         ),
         .testTarget(
