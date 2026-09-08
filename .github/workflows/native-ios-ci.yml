@@ -108,6 +108,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
+      - name: Install Metal toolchain for temporary MLX harness
+        run: |
+          set -euo pipefail
+          xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk macosx metal --version
+
       - name: Build and test temporary Qwen MLX harness
         working-directory: native-ios/MLXHarness
         run: |
