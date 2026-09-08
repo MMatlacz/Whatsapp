@@ -7,7 +7,7 @@ Disposable macOS command-line harness for validating MLX Swift inference with:
 It is intentionally a separate Swift package so the production iOS app and the
 host-independent `native-ios/Package.swift` tests do not acquire MLX dependencies.
 
-## Build
+## Build and test
 
 MLX needs Xcode to package its Metal resources correctly. From this directory:
 
@@ -21,12 +21,16 @@ xcodebuild \
   -derivedDataPath .xcodebuild \
   -skipPackagePluginValidation \
   -skipMacroValidation \
-  build
+  build test
 ```
 
 `-skipMacroValidation` is required for the MLX Hugging Face package macro when
 building noninteractively. Do not use the resulting `swift build` executable for
 runtime inference; it may compile but omit the MLX Metal resource bundle.
+
+The test target covers CLI temperature parsing and streamed-response validation
+without loading a model or downloading weights. Temperature is a finite,
+nonnegative `Float`, matching MLX's generation parameters.
 
 ## Run
 
@@ -56,6 +60,11 @@ Optional flags:
 --temperature <value>  Sampling temperature
 --help, -h             Help
 ```
+
+A successful generation must emit at least one non-whitespace character. Empty
+or whitespace-only output exits with status 2 and a diagnostic on standard error.
+Chunks are still streamed unchanged; validation does not retain the response.
+This smoke test verifies text generation, not translation quality or an exact reply.
 
 ## Remove
 

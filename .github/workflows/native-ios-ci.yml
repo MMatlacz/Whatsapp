@@ -108,7 +108,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
-      - name: Build temporary Qwen MLX harness
+      - name: Build and test temporary Qwen MLX harness
         working-directory: native-ios/MLXHarness
         run: |
           set -euo pipefail
@@ -119,7 +119,7 @@ jobs:
             -derivedDataPath "$PWD/.xcodebuild" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
-            build
+            build test
 
       - name: Smoke-test Qwen MLX inference
         working-directory: native-ios/MLXHarness
