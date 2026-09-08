@@ -151,7 +151,11 @@ private struct QwenMLXHarness {
         write("\n--- response ---\n", to: .standardError)
         let generationStart = ContinuousClock.now
 
-        for try await chunk in session.streamResponse(to: options.prompt) {
+        for try await chunk in session.streamResponse(
+            to: options.prompt,
+            images: [],
+            videos: []
+        ) {
             write(chunk, to: .standardOutput)
         }
 
