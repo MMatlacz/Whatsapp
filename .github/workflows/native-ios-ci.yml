@@ -108,6 +108,47 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
+      - name: Install Metal toolchain for diagnostic MLX adapter
+        run: |
+          set -euo pipefail
+          xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk macosx metal --version
+
+      - name: Resolve diagnostic MLX package
+        working-directory: native-ios/QwenMLXDiagnosticAdapter
+        run: |
+          set -euo pipefail
+          swift package resolve
+          test -f Package.resolved
+          cat Package.resolved
+
+      - name: Build and test diagnostic MLX adapter on macOS
+        working-directory: native-ios/QwenMLXDiagnosticAdapter
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -scheme QwenMLXDiagnosticAdapter \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath "$PWD/.xcodebuild" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            build test
+
+      - name: Build diagnostic MLX adapter for iOS Simulator
+        working-directory: native-ios/QwenMLXDiagnosticAdapter
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -scheme QwenMLXDiagnosticAdapter \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$PWD/.xcodebuild-ios" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
       - name: Record validation boundaries
         run: |
           cat <<'EOF'
@@ -117,13 +158,14 @@ jobs:
           and the SQLite domain persistence layer. The Xcode runner compiles the Apple-specific
           WebKit runtime, SQLite persistence source, and application against the iOS Simulator SDK.
 
-          The completed disposable MLX experiment is archived in
-          docs/native/qwen3-mlx-smoke-results.md. Its harness and model-download steps
-          have been removed; normal CI does not run MLX inference.
+          P0.2b additionally resolves the isolated QwenMLXDiagnosticAdapter dependency graph,
+          compiles/tests that diagnostic package on macOS, and compiles it for the iOS Simulator.
+          Its artifact verifier and injected-generator tests use synthetic local files only.
+          CI does not download Qwen model weights and does not run MLX inference.
 
-          Neither Linux tests nor the Simulator build validate Foundation Models inference,
-          Apple Intelligence availability, real WhatsApp Web authentication, the current
-          WhatsApp-private runtime adapter, linked-device persistence, force-quit restoration,
+          Neither these package builds nor the Simulator build validate Qwen translation quality,
+          physical-iPhone latency/memory/thermal behavior, Foundation Models inference,
+          real WhatsApp Web authentication, linked-device persistence, force-quit restoration,
           offline resync, or a real group message arriving through WebKit on a physical iPhone.
           Those acceptance gates remain open in their dedicated roadmap issues.
           EOF
