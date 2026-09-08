@@ -119,6 +119,7 @@ jobs:
             -derivedDataPath "$PWD/.xcodebuild" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
+            ENABLE_TESTABILITY=YES \
             build test
 
       - name: Smoke-test Qwen MLX inference

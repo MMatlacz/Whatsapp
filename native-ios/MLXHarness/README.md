@@ -21,6 +21,7 @@ xcodebuild \
   -derivedDataPath .xcodebuild \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  ENABLE_TESTABILITY=YES \
   build test
 ```
 
@@ -31,6 +32,9 @@ runtime inference; it may compile but omit the MLX Metal resource bundle.
 The test target covers CLI temperature parsing and streamed-response validation
 without loading a model or downloading weights. Temperature is a finite,
 nonnegative `Float`, matching MLX's generation parameters.
+
+`ENABLE_TESTABILITY=YES` allows the test target to import the internal validation
+helpers in this disposable Release build; it does not change production app settings.
 
 ## Run
 
