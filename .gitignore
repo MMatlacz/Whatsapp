@@ -24,5 +24,7 @@ provider-keys.json
 
 # Xcode / native iOS
 DerivedData/
+.build/
+native-ios/WhatsAppTranslator.xcodeproj/project.xcworkspace/
 *.xcuserstate
 **/xcuserdata/
