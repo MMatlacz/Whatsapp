@@ -3,6 +3,10 @@ import XCTest
 @testable import WhatsAppBridgeCore
 
 final class WhatsAppBridgeSupportTests: XCTestCase {
+    private enum RetryError: Error {
+        case failed
+    }
+
     func testPairingCodeParserNormalizesValidCode() {
         let result = WhatsAppBridgeResultParser.pairingCode(
             from: ["status": "pairing-code-found", "code": "ab12-cd34"]
@@ -183,6 +187,52 @@ final class WhatsAppBridgeSupportTests: XCTestCase {
         XCTAssertEqual(
             WhatsAppSessionContract.profileIdentifier.uuidString,
             "6F856F49-F202-4637-946A-75075B7A2A22"
+        )
+    }
+
+    @MainActor
+    func testProfileRemovalRetryStopsAfterTransientFailure() async {
+        var attempts = 0
+        var delays: [UInt64] = []
+
+        let result = await WhatsAppProfileRemovalRetry.run(
+            operation: {
+                attempts += 1
+                if attempts == 1 {
+                    throw RetryError.failed
+                }
+            },
+            sleep: { delay in
+                delays.append(delay)
+            }
+        )
+
+        XCTAssertTrue(result.succeeded)
+        XCTAssertEqual(result.attempts, 2)
+        XCTAssertEqual(delays, [WhatsAppProfileRemovalRetry.retryDelayNanoseconds])
+    }
+
+    @MainActor
+    func testProfileRemovalRetryReportsFinalFailure() async {
+        var attempts = 0
+        var delays: [UInt64] = []
+
+        let result = await WhatsAppProfileRemovalRetry.run(
+            operation: {
+                attempts += 1
+                throw RetryError.failed
+            },
+            sleep: { delay in
+                delays.append(delay)
+            }
+        )
+
+        XCTAssertFalse(result.succeeded)
+        XCTAssertEqual(result.attempts, WhatsAppProfileRemovalRetry.maximumAttempts)
+        XCTAssertNotNil(result.error)
+        XCTAssertEqual(
+            delays,
+            Array(repeating: WhatsAppProfileRemovalRetry.retryDelayNanoseconds, count: WhatsAppProfileRemovalRetry.maximumAttempts - 1)
         )
     }
 }

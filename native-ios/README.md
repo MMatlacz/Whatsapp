@@ -9,6 +9,7 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - native WebKit integration
 - diagnostics for model availability, context size, advertised Indonesian/Polish support, and WebKit state
 - P0.1 benchmark harness for contextual Indonesian -> Polish translation experiments
+- P0.2 Qwen3-0.6B 4-bit local-model validation plan (runtime not bundled yet)
 - P0.3/P0.4 off-screen WhatsApp Web session probe using a dedicated persistent WebKit profile
 - defensive phone-number-linking bridge, transient pairing-code probe, session-state heuristic, and dedicated-profile disconnect action
 - deterministic Swift-side bridge parsing and session-contract tests
@@ -153,11 +154,23 @@ Use **P0.1 SystemLanguageModel benchmark** to run synthetic translation cases co
 - Indonesian -> English;
 - English -> Polish;
 - Indonesian -> Polish;
+- Indonesian -> Polish with an English-only, language-agnostic prompt control;
+- Indonesian -> Polish with ASCII-only Base64 and JSON-Unicode-escape experiments (diagnostic only);
+- Indonesian -> Polish with a smaller ASCII-only body-escape experiment (diagnostic only);
+- Apple `Translation` framework `id -> pl` availability probe (diagnostic only);
 - contextual Indonesian -> Polish with 0, 3, 8, and 16 context messages;
 - particles and slang such as `dong`, `sih`, `nih`, `lah`, `kok`, `masa`, `wkwk`, `mager`, `baper`, and `gak/nggak/ga` variants;
 - omitted subjects, family terms, jokes, code-switching, and quoted replies.
 
-The benchmark screen exports Markdown that should be pasted into `docs/native/p0.1-system-model-benchmark.md` after running on a physical device.
+The benchmark screen exports Markdown; use **Copy all results** to copy the complete report and paste it into `docs/native/p0.1-system-model-benchmark.md` after running on a physical device.
+
+## P0.2 local-model benchmark
+
+The first custom multilingual candidate is Qwen3-0.6B in a 4-bit MLX
+conversion. See [`docs/native/p0.2-qwen3-local-model.md`](../docs/native/p0.2-qwen3-local-model.md)
+for the selection evidence and validation checklist. The candidate is not
+installed or enabled in the app yet; do not treat the model-card language claim
+as proof of Indonesian -> Polish quality.
 
 ## Issue #2 acceptance check
 

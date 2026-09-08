@@ -310,11 +310,17 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         releaseWebView()
 
         disconnectState = "removing dedicated profile"
-        do {
+        let removalResult = await WhatsAppProfileRemovalRetry.run {
             try await WKWebsiteDataStore.remove(forIdentifier: WhatsAppWebProfile.identifier)
+        }
+
+        if removalResult.succeeded {
             disconnectState = "profile removed"
-            recordDiagnostic("Dedicated WebKit profile removed. The next load will create a clean profile with the same stable identifier.")
-        } catch {
+            let attemptDescription = removalResult.attempts == 1
+                ? ""
+                : " after \(removalResult.attempts) attempts"
+            recordDiagnostic("Dedicated WebKit profile removed\(attemptDescription). The next load will create a clean profile with the same stable identifier.")
+        } else if let error = removalResult.error {
             disconnectState = "profile removal failed"
             recordDiagnostic("Dedicated WebKit profile removal failed: \(error.localizedDescription)")
         }
