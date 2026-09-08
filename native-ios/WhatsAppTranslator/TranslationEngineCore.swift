@@ -349,11 +349,13 @@ public protocol MultilingualLocalModel: Sendable {
         targetLanguage: String
     ) async -> TranslationEngineAvailability
 
-    func translate(
-        text: String,
-        sourceLanguage: String,
-        targetLanguage: String
-    ) async throws -> String
+    /// Receives the complete request that entered `TranslationEngine`.
+    ///
+    /// Implementations must use `request.sourceText` as the explicit source
+    /// message and may use `request.prompt` for its immutable instructions and
+    /// contextual, untrusted chat payload. They must not reconstruct the
+    /// source message by decoding `request.prompt.untrustedInput`.
+    func translate(_ request: TranslationRequest) async throws -> String
 }
 
 /// Adapts a multilingual local model to the common translation engine route.
@@ -391,7 +393,7 @@ public struct LocalMultilingualModelEngine: TranslationEngine {
     }
 
     public func translate(_ request: TranslationRequest) async throws -> TranslationResult {
-        guard let sourceText = request.sourceText else {
+        guard request.sourceText != nil else {
             throw TranslationEngineFailure.invalidRequest
         }
         guard !Task.isCancelled else {
@@ -400,11 +402,10 @@ public struct LocalMultilingualModelEngine: TranslationEngine {
 
         let translatedText: String
         do {
-            translatedText = try await localModel.translate(
-                text: sourceText,
-                sourceLanguage: request.languages.sourceLanguage,
-                targetLanguage: request.languages.targetLanguage
-            )
+            // Pass the original request through unchanged so a local model
+            // receives the versioned prompt and its complete context as well
+            // as the explicit source message.
+            translatedText = try await localModel.translate(request)
         } catch {
             throw normalizedProviderFailure(error)
         }
@@ -438,11 +439,7 @@ public struct UnavailableMultilingualLocalModel: MultilingualLocalModel {
         .unavailable(.notInstalled)
     }
 
-    public func translate(
-        text: String,
-        sourceLanguage: String,
-        targetLanguage: String
-    ) async throws -> String {
+    public func translate(_ request: TranslationRequest) async throws -> String {
         throw TranslationEngineFailure.unavailable
     }
 }
