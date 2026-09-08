@@ -1,0 +1,93 @@
+# P0.1 Apple SystemLanguageModel benchmark results
+
+## Run metadata
+
+- Timestamp: 2026-09-08T18:48:04Z
+
+- OS: Version 26.6.1 (Build 23G83)
+
+- Bundle: com.mmatlacz.WhatsAppTranslator
+
+- Model availability: available
+
+- Context size: 4096 tokens
+
+- Supported languages count: 23
+
+- Supports Indonesian id_ID: no / not advertised
+
+- Supports Polish pl_PL: no / not advertised
+
+- Translation prompt versions: base64-encoded-translation-v1, contextual-translation-v1, english-prompt-translation-v1, unicode-escaped-body-translation-v1, unicode-escaped-translation-v1
+
+## Results
+
+| Case | Route | Context messages | Latency | Result | Error category | Output / error |
+
+| --- | --- | ---: | ---: | --- | --- | --- |
+
+| ID -> EN particles and slang | Indonesian -> English | 0 | 33 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| EN -> PL natural chat | English -> Polish | 0 | 2197 ms | success | n/a | Powiedziała, że może później. Jest naprawdę zbyt zmęczona, żeby wyjść teraz, więc nie zmuszaj ją, haha. |
+
+| ID -> PL omitted subject | Indonesian -> Polish | 0 | 8 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| Contextual ID -> PL (0) | Contextual Indonesian -> Polish | 0 | 5 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| Contextual ID -> PL (3) | Contextual Indonesian -> Polish | 3 | 4 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| Contextual ID -> PL (8) | Contextual Indonesian -> Polish | 8 | 4 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| Contextual ID -> PL (16) | Contextual Indonesian -> Polish | 16 | 7 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| English prompt: ID -> PL | Indonesian -> Polish (English prompt) | 0 | 6 ms | error | unsupported-language/runtime | unsupportedLanguageOrLocale(FoundationModels.LanguageModelSession.GenerationError.Context(debugDescription: "Unsupported language.", underlyingErrors: [], errorDescriptionOverride: nil)) |
+
+| ASCII/Base64 prompt: ID -> PL | Indonesian -> Polish (ASCII/Base64 envelope) | 0 | 6740 ms | success | n/a | ```json<br>{<br>  "recentTurns": [<br>    {<br>      "turn": 1,<br>      "text": "Hi there! I'm just a chat assistant, so I don't have any personal information about you. What can I help you with today?"<br>    },<br>    {<br>      "turn": 2,<br>      "text": "Hello! I'm a student and I'm currently studying for my exams. What topics are you interested in?"<br>    },<br>    {<br>      "turn": 3,<br>      "text": "Hi there! I'm a teacher and I'm currently teaching a class on programming. What programming languages are you interested in learning?"<br>    }<br>  ],<br>  "quotedTurn": [<br>    {<br>      "turn": 1,<br>      "text": "Hello! I'm just a chat assistant, so I don't have any personal information about you. What can I help you with today?"<br>    },<br>    {<br>      "turn": 2,<br>      "text": "Hello! I'm a student and I'm currently studying for my exams. What topics are you interested in?"<br>    },<br>    {<br>      "turn": 3,<br>      "text": "Hi there! I'm a teacher and I'm currently teaching a class on programming. What programming languages are you interested in learning?"<br>    }<br>  ],<br>  "summary": "This is a conversation between a chat assistant and a student. The chat assistant provides information about its capabilities and the student asks about topics they are interested in studying. The chat assistant then responds with information about programming languages that are currently being taught in its class."<br>}<br>```<br><br>```json<br>{<br>  "target.body": "Hi there! I'm just a chat assistant, so I don't have any personal information about you. What can I help you with today?"<br>}<br>``` |
+
+| ASCII/\u prompt: ID -> PL | Indonesian -> Polish (ASCII/\u envelope) | 0 | 2587 ms | success | n/a | ```<br>{"body": "I'm so sorry for being late. I had a flat tire and it took me a while to get here. I'll make sure to drive more carefully next time."}<br>``` |
+
+| ASCII/\u body prompt: ID -> PL | Indonesian -> Polish (ASCII/\u body envelope) | 0 | 949 ms | success | n/a | My friend, I'm sorry, but I cannot help you with that. |
+
+## Manual quality notes
+
+Fill this in after reviewing the device output:
+
+- Indonesian -> English:
+
+- English -> Polish:
+
+- Indonesian -> Polish:
+
+- English prompt: Indonesian -> Polish:
+
+- ASCII/Base64 prompt: Indonesian -> Polish:
+
+- ASCII/Unicode-escape prompt: Indonesian -> Polish:
+
+- ASCII/Unicode-escape body prompt: Indonesian -> Polish:
+
+- Contextual Indonesian -> Polish, 0 messages:
+
+- Contextual Indonesian -> Polish, 3 messages:
+
+- Contextual Indonesian -> Polish, 8 messages:
+
+- Contextual Indonesian -> Polish, 16 messages:
+
+## Decision
+
+Choose exactly one after the physical-device run:
+
+- [ ] Apple SystemLanguageModel is viable as the primary translator.
+
+- [ ] Apple SystemLanguageModel is partially viable and needs fallback.
+
+- [ ] Apple SystemLanguageModel is rejected for this product direction.
+
+## Error interpretation
+
+Distinguish unsupported-language/runtime failures from poor translation quality:
+
+- Unsupported language or availability failure means the API/model cannot support the route on this device/locale combination.
+
+- Poor output quality means the route runs but produces unacceptable translations.
