@@ -154,6 +154,46 @@ struct WhatsAppSessionResetValues: Equatable {
     )
 }
 
+struct WhatsAppProfileRemovalResult {
+    let attempts: Int
+    let error: Error?
+
+    var succeeded: Bool {
+        error == nil
+    }
+}
+
+@MainActor
+enum WhatsAppProfileRemovalRetry {
+    static let maximumAttempts = 5
+    static let retryDelayNanoseconds: UInt64 = 1_000_000_000
+
+    static func run(
+        operation: () async throws -> Void,
+        sleep: (UInt64) async -> Void = { nanoseconds in
+            try? await Task.sleep(nanoseconds: nanoseconds)
+        }
+    ) async -> WhatsAppProfileRemovalResult {
+        var lastError: Error?
+
+        for attempt in 1...maximumAttempts {
+            do {
+                try await operation()
+                return WhatsAppProfileRemovalResult(attempts: attempt, error: nil)
+            } catch {
+                lastError = error
+                guard attempt < maximumAttempts else { break }
+                await sleep(retryDelayNanoseconds)
+            }
+        }
+
+        return WhatsAppProfileRemovalResult(
+            attempts: maximumAttempts,
+            error: lastError
+        )
+    }
+}
+
 enum WhatsAppDiagnosticsBuffer {
     static let defaultLimit = 20
     static let defaultMessageLimit = 500

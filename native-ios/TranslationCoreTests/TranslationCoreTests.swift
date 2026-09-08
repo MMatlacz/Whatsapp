@@ -488,6 +488,60 @@ final class TranslationCoreTests: XCTestCase {
         })
     }
 
+    func testEnglishPromptExperimentKeepsLanguageAgnosticFraming() {
+        let request = P01BenchmarkFixtures.englishPromptIndonesianToPolish
+
+        XCTAssertEqual(request.route, "Indonesian -> Polish (English prompt)")
+        XCTAssertEqual(request.promptVersion.rawValue, "english-prompt-translation-v1")
+        XCTAssertTrue(request.instructions.contains("input may be written in any language"))
+        XCTAssertTrue(request.prompt.contains("Translate this chat message into Polish"))
+        XCTAssertTrue(request.prompt.contains("Dia bilang"))
+        XCTAssertFalse(request.prompt.hasPrefix("{"))
+        XCTAssertEqual(
+            P01BenchmarkFixtures.allRequests.count,
+            P01BenchmarkFixtures.requests.count + 4
+        )
+    }
+
+    func testBase64ExperimentKeepsModelInputASCIIOnlyAndPreservesPayload() throws {
+        let request = P01BenchmarkFixtures.base64EncodedIndonesianToPolish
+
+        XCTAssertEqual(request.promptVersion, TranslationPromptBuilder.base64EncodedVersion)
+        XCTAssertTrue(request.instructions.contains("ASCII-only Base64"))
+        XCTAssertTrue(request.prompt.hasPrefix("Base64-encoded JSON input"))
+        XCTAssertTrue(request.prompt.unicodeScalars.dropFirst().allSatisfy { $0.isASCII })
+        XCTAssertFalse(request.prompt.contains("Dia bilang"))
+
+        let encoded = try XCTUnwrap(request.prompt.split(separator: "\n").last)
+        let decoded = try XCTUnwrap(
+            String(data: Data(base64Encoded: String(encoded))!, encoding: .utf8)
+        )
+        XCTAssertTrue(decoded.contains("Dia bilang"))
+        XCTAssertTrue(decoded.contains("\"sourceLanguage\":\"id\""))
+        XCTAssertTrue(decoded.contains("\"targetLanguage\":\"pl\""))
+    }
+
+    func testUnicodeEscapedExperimentKeepsModelInputASCIIOnlyAndPreservesPayload() throws {
+        let request = P01BenchmarkFixtures.unicodeEscapedIndonesianToPolish
+
+        XCTAssertEqual(request.promptVersion, TranslationPromptBuilder.unicodeEscapedVersion)
+        XCTAssertTrue(request.instructions.contains("JSON \\uXXXX escapes"))
+        XCTAssertTrue(request.prompt.hasPrefix("Unicode-escaped JSON input"))
+        XCTAssertTrue(request.prompt.unicodeScalars.dropFirst().allSatisfy { $0.value < 128 })
+        XCTAssertFalse(request.prompt.contains("Dia bilang"))
+        XCTAssertTrue(request.prompt.contains("\\u0044\\u0069\\u0061"))
+    }
+
+    func testUnicodeEscapedBodyExperimentStaysSmallAndASCIIOnly() {
+        let request = P01BenchmarkFixtures.unicodeEscapedBodyIndonesianToPolish
+
+        XCTAssertEqual(request.promptVersion, TranslationPromptBuilder.unicodeEscapedBodyVersion)
+        XCTAssertTrue(request.prompt.unicodeScalars.allSatisfy { $0.value < 128 })
+        XCTAssertFalse(request.prompt.contains("Dia bilang"))
+        XCTAssertLessThan(request.prompt.count, 1_000)
+        XCTAssertTrue(request.prompt.contains("\\u0044\\u0069\\u0061"))
+    }
+
     func testZeroContextBenchmarkPromptHasEmptyRecentTurns() throws {
         let request = try XCTUnwrap(
             P01BenchmarkFixtures.requests.first {

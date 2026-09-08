@@ -274,6 +274,336 @@ final class TranslationEngineCoreTests: XCTestCase {
         }
     }
 
+    func testTwoStepProviderUsesEnglishIntermediateAndPreservesStageOrder() async throws {
+        let firstRecorder = ProviderRecorder()
+        let secondRecorder = ProviderRecorder()
+        let first = ScriptedTextProvider(
+            identifier: "provider-id-en",
+            output: .success("She will come later."),
+            recorder: firstRecorder
+        )
+        let second = ScriptedTextProvider(
+            identifier: "provider-en-pl",
+            output: .success("Ona przyjdzie później."),
+            recorder: secondRecorder
+        )
+        let pipeline = try XCTUnwrap(
+            TwoStepTranslationProvider(
+                intermediateLanguage: "en",
+                sourceToIntermediate: first,
+                intermediateToTarget: second
+            )
+        )
+
+        let availability = await pipeline.availability(
+            sourceLanguage: "id",
+            targetLanguage: "pl"
+        )
+        XCTAssertEqual(availability, .available)
+        let output = try await pipeline.translate(
+            text: "Dia nanti nyusul.",
+            sourceLanguage: "id",
+            targetLanguage: "pl"
+        )
+
+        XCTAssertEqual(output, "Ona przyjdzie później.")
+        let firstEvents = await firstRecorder.events()
+        XCTAssertEqual(
+            firstEvents,
+            [
+                .availability(sourceLanguage: "id", targetLanguage: "en"),
+                .translate(
+                    text: "Dia nanti nyusul.",
+                    sourceLanguage: "id",
+                    targetLanguage: "en"
+                ),
+            ]
+        )
+        let secondEvents = await secondRecorder.events()
+        XCTAssertEqual(
+            secondEvents,
+            [
+                .availability(sourceLanguage: "en", targetLanguage: "pl"),
+                .translate(
+                    text: "She will come later.",
+                    sourceLanguage: "en",
+                    targetLanguage: "pl"
+                ),
+            ]
+        )
+    }
+
+    func testTwoStepProviderStopsAvailabilityAtUnavailableFirstHop() async throws {
+        let firstRecorder = ProviderRecorder()
+        let secondRecorder = ProviderRecorder()
+        let first = ScriptedTextProvider(
+            identifier: "provider-id-en",
+            availabilityValue: .unavailable(.unsupportedLanguagePair),
+            output: .success("unused"),
+            recorder: firstRecorder
+        )
+        let second = ScriptedTextProvider(
+            identifier: "provider-en-pl",
+            output: .success("unused"),
+            recorder: secondRecorder
+        )
+        let pipeline = try XCTUnwrap(
+            TwoStepTranslationProvider(
+                intermediateLanguage: "en",
+                sourceToIntermediate: first,
+                intermediateToTarget: second
+            )
+        )
+
+        let availability = await pipeline.availability(
+            sourceLanguage: "id",
+            targetLanguage: "pl"
+        )
+        XCTAssertEqual(availability, .unavailable(.unsupportedLanguagePair))
+        let firstEvents = await firstRecorder.events()
+        XCTAssertEqual(
+            firstEvents,
+            [.availability(sourceLanguage: "id", targetLanguage: "en")]
+        )
+        let secondEvents = await secondRecorder.events()
+        XCTAssertTrue(secondEvents.isEmpty)
+    }
+
+    func testTwoStepProviderPropagatesFirstHopFailureWithoutCallingSecondHop() async throws {
+        let firstRecorder = ProviderRecorder()
+        let secondRecorder = ProviderRecorder()
+        let first = ScriptedTextProvider(
+            identifier: "provider-id-en",
+            output: .failure(.unsupported),
+            recorder: firstRecorder
+        )
+        let second = ScriptedTextProvider(
+            identifier: "provider-en-pl",
+            output: .success("unused"),
+            recorder: secondRecorder
+        )
+        let pipeline = try XCTUnwrap(
+            TwoStepTranslationProvider(
+                sourceToIntermediate: first,
+                intermediateToTarget: second
+            )
+        )
+
+        do {
+            _ = try await pipeline.translate(
+                text: "Dia nanti nyusul.",
+                sourceLanguage: "id",
+                targetLanguage: "pl"
+            )
+            XCTFail("Expected the first hop failure")
+        } catch let error as TranslationEngineFailure {
+            XCTAssertEqual(error, .unsupported)
+        }
+
+        let firstEvents = await firstRecorder.events()
+        XCTAssertEqual(
+            firstEvents,
+            [
+                .translate(
+                    text: "Dia nanti nyusul.",
+                    sourceLanguage: "id",
+                    targetLanguage: "en"
+                ),
+            ]
+        )
+        let secondEvents = await secondRecorder.events()
+        XCTAssertTrue(secondEvents.isEmpty)
+    }
+
+    func testTwoStepProviderRejectsEmptyIntermediateOutput() async throws {
+        let secondRecorder = ProviderRecorder()
+        let first = ScriptedTextProvider(
+            identifier: "provider-id-en",
+            output: .success("   ")
+        )
+        let second = ScriptedTextProvider(
+            identifier: "provider-en-pl",
+            output: .success("unused"),
+            recorder: secondRecorder
+        )
+        let pipeline = try XCTUnwrap(
+            TwoStepTranslationProvider(
+                sourceToIntermediate: first,
+                intermediateToTarget: second
+            )
+        )
+
+        do {
+            _ = try await pipeline.translate(
+                text: "Dia nanti nyusul.",
+                sourceLanguage: "id",
+                targetLanguage: "pl"
+            )
+            XCTFail("Expected the empty intermediate result to fail closed")
+        } catch let error as TranslationEngineFailure {
+            XCTAssertEqual(error, .permanent)
+        }
+
+        let secondEvents = await secondRecorder.events()
+        XCTAssertTrue(secondEvents.isEmpty)
+    }
+
+    func testUnavailableLocalModelFallsBackToTwoStepProvider() async throws {
+        let localRecorder = ProviderRecorder()
+        let firstRecorder = ProviderRecorder()
+        let secondRecorder = ProviderRecorder()
+        let localModel = ScriptedMultilingualModel(
+            identifier: "multilingual-local-model",
+            availabilityValue: .unavailable(.notInstalled),
+            output: .success("unused"),
+            recorder: localRecorder
+        )
+        let first = ScriptedTextProvider(
+            identifier: "provider-id-en",
+            output: .success("She will come later."),
+            recorder: firstRecorder
+        )
+        let second = ScriptedTextProvider(
+            identifier: "provider-en-pl",
+            output: .success("Ona przyjdzie później."),
+            recorder: secondRecorder
+        )
+        let pipeline = try XCTUnwrap(
+            TwoStepTranslationProvider(
+                sourceToIntermediate: first,
+                intermediateToTarget: second
+            )
+        )
+        let localEngine = try XCTUnwrap(
+            LocalMultilingualModelEngine(
+                localModel: localModel,
+                model: try XCTUnwrap(
+                    TranslationModelDescriptor(
+                        identifier: "multilingual-local-model",
+                        version: "experimental-v1"
+                    )
+                )
+            )
+        )
+        let providerEngine = try XCTUnwrap(
+            TwoStepTranslationEngine(
+                provider: pipeline,
+                model: try XCTUnwrap(
+                    TranslationModelDescriptor(
+                        identifier: "two-step-provider",
+                        version: "experimental-v1"
+                    )
+                )
+            )
+        )
+        let router = try TranslationEngineRouter(engines: [localEngine, providerEngine])
+
+        let result = try await router.translate(try makeRequest())
+
+        XCTAssertEqual(result.model, providerEngine.model)
+        XCTAssertEqual(result.translatedText, "Ona przyjdzie później.")
+        let localEvents = await localRecorder.events()
+        XCTAssertEqual(
+            localEvents,
+            [.availability(sourceLanguage: "id", targetLanguage: "pl")]
+        )
+        let firstEvents = await firstRecorder.events()
+        XCTAssertEqual(
+            firstEvents,
+            [
+                .availability(sourceLanguage: "id", targetLanguage: "en"),
+                .translate(
+                    text: "Dia nanti nyusul.",
+                    sourceLanguage: "id",
+                    targetLanguage: "en"
+                ),
+            ]
+        )
+        let secondEvents = await secondRecorder.events()
+        XCTAssertEqual(
+            secondEvents,
+            [
+                .availability(sourceLanguage: "en", targetLanguage: "pl"),
+                .translate(
+                    text: "She will come later.",
+                    sourceLanguage: "en",
+                    targetLanguage: "pl"
+                ),
+            ]
+        )
+    }
+
+    func testLocalMultilingualModelEnginePassesSourceTextAndProvenance() async throws {
+        let recorder = ProviderRecorder()
+        let localModel = ScriptedMultilingualModel(
+            identifier: "multilingual-local-model",
+            output: .success("Ona przyjdzie później."),
+            recorder: recorder
+        )
+        let engine = try XCTUnwrap(
+            LocalMultilingualModelEngine(
+                localModel: localModel,
+                version: "model-1"
+            )
+        )
+
+        let request = try makeRequest(sourceText: "Dia nanti nyusul.")
+        let result = try await engine.translate(request)
+
+        XCTAssertEqual(result.model, engine.model)
+        XCTAssertEqual(result.requestID, request.id)
+        XCTAssertEqual(result.revision, request.revision)
+        XCTAssertEqual(result.promptVersion, request.prompt.version)
+        XCTAssertEqual(result.translatedText, "Ona przyjdzie później.")
+        let events = await recorder.events()
+        XCTAssertEqual(
+            events,
+            [
+                .translate(
+                    text: "Dia nanti nyusul.",
+                    sourceLanguage: "id",
+                    targetLanguage: "pl"
+                ),
+            ]
+        )
+    }
+
+    func testProviderBackedEngineRejectsPromptOnlyRequestWithoutGuessingText() async throws {
+        let recorder = ProviderRecorder()
+        let localModel = ScriptedMultilingualModel(
+            identifier: "multilingual-local-model",
+            output: .success("unused"),
+            recorder: recorder
+        )
+        let engine = try XCTUnwrap(
+            LocalMultilingualModelEngine(
+                localModel: localModel,
+                version: "model-1"
+            )
+        )
+        let requestID = try XCTUnwrap(TranslationRequestID(rawValue: "prompt-only"))
+        let languages = try XCTUnwrap(
+            TranslationLanguagePair(sourceLanguage: "id", targetLanguage: "pl")
+        )
+        let request = try XCTUnwrap(
+            TranslationRequest(
+                id: requestID,
+                revision: 1,
+                languages: languages,
+                prompt: try makePrompt()
+            )
+        )
+
+        do {
+            _ = try await engine.translate(request)
+            XCTFail("Expected source text to be required")
+        } catch let error as TranslationEngineFailure {
+            XCTAssertEqual(error, .invalidRequest)
+        }
+        let events = await recorder.events()
+        XCTAssertTrue(events.isEmpty)
+    }
+
     private func makePrompt() throws -> TranslationPrompt {
         let context = TranslationContext(
             target: TranslationTarget(speaker: .unknown, body: "Dia nanti nyusul."),
@@ -293,7 +623,10 @@ final class TranslationEngineCoreTests: XCTestCase {
         )
     }
 
-    private func makeRequest(revision: Int = 1) throws -> TranslationRequest {
+    private func makeRequest(
+        revision: Int = 1,
+        sourceText: String? = "Dia nanti nyusul."
+    ) throws -> TranslationRequest {
         let requestID = try XCTUnwrap(
             TranslationRequestID(rawValue: "request-\(revision)")
         )
@@ -305,7 +638,8 @@ final class TranslationEngineCoreTests: XCTestCase {
                 id: requestID,
                 revision: revision,
                 languages: languages,
-                prompt: makePrompt()
+                prompt: makePrompt(),
+                sourceText: sourceText
             )
         )
     }
@@ -336,6 +670,126 @@ private actor EngineRecorder {
 
     func requests() -> [TranslationRequest] {
         recordedRequests
+    }
+}
+
+private enum ScriptedTextOutcome: Sendable {
+    case success(String)
+    case failure(TranslationEngineFailure)
+}
+
+private enum ProviderEvent: Equatable, Sendable {
+    case availability(sourceLanguage: String, targetLanguage: String)
+    case translate(text: String, sourceLanguage: String, targetLanguage: String)
+}
+
+private actor ProviderRecorder {
+    private var recordedEvents: [ProviderEvent] = []
+
+    func record(_ event: ProviderEvent) {
+        recordedEvents.append(event)
+    }
+
+    func events() -> [ProviderEvent] {
+        recordedEvents
+    }
+}
+
+private struct ScriptedTextProvider: TranslationTextProvider {
+    let identifier: String
+    let availabilityValue: TranslationEngineAvailability
+    let output: ScriptedTextOutcome
+    let recorder: ProviderRecorder
+
+    init(
+        identifier: String,
+        availabilityValue: TranslationEngineAvailability = .available,
+        output: ScriptedTextOutcome,
+        recorder: ProviderRecorder = ProviderRecorder()
+    ) {
+        self.identifier = identifier
+        self.availabilityValue = availabilityValue
+        self.output = output
+        self.recorder = recorder
+    }
+
+    func availability(
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async -> TranslationEngineAvailability {
+        await recorder.record(
+            .availability(sourceLanguage: sourceLanguage, targetLanguage: targetLanguage)
+        )
+        return availabilityValue
+    }
+
+    func translate(
+        text: String,
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async throws -> String {
+        await recorder.record(
+            .translate(
+                text: text,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+            )
+        )
+        switch output {
+        case .success(let value):
+            return value
+        case .failure(let failure):
+            throw failure
+        }
+    }
+}
+
+private struct ScriptedMultilingualModel: MultilingualLocalModel {
+    let identifier: String
+    let availabilityValue: TranslationEngineAvailability
+    let output: ScriptedTextOutcome
+    let recorder: ProviderRecorder
+
+    init(
+        identifier: String,
+        availabilityValue: TranslationEngineAvailability = .available,
+        output: ScriptedTextOutcome,
+        recorder: ProviderRecorder = ProviderRecorder()
+    ) {
+        self.identifier = identifier
+        self.availabilityValue = availabilityValue
+        self.output = output
+        self.recorder = recorder
+    }
+
+    func availability(
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async -> TranslationEngineAvailability {
+        await recorder.record(
+            .availability(sourceLanguage: sourceLanguage, targetLanguage: targetLanguage)
+        )
+        return availabilityValue
+    }
+
+    func translate(
+        text: String,
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async throws -> String {
+        await recorder.record(
+            .translate(
+                text: text,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+            )
+        )
+        switch output {
+        case .success(let value):
+            return value
+        case .failure(let failure):
+            throw failure
+        }
     }
 }
 
