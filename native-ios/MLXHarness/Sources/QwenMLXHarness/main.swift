@@ -13,7 +13,7 @@ private struct HarnessOptions {
     var prompt = "Reply with exactly: MLX Swift is working."
     var systemPrompt: String?
     var maxTokens = 128
-    var temperature: Float = 0.0
+    var temperature: Double = 0.0
 
     static func parse(_ arguments: [String]) throws -> HarnessOptions {
         var options = HarnessOptions()
@@ -38,7 +38,7 @@ private struct HarnessOptions {
                 options.maxTokens = value
             case "--temperature":
                 let rawValue = try value(after: argument, at: &index, in: arguments)
-                guard let value = Float(rawValue), value >= 0 else {
+                guard let value = Double(rawValue), value >= 0 else {
                     throw HarnessError.invalidValue(argument, rawValue)
                 }
                 options.temperature = value
@@ -103,7 +103,7 @@ private extension HarnessOptions {
 
         Options:
           --model <repo>         Hugging Face model ID.
-                                 Default: \(defaultModelID)
+                                 Default: \(self.defaultModelID)
           --prompt <text>        Prompt to send to the model.
           --system <text>        Optional system instruction.
           --max-tokens <count>   Maximum generated tokens. Default: 128
