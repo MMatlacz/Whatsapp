@@ -338,11 +338,12 @@ public enum TranslationBenchmarkExporter {
     public static func markdownSummary(
         _ report: TranslationBenchmarkReport
     ) -> String {
+        let sourceRevision = report.sourceRevision ?? "unknown"
         var lines = [
             "# Local translation benchmark",
             "",
             "- Timestamp: \(report.timestamp)",
-            "- Source revision: \(report.sourceRevision ?? \"unknown\")",
+            "- Source revision: \(sourceRevision)",
             "- Model: \(report.model.repositoryID)",
             "- Model revision: \(report.model.revision)",
             "- Tokenizer revision: \(report.model.tokenizerRevision)",
@@ -355,8 +356,10 @@ public enum TranslationBenchmarkExporter {
         ]
 
         for result in report.results {
+            let finishReason = sanitize(result.finishReason ?? "unknown")
+            let tokenCount = result.generatedTokenCount.map(String.init) ?? "unknown"
             lines.append(
-                "| \(sanitize(result.fixtureID)) | \(sanitize(result.route)) | \(result.contextWindow) | \(result.termination.rawValue) | \(result.outputValidity.rawValue) | \(sanitize(result.finishReason ?? \"unknown\")) | \(result.generatedTokenCount.map(String.init) ?? \"unknown\") |"
+                "| \(sanitize(result.fixtureID)) | \(sanitize(result.route)) | \(result.contextWindow) | \(result.termination.rawValue) | \(result.outputValidity.rawValue) | \(finishReason) | \(tokenCount) |"
             )
         }
 
