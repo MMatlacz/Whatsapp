@@ -12,6 +12,10 @@ let package = Package(
             name: "QwenMLXDiagnosticAdapter",
             targets: ["QwenMLXDiagnosticAdapter"]
         ),
+        .executable(
+            name: "qwen-mlx-benchmark",
+            targets: ["QwenMLXBenchmark"]
+        ),
     ],
     dependencies: [
         .package(name: "WhatsAppTranslatorCore", path: ".."),
@@ -36,6 +40,16 @@ let package = Package(
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
+            ]
+        ),
+        .executableTarget(
+            name: "QwenMLXBenchmark",
+            dependencies: [
+                "QwenMLXDiagnosticAdapter",
+                .product(
+                    name: "TranslationCore",
+                    package: "WhatsAppTranslatorCore"
+                ),
             ]
         ),
         .testTarget(
