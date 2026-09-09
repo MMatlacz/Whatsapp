@@ -72,11 +72,51 @@ This package returns raw non-empty generated text. It does not decide whether a
 response is a valid final answer or a good translation; issue #103 owns that
 classification.
 
+## P0.2c shared benchmark runner
+
+Issue #103 adds the `qwen-mlx-benchmark` executable and a deterministic export
+schema. The runner reuses the original unencoded P0.1 fixtures directly from
+`TranslationCore`, including context windows 0, 3, 8, and 16. Encoded prompt
+experiments are intentionally excluded from the shared comparison corpus.
+
+Run it only after provisioning the verified local model snapshot:
+
+```bash
+swift run qwen-mlx-benchmark \
+  --model-dir .models/Qwen3-0.6B-4bit \
+  --output-dir ../../docs/native/qwen3-benchmark-run \
+  --source-revision "$(git rev-parse HEAD)"
+```
+
+The output directory contains:
+
+- `report.json` — run-level provenance plus all result records;
+- `summary.md` — a compact human-review table;
+- `results/<fixture-id>.json` — one deterministic record per fixture.
+
+Each result records fixture identity, language pair, context size, prompt
+version, execution termination, output-validity classification, raw output,
+finish reason/token count when available, and explicit errors. Runtime
+execution, output validity, and translation quality remain separate outcomes.
+A non-empty answer is never automatically treated as a quality pass.
+
+The current `MultilingualLocalModel` boundary returns generated text but does
+not expose MLX finish-reason or generated-token metadata. Those fields therefore
+remain explicitly unknown for the real Qwen adapter until the pinned runtime
+provides them through a verified API; the schema and deterministic tests already
+cover truncation when such metadata is available. Timeout, cancellation, input
+budget failure, empty output, and thinking-only output are represented as
+distinct states.
+
+This runner is diagnostic only. It does not select Qwen for production, enable
+fallback routing, or satisfy the physical-iPhone acceptance work in #104.
+
 ## Build and deterministic tests
 
 The PR CI installs the Metal toolchain, resolves the locked package graph,
-builds/tests the package on macOS, and compiles it for the iOS Simulator without
-downloading model weights.
+builds/tests the package on macOS, builds the benchmark executable, exercises
+its `--help` path without model weights, and compiles the adapter for the iOS
+Simulator without downloading model weights.
 
 Manual commands from this directory:
 
@@ -91,6 +131,9 @@ xcodebuild \
   -skipPackagePluginValidation \
   -skipMacroValidation \
   build test
+
+swift build --product qwen-mlx-benchmark
+swift run qwen-mlx-benchmark --help
 
 xcodebuild \
   -scheme QwenMLXDiagnosticAdapter \
