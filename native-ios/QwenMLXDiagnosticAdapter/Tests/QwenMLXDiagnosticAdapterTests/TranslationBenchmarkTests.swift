@@ -51,7 +51,7 @@ final class TranslationBenchmarkTests: XCTestCase {
         )
     }
 
-    func testRunnerSeparatesExecutionAndOutputValidity() async throws {
+    func testRunnerSeparatesExecutionOutputValidityAndMeasurements() async throws {
         let fixtures = Array(
             P01SharedTranslationBenchmarkFixtures.unencoded.prefix(4)
         )
@@ -59,7 +59,16 @@ final class TranslationBenchmarkTests: XCTestCase {
             executions: [
                 TranslationBenchmarkExecution(
                     termination: .returned,
-                    output: "Ona dołączy później."
+                    output: "Ona dołączy później.",
+                    modelLoadWasCold: true,
+                    modelLoadSeconds: 1.2,
+                    firstTokenSecondsAfterModelReady: 0.3,
+                    generationSeconds: 0.7,
+                    promptTokenCount: 40,
+                    finishReason: "stop",
+                    generatedTokenCount: 7,
+                    tokensPerSecond: 10,
+                    reachedGenerationLimit: false
                 ),
                 TranslationBenchmarkExecution(
                     termination: .returned,
@@ -95,8 +104,20 @@ final class TranslationBenchmarkTests: XCTestCase {
             records.map(\.outputValidity),
             [.validText, .emptyText, .thinkingOnly, .truncated]
         )
+        XCTAssertEqual(records[0].modelLoadWasCold, true)
+        XCTAssertEqual(records[0].modelLoadSeconds, 1.2)
+        XCTAssertEqual(records[0].firstTokenSecondsAfterModelReady, 0.3)
+        XCTAssertEqual(records[0].generationSeconds, 0.7)
+        XCTAssertEqual(records[0].promptTokenCount, 40)
+        XCTAssertEqual(records[0].finishReason, "stop")
+        XCTAssertEqual(records[0].generatedTokenCount, 7)
+        XCTAssertEqual(records[0].tokensPerSecond, 10)
+        XCTAssertTrue(records[0].unknownMeasurements.isEmpty)
         XCTAssertEqual(records[3].finishReason, "length")
         XCTAssertEqual(records[3].generatedTokenCount, 512)
+        XCTAssertTrue(
+            records[3].unknownMeasurements.contains("tokensPerSecond")
+        )
     }
 
     func testRunnerClassifiesTimeoutWithoutWaitingForExecutorCompletion() async throws {
@@ -117,6 +138,45 @@ final class TranslationBenchmarkTests: XCTestCase {
         XCTAssertEqual(records[0].termination, .timedOut)
         XCTAssertEqual(records[0].outputValidity, .notProduced)
         XCTAssertEqual(records[0].errorCategory, "timeout")
+        XCTAssertTrue(
+            records[0].unknownMeasurements.contains("modelLoadSeconds")
+        )
+    }
+
+    func testPhysicalEvaluationContractIsPredeclaredBeforeDeviceRun() {
+        let contract = PhysicalDeviceEvaluationContract.p02d1V1
+        let evidence = PhysicalDeviceEnvironmentEvidence.notRun
+
+        XCTAssertEqual(contract.version, "p0.2d1-v1")
+        XCTAssertEqual(contract.performance.maximumColdModelLoadSeconds, 8)
+        XCTAssertEqual(contract.performance.maximumWarmFirstTokenSeconds, 1.5)
+        XCTAssertEqual(contract.performance.maximumWarmGenerationSeconds, 4)
+        XCTAssertEqual(contract.performance.minimumWarmTokensPerSecond, 10)
+        XCTAssertEqual(contract.performance.maximumPeakMemoryBytes, 1_610_612_736)
+        XCTAssertTrue(contract.performance.requireOfflineAfterProvisioning)
+        XCTAssertTrue(contract.performance.requireCancellation)
+        XCTAssertEqual(
+            Set(contract.performance.disallowedThermalStates),
+            Set(["serious", "critical"])
+        )
+        XCTAssertTrue(
+            contract.quality.criteria.contains {
+                $0.identifier == "meaning"
+                    && $0.minimumScore == 2
+                    && $0.hardGate
+            }
+        )
+        XCTAssertTrue(
+            contract.quality.criteria.contains {
+                $0.identifier == "hallucinations"
+                    && $0.minimumScore == 2
+                    && $0.hardGate
+            }
+        )
+        XCTAssertEqual(evidence.state, .notRun)
+        XCTAssertEqual(evidence.offlineAfterProvisioning, .notRun)
+        XCTAssertEqual(evidence.cancellationBehavior, .notRun)
+        XCTAssertNil(evidence.peakMemoryBytes)
     }
 
     func testExporterWritesDeterministicReviewableArtifacts() throws {
@@ -161,6 +221,8 @@ final class TranslationBenchmarkTests: XCTestCase {
             encoding: .utf8
         )
 
+        XCTAssertEqual(report.schemaVersion, 2)
+        XCTAssertEqual(report.physicalDeviceEvidence.state, .notRun)
         XCTAssertEqual(
             reportData,
             try TranslationBenchmarkExporter.encodeReport(report)
@@ -169,7 +231,14 @@ final class TranslationBenchmarkTests: XCTestCase {
             individualData,
             try TranslationBenchmarkExporter.encodeResult(record)
         )
-        XCTAssertTrue(summary.contains("Execution success, output validity, and translation quality are separate outcomes."))
+        XCTAssertTrue(
+            summary.contains("Physical-device evidence: notRun")
+        )
+        XCTAssertTrue(
+            summary.contains(
+                "Execution success, output validity, translation quality, and physical-device acceptance are separate outcomes."
+            )
+        )
         XCTAssertTrue(summary.contains("unknown"))
     }
 }
