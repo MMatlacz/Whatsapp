@@ -152,6 +152,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Inspect Qwen device benchmark project
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/QwenDeviceBenchmarkHarness.xcodeproj \
+            -list
+
+      - name: Build Qwen device benchmark app for iOS Simulator
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/QwenDeviceBenchmarkHarness.xcodeproj \
+            -target QwenDeviceBenchmarkHarness \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
       - name: Record validation boundaries
         run: |
           cat <<'EOF'
@@ -166,11 +186,13 @@ jobs:
           Its artifact verifier and injected-generator tests use synthetic local files only.
           P0.2c additionally builds the shared benchmark executable, checks its no-model --help
           path, and runs deterministic tests for fixture identity, outcome classification,
-          timeout behavior, and result export. CI does not download Qwen model weights and does
-          not run MLX inference.
+          timeout behavior, and result export. P0.2d2a additionally builds the dedicated Qwen
+          device benchmark app for the iOS Simulator and tests its host-independent harness
+          state/session plumbing. CI does not download Qwen model weights and does not run MLX
+          inference or claim a physical-device result.
 
-          Neither these package builds nor the Simulator build validate Qwen translation quality,
-          physical-iPhone latency/memory/thermal behavior, Foundation Models inference,
+          Neither these package/app builds nor the Simulator build validate Qwen translation
+          quality, physical-iPhone latency/memory/thermal behavior, Foundation Models inference,
           real WhatsApp Web authentication, linked-device persistence, force-quit restoration,
           offline resync, or a real group message arriving through WebKit on a physical iPhone.
           Those acceptance gates remain open in their dedicated roadmap issues.
