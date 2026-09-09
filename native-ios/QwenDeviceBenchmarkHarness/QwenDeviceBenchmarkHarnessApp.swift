@@ -135,6 +135,23 @@ private struct QwenDeviceBenchmarkView: View {
     }
 }
 
+private enum OfflineObservation: String, Sendable {
+    case notRun
+    case passed
+    case failed
+
+    var evidence: PhysicalDeviceEvidenceState {
+        switch self {
+        case .notRun:
+            .notRun
+        case .passed:
+            .passed
+        case .failed:
+            .failed
+        }
+    }
+}
+
 @MainActor
 private final class QwenDeviceBenchmarkController: ObservableObject {
     @Published private(set) var state = QwenDeviceBenchmarkHarnessState()
@@ -149,7 +166,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     private var session: QwenMLXBenchmarkSession?
     private var runTask: Task<Void, Never>?
     private var cancellationRequested = false
-    private var offlineObservation: PhysicalDeviceEvidenceState = .notRun
+    private var offlineObservation: OfflineObservation = .notRun
 
     var isBusy: Bool {
         switch state.phase {
@@ -287,7 +304,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
 
     func cycleOfflineObservation() {
         switch offlineObservation {
-        case .notRun, .unknown:
+        case .notRun:
             offlineObservation = .passed
         case .passed:
             offlineObservation = .failed
@@ -332,6 +349,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         let xcodeVersion = Self.bundleString("DTXcode")
         let xcodeBuild = Self.bundleString("DTXcodeBuild")
         let sdkVersion = Self.bundleString("DTSDKName")
+        let offlineEvidence = offlineObservation.evidence
 
 #if targetEnvironment(simulator)
         let evidenceState: PhysicalDeviceEvidenceState = .notRun
@@ -346,7 +364,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         if normalizedSourceRevision == nil {
             unknown.append("sourceRevision")
         }
-        if offlineObservation == .notRun || offlineObservation == .unknown {
+        if offlineObservation == .notRun {
             unknown.append("offlineAfterProvisioning")
         }
         if cancellationBehavior == .notRun || cancellationBehavior == .unknown {
@@ -366,7 +384,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             sdkVersion: sdkVersion,
             sourceRevision: normalizedSourceRevision,
             provisioningState: session == nil ? nil : "verified-local-copy",
-            offlineAfterProvisioning: offlineObservation,
+            offlineAfterProvisioning: offlineEvidence,
             cancellationBehavior: cancellationBehavior,
             peakMemoryBytes: nil,
             peakMemoryMeasurementSource: nil,
