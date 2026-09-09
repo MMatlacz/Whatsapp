@@ -26,5 +26,6 @@ provider-keys.json
 DerivedData/
 .build/
 native-ios/WhatsAppTranslator.xcodeproj/project.xcworkspace/
+native-ios/QwenMLXDiagnosticAdapter/.models/
 *.xcuserstate
 **/xcuserdata/
