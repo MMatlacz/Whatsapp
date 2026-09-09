@@ -154,6 +154,44 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         )
     }
 
+    func testBenchmarkGenerationPreservesRawOutputAndMetrics() async throws {
+        let fixture = try makeArtifactFixture()
+        defer { fixture.cleanup() }
+        let verified = try QwenMLXArtifactVerifier.verify(
+            directory: fixture.directory,
+            manifest: fixture.manifest
+        )
+        let metrics = QwenMLXGenerationMetrics(
+            modelLoadWasCold: true,
+            modelLoadSeconds: 1.25,
+            firstTokenSecondsAfterModelReady: 0.4,
+            generationSeconds: 0.8,
+            promptTokenCount: 42,
+            generatedTokenCount: 8,
+            tokensPerSecond: 10,
+            finishReason: "stop",
+            reachedGenerationLimit: false
+        )
+        let generator = RecordingGenerator(output: "", metrics: metrics)
+        let model = QwenMLXDiagnosticModel(
+            verifiedArtifacts: verified,
+            generator: generator
+        )
+        let request = try makeContextualRequest()
+
+        let benchmark = try await model.benchmarkGenerate(request)
+
+        XCTAssertEqual(benchmark.output, "")
+        XCTAssertEqual(benchmark.metrics, metrics)
+
+        do {
+            _ = try await model.translate(request)
+            XCTFail("Expected production model contract to reject empty output")
+        } catch let failure as TranslationEngineFailure {
+            XCTAssertEqual(failure, .permanent)
+        }
+    }
+
     func testDiagnosticModelRejectsMissingSourceBeforeGeneration() async throws {
         let fixture = try makeArtifactFixture()
         defer { fixture.cleanup() }
@@ -343,19 +381,25 @@ private struct ArtifactFixture {
 }
 
 private actor RecordingGenerator: QwenMLXGenerating {
-    private let output: String
+    private let result: QwenMLXGenerationResult
     private var capturedRequests: [TranslationRequest] = []
 
-    init(output: String) {
-        self.output = output
+    init(
+        output: String,
+        metrics: QwenMLXGenerationMetrics = .unmeasured
+    ) {
+        self.result = QwenMLXGenerationResult(
+            output: output,
+            metrics: metrics
+        )
     }
 
     func generate(
         request: TranslationRequest,
         limits: QwenMLXDiagnosticLimits
-    ) async throws -> String {
+    ) async throws -> QwenMLXGenerationResult {
         capturedRequests.append(request)
-        return output
+        return result
     }
 
     func requests() -> [TranslationRequest] {
