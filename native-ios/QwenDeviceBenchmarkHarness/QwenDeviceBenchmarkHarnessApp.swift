@@ -160,17 +160,13 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         }
     }
 
-    var canRun: Bool {
-        session != nil && !isBusy
-    }
+    var canRun: Bool { session != nil && !isBusy }
 
     var canCancel: Bool {
         state.phase == .running || state.phase == .cancelling
     }
 
-    var canResetColdState: Bool {
-        session != nil && !isBusy
-    }
+    var canResetColdState: Bool { session != nil && !isBusy }
 
     var offlineButtonTitle: String {
         "Offline-after-provisioning: \(offlineObservation.rawValue)"
@@ -251,16 +247,15 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
                     cancellationEvidence = .notRun
                 }
 
-                let finalEvidence = environmentEvidence(
-                    cancellationBehavior: cancellationEvidence
-                )
                 let finalReport = TranslationBenchmarkReport(
                     timestamp: initialReport.timestamp,
                     sourceRevision: initialReport.sourceRevision,
                     model: initialReport.model,
                     maxGeneratedTokens: initialReport.maxGeneratedTokens,
                     evaluationContract: initialReport.evaluationContract,
-                    physicalDeviceEvidence: finalEvidence,
+                    physicalDeviceEvidence: environmentEvidence(
+                        cancellationBehavior: cancellationEvidence
+                    ),
                     results: initialReport.results
                 )
 
@@ -285,7 +280,8 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         guard let session, !isBusy else { return }
         Task { [weak self] in
             await session.resetModelForColdRun()
-            self?.state.resetForColdRun()
+            guard let self else { return }
+            state.resetForColdRun()
         }
     }
 
@@ -317,16 +313,12 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     }
 
     func refreshEnvironmentSummary() {
-        let device = Self.machineIdentifier()
-        let osVersion = UIDevice.current.systemVersion
-        let osBuild = ProcessInfo.processInfo.operatingSystemVersionString
-        let thermal = Self.thermalStateDescription(ProcessInfo.processInfo.thermalState)
-        let battery = Self.batteryObservation()
-
-        deviceSummary = device
-        osSummary = "\(osVersion) — \(osBuild)"
-        thermalSummary = thermal
-        batterySummary = battery
+        deviceSummary = Self.machineIdentifier()
+        osSummary = "\(UIDevice.current.systemVersion) — \(ProcessInfo.processInfo.operatingSystemVersionString)"
+        thermalSummary = Self.thermalStateDescription(
+            ProcessInfo.processInfo.thermalState
+        )
+        batterySummary = Self.batteryObservation()
     }
 
     private var normalizedSourceRevision: String? {
@@ -337,14 +329,9 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     private func environmentEvidence(
         cancellationBehavior: PhysicalDeviceEvidenceState
     ) -> PhysicalDeviceEnvironmentEvidence {
-        let deviceModel = Self.machineIdentifier()
-        let osVersion = UIDevice.current.systemVersion
-        let osBuild = ProcessInfo.processInfo.operatingSystemVersionString
         let xcodeVersion = Self.bundleString("DTXcode")
         let xcodeBuild = Self.bundleString("DTXcodeBuild")
         let sdkVersion = Self.bundleString("DTSDKName")
-        let thermal = Self.thermalStateDescription(ProcessInfo.processInfo.thermalState)
-        let battery = Self.batteryObservation()
 
 #if targetEnvironment(simulator)
         let evidenceState: PhysicalDeviceEvidenceState = .notRun
@@ -365,21 +352,15 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         if cancellationBehavior == .notRun || cancellationBehavior == .unknown {
             unknown.append("cancellationBehavior")
         }
-        if xcodeVersion == nil {
-            unknown.append("xcodeVersion")
-        }
-        if xcodeBuild == nil {
-            unknown.append("xcodeBuild")
-        }
-        if sdkVersion == nil {
-            unknown.append("sdkVersion")
-        }
+        if xcodeVersion == nil { unknown.append("xcodeVersion") }
+        if xcodeBuild == nil { unknown.append("xcodeBuild") }
+        if sdkVersion == nil { unknown.append("sdkVersion") }
 
         return PhysicalDeviceEnvironmentEvidence(
             state: evidenceState,
-            deviceModel: deviceModel,
-            osVersion: osVersion,
-            osBuild: osBuild,
+            deviceModel: Self.machineIdentifier(),
+            osVersion: UIDevice.current.systemVersion,
+            osBuild: ProcessInfo.processInfo.operatingSystemVersionString,
             xcodeVersion: xcodeVersion,
             xcodeBuild: xcodeBuild,
             sdkVersion: sdkVersion,
@@ -389,8 +370,10 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             cancellationBehavior: cancellationBehavior,
             peakMemoryBytes: nil,
             peakMemoryMeasurementSource: nil,
-            thermalObservation: thermal,
-            batteryObservation: battery,
+            thermalObservation: Self.thermalStateDescription(
+                ProcessInfo.processInfo.thermalState
+            ),
+            batteryObservation: Self.batteryObservation(),
             unknownMeasurements: unknown
         )
     }
@@ -460,11 +443,9 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     private static func machineIdentifier() -> String {
         var systemInfo = utsname()
         uname(&systemInfo)
+        let capacity = MemoryLayout.size(ofValue: systemInfo.machine)
         return withUnsafePointer(to: &systemInfo.machine) { pointer in
-            pointer.withMemoryRebound(
-                to: CChar.self,
-                capacity: MemoryLayout.size(ofValue: systemInfo.machine)
-            ) {
+            pointer.withMemoryRebound(to: CChar.self, capacity: capacity) {
                 String(cString: $0)
             }
         }
@@ -518,12 +499,8 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) else {
             return nil
         }
-        if let string = value as? String {
-            return string
-        }
-        if let number = value as? NSNumber {
-            return number.stringValue
-        }
+        if let string = value as? String { return string }
+        if let number = value as? NSNumber { return number.stringValue }
         return String(describing: value)
     }
 }
