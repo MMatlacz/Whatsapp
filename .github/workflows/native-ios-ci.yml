@@ -142,6 +142,8 @@ jobs:
             -skipPackagePluginValidation \
             -skipMacroValidation \
             build test
+          swift build --product qwen-mlx-benchmark
+          swift run qwen-mlx-benchmark --help
 
       - name: Build diagnostic MLX adapter for iOS Simulator
         working-directory: native-ios/QwenMLXDiagnosticAdapter
@@ -169,7 +171,10 @@ jobs:
           P0.2b additionally resolves the isolated QwenMLXDiagnosticAdapter dependency graph,
           compiles/tests that diagnostic package on macOS, and compiles it for the iOS Simulator.
           Its artifact verifier and injected-generator tests use synthetic local files only.
-          CI does not download Qwen model weights and does not run MLX inference.
+          P0.2c additionally builds the shared benchmark executable, checks its no-model --help
+          path, and runs deterministic tests for fixture identity, outcome classification,
+          timeout behavior, and result export. CI does not download Qwen model weights and does
+          not run MLX inference.
 
           Neither these package builds nor the Simulator build validate Qwen translation quality,
           physical-iPhone latency/memory/thermal behavior, Foundation Models inference,
