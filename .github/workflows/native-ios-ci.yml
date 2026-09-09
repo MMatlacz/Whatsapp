@@ -134,14 +134,7 @@ jobs:
         working-directory: native-ios/QwenMLXDiagnosticAdapter
         run: |
           set -euo pipefail
-          xcodebuild \
-            -scheme QwenMLXDiagnosticAdapter \
-            -configuration Debug \
-            -destination 'platform=macOS,arch=arm64' \
-            -derivedDataPath "$PWD/.xcodebuild" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            build test
+          swift test
           swift build --product qwen-mlx-benchmark
           swift run qwen-mlx-benchmark --help
 
