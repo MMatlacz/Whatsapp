@@ -122,16 +122,7 @@ Manual commands from this directory:
 
 ```bash
 swift package resolve
-
-xcodebuild \
-  -scheme QwenMLXDiagnosticAdapter \
-  -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' \
-  -derivedDataPath .xcodebuild \
-  -skipPackagePluginValidation \
-  -skipMacroValidation \
-  build test
-
+swift test
 swift build --product qwen-mlx-benchmark
 swift run qwen-mlx-benchmark --help
 
