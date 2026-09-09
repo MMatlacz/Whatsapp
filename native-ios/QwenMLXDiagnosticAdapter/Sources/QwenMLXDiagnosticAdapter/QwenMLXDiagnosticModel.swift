@@ -35,11 +35,60 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
     )!
 }
 
+public struct QwenMLXGenerationMetrics: Equatable, Sendable {
+    public let modelLoadWasCold: Bool?
+    public let modelLoadSeconds: TimeInterval?
+    public let firstTokenSecondsAfterModelReady: TimeInterval?
+    public let generationSeconds: TimeInterval?
+    public let promptTokenCount: Int?
+    public let generatedTokenCount: Int?
+    public let tokensPerSecond: Double?
+    public let finishReason: String?
+    public let reachedGenerationLimit: Bool?
+
+    public init(
+        modelLoadWasCold: Bool? = nil,
+        modelLoadSeconds: TimeInterval? = nil,
+        firstTokenSecondsAfterModelReady: TimeInterval? = nil,
+        generationSeconds: TimeInterval? = nil,
+        promptTokenCount: Int? = nil,
+        generatedTokenCount: Int? = nil,
+        tokensPerSecond: Double? = nil,
+        finishReason: String? = nil,
+        reachedGenerationLimit: Bool? = nil
+    ) {
+        self.modelLoadWasCold = modelLoadWasCold
+        self.modelLoadSeconds = modelLoadSeconds
+        self.firstTokenSecondsAfterModelReady = firstTokenSecondsAfterModelReady
+        self.generationSeconds = generationSeconds
+        self.promptTokenCount = promptTokenCount
+        self.generatedTokenCount = generatedTokenCount
+        self.tokensPerSecond = tokensPerSecond
+        self.finishReason = finishReason
+        self.reachedGenerationLimit = reachedGenerationLimit
+    }
+
+    public static let unmeasured = QwenMLXGenerationMetrics()
+}
+
+public struct QwenMLXGenerationResult: Equatable, Sendable {
+    public let output: String
+    public let metrics: QwenMLXGenerationMetrics
+
+    public init(
+        output: String,
+        metrics: QwenMLXGenerationMetrics = .unmeasured
+    ) {
+        self.output = output
+        self.metrics = metrics
+    }
+}
+
 protocol QwenMLXGenerating: Sendable {
     func generate(
         request: TranslationRequest,
         limits: QwenMLXDiagnosticLimits
-    ) async throws -> String
+    ) async throws -> QwenMLXGenerationResult
 }
 
 public struct QwenMLXDiagnosticModel: MultilingualLocalModel, Sendable {
@@ -89,6 +138,16 @@ public struct QwenMLXDiagnosticModel: MultilingualLocalModel, Sendable {
     public func translate(
         _ request: TranslationRequest
     ) async throws -> String {
+        let result = try await benchmarkGenerate(request)
+        guard !result.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TranslationEngineFailure.permanent
+        }
+        return result.output
+    }
+
+    func benchmarkGenerate(
+        _ request: TranslationRequest
+    ) async throws -> QwenMLXGenerationResult {
         guard let sourceText = request.sourceText else {
             throw TranslationEngineFailure.invalidRequest
         }
@@ -114,17 +173,14 @@ public struct QwenMLXDiagnosticModel: MultilingualLocalModel, Sendable {
         }
 
         do {
-            let output = try await generator.generate(
+            let result = try await generator.generate(
                 request: request,
                 limits: limits
             )
             guard !Task.isCancelled else {
                 throw TranslationEngineFailure.cancelled
             }
-            guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw TranslationEngineFailure.permanent
-            }
-            return output
+            return result
         } catch let failure as TranslationEngineFailure {
             throw failure
         } catch is CancellationError {
@@ -146,8 +202,8 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
     func generate(
         request: TranslationRequest,
         limits: QwenMLXDiagnosticLimits
-    ) async throws -> String {
-        let container = try await loadContainer()
+    ) async throws -> QwenMLXGenerationResult {
+        let loaded = try await loadContainerMeasured()
         guard !Task.isCancelled else {
             throw TranslationEngineFailure.cancelled
         }
@@ -156,7 +212,7 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
         // transcript/KV state, so never reuse a session across benchmark cases
         // or chats.
         let session = ChatSession(
-            container,
+            loaded.container,
             instructions: request.prompt.instructions,
             generateParameters: GenerateParameters(
                 maxTokens: limits.maxGeneratedTokens,
@@ -166,14 +222,30 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
         )
 
         var output = ""
+        var completionInfo: GenerateCompletionInfo?
         do {
-            for try await chunk in session.streamResponse(
-                to: request.prompt.untrustedInput
+            for try await generation in session.streamDetails(
+                to: request.prompt.untrustedInput,
+                images: [],
+                videos: []
             ) {
                 guard !Task.isCancelled else {
                     throw TranslationEngineFailure.cancelled
                 }
-                output += chunk
+
+                switch generation {
+                case .chunk(let chunk):
+                    output += chunk
+                case .info(let info):
+                    completionInfo = info
+                case .toolCall:
+                    // No tools are configured for translation. Treat a tool call
+                    // as an invalid diagnostic generation rather than silently
+                    // dropping model output.
+                    throw TranslationEngineFailure.permanent
+                @unknown default:
+                    throw TranslationEngineFailure.permanent
+                }
             }
         } catch let failure as TranslationEngineFailure {
             throw failure
@@ -183,12 +255,32 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
             throw TranslationEngineFailure.transient
         }
 
-        return output
+        let completionMetrics = completionInfo.map(Self.metrics(from:))
+        let metrics = QwenMLXGenerationMetrics(
+            modelLoadWasCold: loaded.wasCold,
+            modelLoadSeconds: loaded.loadSeconds,
+            firstTokenSecondsAfterModelReady: completionMetrics?.firstTokenSecondsAfterModelReady,
+            generationSeconds: completionMetrics?.generationSeconds,
+            promptTokenCount: completionMetrics?.promptTokenCount,
+            generatedTokenCount: completionMetrics?.generatedTokenCount,
+            tokensPerSecond: completionMetrics?.tokensPerSecond,
+            finishReason: completionMetrics?.finishReason,
+            reachedGenerationLimit: completionMetrics?.reachedGenerationLimit
+        )
+
+        return QwenMLXGenerationResult(
+            output: output,
+            metrics: metrics
+        )
     }
 
-    private func loadContainer() async throws -> ModelContainer {
+    private func loadContainerMeasured() async throws -> (
+        container: ModelContainer,
+        wasCold: Bool,
+        loadSeconds: TimeInterval
+    ) {
         if let modelContainer {
-            return modelContainer
+            return (modelContainer, false, 0)
         }
         guard artifacts.requiredFilesArePresent() else {
             throw TranslationEngineFailure.unavailable
@@ -197,6 +289,7 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
             throw TranslationEngineFailure.cancelled
         }
 
+        let startedAt = ProcessInfo.processInfo.systemUptime
         do {
             // This overload accepts only a local directory and tokenizer
             // loader. It cannot fall back to a remote model identifier or
@@ -209,7 +302,11 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
                 throw TranslationEngineFailure.cancelled
             }
             modelContainer = container
-            return container
+            let elapsed = max(
+                0,
+                ProcessInfo.processInfo.systemUptime - startedAt
+            )
+            return (container, true, elapsed)
         } catch let failure as TranslationEngineFailure {
             throw failure
         } catch is CancellationError {
@@ -219,6 +316,37 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
             // quantization, or weight-loading failures are deterministic for
             // this snapshot and should not silently route around bad artifacts.
             throw TranslationEngineFailure.permanent
+        }
+    }
+
+    private static func metrics(
+        from info: GenerateCompletionInfo
+    ) -> QwenMLXGenerationMetrics {
+        let stop = normalizedStopReason(info.stopReason)
+        let rate = info.tokensPerSecond
+        return QwenMLXGenerationMetrics(
+            firstTokenSecondsAfterModelReady: info.promptTime,
+            generationSeconds: info.generateTime,
+            promptTokenCount: info.promptTokenCount,
+            generatedTokenCount: info.generationTokenCount,
+            tokensPerSecond: rate.isFinite ? rate : nil,
+            finishReason: stop.reason,
+            reachedGenerationLimit: stop.reachedGenerationLimit
+        )
+    }
+
+    private static func normalizedStopReason(
+        _ reason: GenerateStopReason
+    ) -> (reason: String, reachedGenerationLimit: Bool) {
+        switch reason {
+        case .stop:
+            ("stop", false)
+        case .length:
+            ("length", true)
+        case .cancelled:
+            ("cancelled", false)
+        @unknown default:
+            ("unknown", false)
         }
     }
 }
