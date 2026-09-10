@@ -1,0 +1,295 @@
+name: Qwen functional CI
+
+on:
+  workflow_dispatch:
+  # Temporary bootstrap trigger for the focused validation branch. This is
+  # removed/replaced with pull_request after the execution path is proven.
+  push:
+    branches:
+      - issue-112-qwen-functional-ci
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qwen-functional-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QWEN_MODEL_REPOSITORY: mlx-community/Qwen3-0.6B-4bit
+  QWEN_MODEL_REVISION: 73e3e38d981303bc594367cd910ea6eb48349da8
+  QWEN_MODEL_WEIGHT_SIZE: "335450584"
+  QWEN_MODEL_WEIGHT_SHA256: 392e8d466d56100ada00eb82031fb854297fc9e389b7d303eba3af114e87bce2
+
+jobs:
+  qwen-functional:
+    name: real Qwen functional inference
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Record runner and Apple toolchain
+        run: |
+          set -euo pipefail
+          uname -a
+          sw_vers
+          xcodebuild -version
+          xcodebuild -showsdks
+          printf 'machine_architecture='; uname -m
+
+      - name: Install Metal toolchain
+        run: |
+          set -euo pipefail
+          xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk macosx metal --version
+
+      - name: Resolve and build the pinned diagnostic package
+        working-directory: native-ios/QwenMLXDiagnosticAdapter
+        run: |
+          set -euo pipefail
+          swift package resolve
+          swift build --configuration release --product qwen-mlx-benchmark
+
+      - name: Build the iOS Simulator inference harness
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project native-ios/QwenDeviceBenchmarkHarness.xcodeproj \
+            -scheme QwenDeviceBenchmarkHarness \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/qwen-simulator-derived-data" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            INDEX_STORE_PATH="$RUNNER_TEMP/qwen-simulator-index" \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Provision and verify the pinned model artifacts
+        id: provision_model
+        run: |
+          set -euo pipefail
+          model_dir="$RUNNER_TEMP/qwen-model"
+          rm -rf "$model_dir"
+          mkdir -p "$model_dir"
+
+          artifacts=(
+            added_tokens.json
+            config.json
+            merges.txt
+            model.safetensors
+            model.safetensors.index.json
+            special_tokens_map.json
+            tokenizer.json
+            tokenizer_config.json
+            vocab.json
+          )
+
+          for artifact in "${artifacts[@]}"; do
+            curl \
+              --fail \
+              --location \
+              --retry 3 \
+              --connect-timeout 30 \
+              --max-time 900 \
+              "https://huggingface.co/${QWEN_MODEL_REPOSITORY}/resolve/${QWEN_MODEL_REVISION}/${artifact}?download=true" \
+              --output "$model_dir/$artifact"
+
+            case "$artifact" in
+              added_tokens.json)
+                expected_size=707
+                expected_sha256=c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680
+                ;;
+              config.json)
+                expected_size=937
+                expected_sha256=15d3ac26c043ae477273ed5802ee0f0b33bb14f18c9d3dd70910c02d906e3f1f
+                ;;
+              merges.txt)
+                expected_size=1671853
+                expected_sha256=8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5
+                ;;
+              model.safetensors)
+                expected_size=$QWEN_MODEL_WEIGHT_SIZE
+                expected_sha256=$QWEN_MODEL_WEIGHT_SHA256
+                ;;
+              model.safetensors.index.json)
+                expected_size=49731
+                expected_sha256=7b294141456f6904936db03c00bca50fb5f6198f652fe8483f9cd2a1018accfb
+                ;;
+              special_tokens_map.json)
+                expected_size=613
+                expected_sha256=76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd
+                ;;
+              tokenizer.json)
+                expected_size=11422654
+                expected_sha256=aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4
+                ;;
+              tokenizer_config.json)
+                expected_size=9706
+                expected_sha256=253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0
+                ;;
+              vocab.json)
+                expected_size=2776833
+                expected_sha256=ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910
+                ;;
+              *)
+                echo "No integrity manifest entry for $artifact" >&2
+                exit 1
+                ;;
+            esac
+            test "$(stat -f%z "$model_dir/$artifact")" = "$expected_size"
+            test "$(shasum -a 256 "$model_dir/$artifact" | awk '{print $1}')" = "$expected_sha256"
+          done
+
+          for artifact in "${artifacts[@]}"; do
+            test -s "$model_dir/$artifact"
+          done
+
+          echo "model_dir=$model_dir" >> "$GITHUB_OUTPUT"
+          {
+            echo "repository=$QWEN_MODEL_REPOSITORY"
+            echo "revision=$QWEN_MODEL_REVISION"
+            echo "weight_size=$(stat -f%z "$model_dir/model.safetensors")"
+            echo "weight_sha256=$(shasum -a 256 "$model_dir/model.safetensors" | awk '{print $1}')"
+          } > "$RUNNER_TEMP/qwen-provisioning.txt"
+
+      - name: Run the real iOS Simulator smoke and functional benchmark
+        id: simulator_smoke
+        continue-on-error: true
+        env:
+          MODEL_DIR: ${{ steps.provision_model.outputs.model_dir }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/qwen-simulator-output"
+          simulator_udid="$(xcrun simctl list devices available | sed -nE 's/^[[:space:]]*(iPhone[^()]*) \(([0-9A-F-]+)\) \((Booted|Shutdown)\)$/\2/p' | head -n 1)"
+          if [[ -z "$simulator_udid" ]]; then
+            echo "No available iPhone Simulator device was exposed by this runner."
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+          xcrun simctl boot "$simulator_udid" 2>/dev/null || true
+          xcrun simctl bootstatus "$simulator_udid" -b
+
+          app_path="$(find "$RUNNER_TEMP/qwen-simulator-derived-data/Build/Products" -name 'QwenDeviceBenchmarkHarness.app' -print -quit)"
+          test -n "$app_path"
+          xcrun simctl install "$simulator_udid" "$app_path"
+          container="$(xcrun simctl get_app_container "$simulator_udid" com.mmatlacz.QwenDeviceBenchmarkHarness data)"
+          mkdir -p "$container/Documents/QwenCIModel"
+          ditto "$MODEL_DIR/." "$container/Documents/QwenCIModel/"
+
+          set +e
+          python3 - "$simulator_udid" > "$RUNNER_TEMP/qwen-simulator-console.log" 2>&1 <<'PY'
+          import subprocess
+          import sys
+
+          device = sys.argv[1]
+          command = [
+              "xcrun", "simctl", "launch", "--console", device,
+              "com.mmatlacz.QwenDeviceBenchmarkHarness",
+              "--qwen-ci-model-dir", "QwenCIModel",
+              "--qwen-ci-output", "QwenCISmoke.json",
+              "--qwen-ci-source-revision", "${{ github.sha }}",
+          ]
+          try:
+              result = subprocess.run(command, timeout=900)
+              sys.exit(result.returncode)
+          except subprocess.TimeoutExpired:
+              print("Simulator smoke exceeded its 900 second process timeout.")
+              sys.exit(124)
+          PY
+          simulator_rc=$?
+          set -e
+
+          if [[ -f "$container/Documents/QwenCISmoke.json" ]]; then
+            cp "$container/Documents/QwenCISmoke.json" "$RUNNER_TEMP/qwen-simulator-output/smoke.json"
+          fi
+          if [[ -d "$container/Documents/QwenFunctionalReport" ]]; then
+            cp -R "$container/Documents/QwenFunctionalReport" "$RUNNER_TEMP/qwen-simulator-output/"
+          fi
+
+          if [[ -f "$RUNNER_TEMP/qwen-simulator-output/smoke.json" ]] && \
+             python3 - "$RUNNER_TEMP/qwen-simulator-output/smoke.json" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              payload = json.load(handle)
+          raise SystemExit(0 if payload.get("status") == "passed" else 1)
+          PY
+          then
+            echo "status=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$simulator_rc"
+
+      - name: Run the native macOS arm64 fallback benchmark
+        if: steps.simulator_smoke.outputs.status != 'passed'
+        env:
+          MODEL_DIR: ${{ steps.provision_model.outputs.model_dir }}
+        working-directory: native-ios/QwenMLXDiagnosticAdapter
+        run: |
+          set -euo pipefail
+          output_dir="$RUNNER_TEMP/qwen-macos-output"
+          mkdir -p "$output_dir"
+          python3 - "$MODEL_DIR" "$output_dir" <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          model_dir, output_dir = sys.argv[1:]
+          command = [
+              "swift", "run", "--configuration", "release",
+              "qwen-mlx-benchmark",
+              "--model-dir", model_dir,
+              "--output-dir", output_dir,
+              "--source-revision", os.environ["GITHUB_SHA"],
+              "--corpus", "functional",
+              "--execution-environment", "macos-arm64-ci",
+              "--timeout-seconds", "120",
+          ]
+          try:
+              subprocess.run(command, check=True, timeout=1800)
+          except subprocess.TimeoutExpired as error:
+              print(f"Native macOS benchmark exceeded its 1800 second process timeout: {error}")
+              raise SystemExit(124)
+          PY
+
+      - name: Validate the selected functional result
+        env:
+          SIMULATOR_STATUS: ${{ steps.simulator_smoke.outputs.status }}
+        run: |
+          set -euo pipefail
+          if [[ "$SIMULATOR_STATUS" == "passed" ]]; then
+            test -f "$RUNNER_TEMP/qwen-simulator-output/smoke.json"
+            test -f "$RUNNER_TEMP/qwen-simulator-output/QwenFunctionalReport/report.json"
+            python3 - "$RUNNER_TEMP/qwen-simulator-output/smoke.json" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              payload = json.load(handle)
+          if payload.get("status") != "passed":
+              raise SystemExit("Simulator smoke did not pass")
+          if payload.get("fullFailureCount") != 0:
+              raise SystemExit("Simulator functional benchmark has failed records")
+          PY
+          else
+            test -f "$RUNNER_TEMP/qwen-macos-output/smoke.json"
+            test -f "$RUNNER_TEMP/qwen-macos-output/report.json"
+          fi
+
+      - name: Upload Qwen functional evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-functional-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/qwen-provisioning.txt
+            ${{ runner.temp }}/qwen-simulator-console.log
+            ${{ runner.temp }}/qwen-simulator-output
+            ${{ runner.temp }}/qwen-macos-output
+          if-no-files-found: ignore
+          retention-days: 14

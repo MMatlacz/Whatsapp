@@ -1,7 +1,8 @@
 # Qwen physical-device benchmark harness
 
 This directory is the diagnostic iOS app for issue #111. It exists only to run
-the isolated Qwen MLX benchmark on an iPhone for the later #112 experiment.
+the isolated Qwen MLX benchmark on an iPhone for the physical-device follow-up
+in #114. Functional CI validation is tracked separately in #112.
 It is not part of the production `WhatsAppTranslator` target and it does not
 enable Qwen in the production translation router.
 
@@ -50,7 +51,7 @@ to Git.
   must load the model container again. Without a reset, subsequent runs may
   reuse the loaded `ModelContainer`, while every fixture still creates a fresh
   `ChatSession`.
-- **Offline-after-provisioning** is an operator observation. For #112, provision
+- **Offline-after-provisioning** is an operator observation. For #114, provision
   first, disable network access, relaunch/run a representative case, then mark
   the observation pass or fail before exporting. The harness does not infer
   offline success merely because artifacts are present.
@@ -59,7 +60,7 @@ The source revision field should contain the exact Git revision installed on the
 phone. Runtime evidence also records the hardware machine identifier, iOS
 version/build observation, Xcode/SDK metadata embedded by the build, current
 thermal state, and battery level/charging state. Peak resident memory remains
-explicitly unknown in the harness because #112 must capture it from a named
+explicitly unknown in the harness because #114 must capture it from a named
 Xcode/Instruments/device measurement source.
 
 ## Export
@@ -76,11 +77,11 @@ files through the system share sheet. Only source-controlled synthetic fixture
 content is included; do not run or export real WhatsApp messages, cookies,
 session state, pairing material, or account data.
 
-## #112 evidence boundary
+## #114 evidence boundary
 
 This harness deliberately reports physical-device evidence as `notRun` in the
 Simulator and `unknown` on a real device. It does not upgrade itself to an
-acceptance result. Issue #112 must still:
+acceptance result. Issue #114 must still:
 
 1. reconfirm the current device/toolchain compatibility gate;
 2. run the full physical-iPhone benchmark and cancellation/offline checks;

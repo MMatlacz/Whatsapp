@@ -1,26 +1,79 @@
 import Foundation
 
+public enum TranslationBenchmarkContextMode: String, Codable, Equatable, Sendable {
+    case none
+    case bounded
+}
+
+public struct TranslationBenchmarkContextTurn: Codable, Equatable, Sendable {
+    public let speaker: String
+    public let body: String
+
+    public init(speaker: String, body: String) {
+        self.speaker = speaker
+        self.body = body
+    }
+
+    init(_ turn: TranslationContextTurn) {
+        self.init(speaker: turn.speaker.rawValue, body: turn.body)
+    }
+
+}
+
+public struct TranslationBenchmarkContextSnapshot: Codable, Equatable, Sendable {
+    public let recentTurns: [TranslationBenchmarkContextTurn]
+    public let quotedTurn: TranslationBenchmarkContextTurn?
+
+    public init(
+        recentTurns: [TranslationBenchmarkContextTurn] = [],
+        quotedTurn: TranslationBenchmarkContextTurn? = nil
+    ) {
+        self.recentTurns = recentTurns
+        self.quotedTurn = quotedTurn
+    }
+
+    public static let none = TranslationBenchmarkContextSnapshot()
+}
+
 public struct TranslationBenchmarkFixture: Equatable, Sendable {
     public let id: String
+    public let semanticCaseID: String
     public let title: String
     public let route: String
     public let contextWindow: Int
+    public let contextMode: TranslationBenchmarkContextMode
     public let focus: String
+    public let input: String
+    public let suppliedContext: TranslationBenchmarkContextSnapshot
+    public let intendedMeaning: String
+    public let preservationNotes: String
     public let request: TranslationRequest
 
     public init(
         id: String,
+        semanticCaseID: String? = nil,
         title: String,
         route: String,
         contextWindow: Int,
+        contextMode: TranslationBenchmarkContextMode = .none,
         focus: String,
+        input: String? = nil,
+        suppliedContext: TranslationBenchmarkContextSnapshot = .none,
+        intendedMeaning: String = "",
+        preservationNotes: String = "",
         request: TranslationRequest
     ) {
         self.id = id
+        self.semanticCaseID = semanticCaseID ?? id
         self.title = title
         self.route = route
         self.contextWindow = contextWindow
+        self.contextMode = contextMode
         self.focus = focus
+        self.input = input ?? request.sourceText ?? ""
+        self.suppliedContext = suppliedContext
+        self.intendedMeaning = intendedMeaning
+        self.preservationNotes = preservationNotes
         self.request = request
     }
 }
@@ -84,10 +137,15 @@ public enum P01SharedTranslationBenchmarkFixtures {
 
         return TranslationBenchmarkFixture(
             id: fixture.id,
+            semanticCaseID: fixture.id,
             title: fixture.title,
             route: fixture.route,
             contextWindow: fixture.contextWindow,
+            contextMode: .none,
             focus: fixture.focus,
+            input: sourceText,
+            intendedMeaning: "Review the output against the fixture's source meaning.",
+            preservationNotes: fixture.focus,
             request: request
         )
     }

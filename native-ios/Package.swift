@@ -30,6 +30,7 @@ let package = Package(
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
@@ -52,6 +53,7 @@ let package = Package(
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
                 "TranslationCore.swift",
@@ -87,6 +89,7 @@ let package = Package(
             ],
             sources: [
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
             ]
@@ -98,6 +101,7 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
