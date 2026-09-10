@@ -2,11 +2,13 @@ name: Qwen functional CI
 
 on:
   workflow_dispatch:
-  # Temporary bootstrap trigger for the focused validation branch. This is
-  # removed/replaced with pull_request after the execution path is proven.
-  push:
+  pull_request:
     branches:
-      - issue-112-qwen-functional-ci
+      - apple
+    paths:
+      - ".github/workflows/qwen-functional-ci.yml"
+      - "native-ios/**"
+      - "docs/native/**"
 
 permissions:
   contents: read
