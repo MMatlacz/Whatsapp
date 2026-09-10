@@ -290,7 +290,7 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
             instructions: request.prompt.instructions,
             generateParameters: GenerateParameters(
                 maxTokens: limits.maxGeneratedTokens,
-                temperature: limits.generationTemperature
+                temperature: Float(limits.generationTemperature)
             ),
             additionalContext: ["enable_thinking": limits.thinkingEnabled]
         )
