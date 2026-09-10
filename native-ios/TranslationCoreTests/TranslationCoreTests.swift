@@ -486,8 +486,10 @@ final class TranslationCoreTests: XCTestCase {
         })
         XCTAssertTrue(P01BenchmarkFixtures.requests.allSatisfy {
             $0.instructions.hasPrefix(TranslationPromptBuilder.immutableInstructions)
-                && $0.instructions.contains("Indonesian (id)")
-                && $0.instructions.contains("Polish (pl)")
+                && $0.instructions.contains(
+                    "For this request, translate from"
+                )
+                && $0.instructions.contains("Return only the")
         })
     }
 
