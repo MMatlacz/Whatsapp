@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import QwenMLXDiagnosticAdapter
 import SwiftUI
+import TranslationCore
 import UniformTypeIdentifiers
 import UIKit
 
