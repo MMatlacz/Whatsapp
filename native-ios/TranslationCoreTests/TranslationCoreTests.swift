@@ -347,7 +347,7 @@ final class TranslationCoreTests: XCTestCase {
 
         XCTAssertEqual(first, second)
         XCTAssertEqual(first.version, TranslationPromptBuilder.currentVersion)
-        XCTAssertEqual(first.version.rawValue, "contextual-translation-v1")
+        XCTAssertEqual(first.version.rawValue, "contextual-translation-v2")
         XCTAssertEqual(first.instructions, TranslationPromptBuilder.immutableInstructions)
     }
 
