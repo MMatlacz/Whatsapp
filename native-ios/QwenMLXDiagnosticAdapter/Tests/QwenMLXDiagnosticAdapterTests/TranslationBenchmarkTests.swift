@@ -51,6 +51,43 @@ final class TranslationBenchmarkTests: XCTestCase {
         )
     }
 
+    func testFunctionalCorpusHasStableSyntheticCoverageAndContextComparisons() throws {
+        let fixtures = QwenFunctionalTranslationBenchmarkFixtures.fixtures
+        let semanticIDs = Set(
+            QwenFunctionalTranslationBenchmarkFixtures.cases.map(\.id)
+        )
+
+        XCTAssertEqual(semanticIDs.count, 24)
+        XCTAssertGreaterThanOrEqual(fixtures.count, 30)
+        XCTAssertEqual(
+            fixtures.filter { $0.contextMode == .none }.count,
+            QwenFunctionalTranslationBenchmarkFixtures.cases.count
+        )
+        XCTAssertTrue(
+            QwenFunctionalTranslationBenchmarkFixtures.cases.contains {
+                $0.input.contains("dia") || $0.input.contains("Dia")
+            }
+        )
+        XCTAssertTrue(
+            QwenFunctionalTranslationBenchmarkFixtures.cases.contains {
+                $0.input.contains("wkwk")
+            }
+        )
+        XCTAssertTrue(
+            QwenFunctionalTranslationBenchmarkFixtures.cases.contains {
+                $0.quotedContext != nil
+            }
+        )
+        XCTAssertTrue(
+            fixtures.allSatisfy {
+                $0.request.languages.sourceLanguage == "id"
+                    && $0.request.languages.targetLanguage == "pl"
+                    && !$0.intendedMeaning.isEmpty
+                    && !$0.preservationNotes.isEmpty
+            }
+        )
+    }
+
     func testRunnerSeparatesExecutionOutputValidityAndMeasurements() async throws {
         let fixtures = Array(
             P01SharedTranslationBenchmarkFixtures.unencoded.prefix(4)
@@ -112,7 +149,7 @@ final class TranslationBenchmarkTests: XCTestCase {
         XCTAssertEqual(records[0].finishReason, "stop")
         XCTAssertEqual(records[0].generatedTokenCount, 7)
         XCTAssertEqual(records[0].tokensPerSecond, 10)
-        XCTAssertTrue(records[0].unknownMeasurements.isEmpty)
+        XCTAssertEqual(records[0].unknownMeasurements, ["durationSeconds"])
         XCTAssertEqual(records[3].finishReason, "length")
         XCTAssertEqual(records[3].generatedTokenCount, 512)
         XCTAssertTrue(
@@ -221,7 +258,7 @@ final class TranslationBenchmarkTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertEqual(report.schemaVersion, 2)
+        XCTAssertEqual(report.schemaVersion, 3)
         XCTAssertEqual(report.physicalDeviceEvidence.state, .notRun)
         XCTAssertEqual(
             reportData,

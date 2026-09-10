@@ -30,6 +30,7 @@ public struct TranslationBenchmarkExecution: Equatable, Sendable {
     public let generatedTokenCount: Int?
     public let tokensPerSecond: Double?
     public let reachedGenerationLimit: Bool?
+    public let durationSeconds: TimeInterval?
     public let errorCategory: String?
     public let errorDescription: String?
 
@@ -45,6 +46,7 @@ public struct TranslationBenchmarkExecution: Equatable, Sendable {
         generatedTokenCount: Int? = nil,
         tokensPerSecond: Double? = nil,
         reachedGenerationLimit: Bool? = nil,
+        durationSeconds: TimeInterval? = nil,
         errorCategory: String? = nil,
         errorDescription: String? = nil
     ) {
@@ -59,6 +61,7 @@ public struct TranslationBenchmarkExecution: Equatable, Sendable {
         self.generatedTokenCount = generatedTokenCount
         self.tokensPerSecond = tokensPerSecond
         self.reachedGenerationLimit = reachedGenerationLimit
+        self.durationSeconds = durationSeconds
         self.errorCategory = errorCategory
         self.errorDescription = errorDescription
     }
@@ -83,8 +86,9 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
     public func execute(
         _ request: TranslationRequest
     ) async -> TranslationBenchmarkExecution {
+        let startedAt = ProcessInfo.processInfo.systemUptime
         guard let sourceText = request.sourceText else {
-            return failure(.invalidRequest)
+            return failure(.invalidRequest, durationSeconds: elapsed(since: startedAt))
         }
 
         let promptByteCount = request.prompt.instructions.utf8.count
@@ -95,13 +99,14 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
         else {
             return TranslationBenchmarkExecution(
                 termination: .budgetFailed,
+                durationSeconds: elapsed(since: startedAt),
                 errorCategory: "input-budget",
                 errorDescription: "Benchmark input exceeds configured source/prompt byte budget."
             )
         }
 
         guard !Task.isCancelled else {
-            return cancelled()
+            return cancelled(durationSeconds: elapsed(since: startedAt))
         }
 
         do {
@@ -118,20 +123,25 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
                 finishReason: metrics.finishReason,
                 generatedTokenCount: metrics.generatedTokenCount,
                 tokensPerSecond: metrics.tokensPerSecond,
-                reachedGenerationLimit: metrics.reachedGenerationLimit
+                reachedGenerationLimit: metrics.reachedGenerationLimit,
+                durationSeconds: elapsed(since: startedAt)
             )
         } catch let engineFailure as TranslationEngineFailure {
             switch engineFailure {
             case .cancelled:
-                return cancelled()
+                return cancelled(durationSeconds: elapsed(since: startedAt))
             default:
-                return failure(engineFailure)
+                return failure(
+                    engineFailure,
+                    durationSeconds: elapsed(since: startedAt)
+                )
             }
         } catch is CancellationError {
-            return cancelled()
+            return cancelled(durationSeconds: elapsed(since: startedAt))
         } catch {
             return TranslationBenchmarkExecution(
                 termination: .failed,
+                durationSeconds: elapsed(since: startedAt),
                 errorCategory: "unexpected-error",
                 errorDescription: String(describing: error)
             )
@@ -139,21 +149,30 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
     }
 
     private func failure(
-        _ failure: TranslationEngineFailure
+        _ failure: TranslationEngineFailure,
+        durationSeconds: TimeInterval
     ) -> TranslationBenchmarkExecution {
         TranslationBenchmarkExecution(
             termination: .failed,
+            durationSeconds: durationSeconds,
             errorCategory: String(describing: failure),
             errorDescription: "TranslationEngineFailure.\(String(describing: failure))"
         )
     }
 
-    private func cancelled() -> TranslationBenchmarkExecution {
+    private func cancelled(
+        durationSeconds: TimeInterval
+    ) -> TranslationBenchmarkExecution {
         TranslationBenchmarkExecution(
             termination: .cancelled,
+            durationSeconds: durationSeconds,
             errorCategory: "cancelled",
             errorDescription: "Benchmark execution was cancelled."
         )
+    }
+
+    private func elapsed(since startedAt: TimeInterval) -> TimeInterval {
+        max(0, ProcessInfo.processInfo.systemUptime - startedAt)
     }
 }
 
@@ -163,24 +182,43 @@ public struct TranslationBenchmarkModelProvenance: Codable, Equatable, Sendable 
     public let tokenizerRevision: String
     public let chatTemplateRevision: String
     public let quantization: String
+    public let runtime: QwenMLXRuntimeProvenance
+    public let generation: QwenMLXGenerationSettings
+    public let executionEnvironment: String
 
-    public init(manifest: QwenMLXArtifactManifest) {
+    public init(
+        manifest: QwenMLXArtifactManifest,
+        runtime: QwenMLXRuntimeProvenance = .pinned,
+        generation: QwenMLXGenerationSettings = QwenMLXGenerationSettings(
+            limits: QwenMLXDiagnosticLimits.benchmark
+        ),
+        executionEnvironment: String = "unknown"
+    ) {
         self.repositoryID = manifest.repositoryID
         self.revision = manifest.revision
         self.tokenizerRevision = manifest.tokenizerRevision
         self.chatTemplateRevision = manifest.chatTemplateRevision
         self.quantization = manifest.quantization
+        self.runtime = runtime
+        self.generation = generation
+        self.executionEnvironment = executionEnvironment
     }
 }
 
 public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
     public let fixtureID: String
+    public let semanticCaseID: String
     public let title: String
     public let route: String
     public let sourceLanguage: String
     public let targetLanguage: String
     public let contextWindow: Int
+    public let contextMode: TranslationBenchmarkContextMode
     public let focus: String
+    public let input: String
+    public let suppliedContext: TranslationBenchmarkContextSnapshot
+    public let intendedMeaning: String
+    public let preservationNotes: String
     public let promptVersion: String
     public let termination: TranslationBenchmarkTermination
     public let outputValidity: TranslationBenchmarkOutputValidity
@@ -193,6 +231,7 @@ public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
     public let finishReason: String?
     public let generatedTokenCount: Int?
     public let tokensPerSecond: Double?
+    public let durationSeconds: TimeInterval?
     public let errorCategory: String?
     public let errorDescription: String?
     public let unknownMeasurements: [String]
@@ -202,12 +241,18 @@ public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
         execution: TranslationBenchmarkExecution
     ) {
         self.fixtureID = fixture.id
+        self.semanticCaseID = fixture.semanticCaseID
         self.title = fixture.title
         self.route = fixture.route
         self.sourceLanguage = fixture.request.languages.sourceLanguage
         self.targetLanguage = fixture.request.languages.targetLanguage
         self.contextWindow = fixture.contextWindow
+        self.contextMode = fixture.contextMode
         self.focus = fixture.focus
+        self.input = fixture.input
+        self.suppliedContext = fixture.suppliedContext
+        self.intendedMeaning = fixture.intendedMeaning
+        self.preservationNotes = fixture.preservationNotes
         self.promptVersion = fixture.request.prompt.version.rawValue
         self.termination = execution.termination
         self.outputValidity = Self.classifyOutput(execution)
@@ -220,6 +265,7 @@ public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
         self.finishReason = execution.finishReason
         self.generatedTokenCount = execution.generatedTokenCount
         self.tokensPerSecond = execution.tokensPerSecond
+        self.durationSeconds = execution.durationSeconds
         self.errorCategory = execution.errorCategory
         self.errorDescription = execution.errorDescription
         self.unknownMeasurements = Self.unknownMeasurements(execution)
@@ -289,6 +335,9 @@ public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
         if execution.tokensPerSecond == nil {
             values.append("tokensPerSecond")
         }
+        if execution.durationSeconds == nil {
+            values.append("durationSeconds")
+        }
         return values
     }
 }
@@ -302,6 +351,8 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
     public let evaluationContract: PhysicalDeviceEvaluationContract
     public let physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence
     public let results: [TranslationBenchmarkResultRecord]
+    public let corpus: String
+    public let timeoutSeconds: Int?
 
     public init(
         timestamp: String,
@@ -310,9 +361,11 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
         maxGeneratedTokens: Int,
         evaluationContract: PhysicalDeviceEvaluationContract = .p02d1V1,
         physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence = .notRun,
-        results: [TranslationBenchmarkResultRecord]
+        results: [TranslationBenchmarkResultRecord],
+        corpus: String = "shared-p01",
+        timeoutSeconds: Int? = nil
     ) {
-        self.schemaVersion = 2
+        self.schemaVersion = 3
         self.timestamp = timestamp
         self.sourceRevision = sourceRevision
         self.model = model
@@ -320,6 +373,8 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
         self.evaluationContract = evaluationContract
         self.physicalDeviceEvidence = physicalDeviceEvidence
         self.results = results
+        self.corpus = corpus
+        self.timeoutSeconds = timeoutSeconds
     }
 }
 
@@ -361,7 +416,8 @@ public struct TranslationBenchmarkRunner: Sendable {
     private func executeWithTimeout(
         _ request: TranslationRequest
     ) async -> TranslationBenchmarkExecution {
-        await withTaskGroup(
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        return await withTaskGroup(
             of: TranslationBenchmarkExecution.self,
             returning: TranslationBenchmarkExecution.self
         ) { group in
@@ -374,12 +430,14 @@ public struct TranslationBenchmarkRunner: Sendable {
                 } catch {
                     return TranslationBenchmarkExecution(
                         termination: .cancelled,
+                        durationSeconds: elapsed(since: startedAt),
                         errorCategory: "cancelled",
                         errorDescription: "Benchmark timeout task was cancelled."
                     )
                 }
                 return TranslationBenchmarkExecution(
                     termination: .timedOut,
+                    durationSeconds: elapsed(since: startedAt),
                     errorCategory: "timeout",
                     errorDescription: "Benchmark case exceeded its configured timeout."
                 )
@@ -393,6 +451,10 @@ public struct TranslationBenchmarkRunner: Sendable {
             group.cancelAll()
             return first
         }
+    }
+
+    private func elapsed(since startedAt: TimeInterval) -> TimeInterval {
+        max(0, ProcessInfo.processInfo.systemUptime - startedAt)
     }
 }
 
@@ -411,6 +473,18 @@ public enum TranslationBenchmarkExporter {
         return try encoder.encode(report)
     }
 
+    public static func writeResult(
+        _ result: TranslationBenchmarkResultRecord,
+        to fileURL: URL
+    ) throws {
+        let directory = fileURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        try encodeResult(result).write(to: fileURL, options: .atomic)
+    }
+
     public static func markdownSummary(
         _ report: TranslationBenchmarkReport
     ) -> String {
@@ -426,12 +500,22 @@ public enum TranslationBenchmarkExporter {
             "- Tokenizer revision: \(report.model.tokenizerRevision)",
             "- Chat-template revision: \(report.model.chatTemplateRevision)",
             "- Quantization: \(report.model.quantization)",
+            "- Runtime: \(report.model.runtime.runtime) \(report.model.runtime.runtimeVersion) (\(report.model.runtime.runtimeRevision))",
+            "- MLX Swift: \(report.model.runtime.mlxSwiftVersion) (\(report.model.runtime.mlxSwiftRevision))",
+            "- Swift Transformers: \(report.model.runtime.swiftTransformersVersion) (\(report.model.runtime.swiftTransformersRevision))",
+            "- Execution environment: \(report.model.executionEnvironment)",
+            "- Corpus: \(report.corpus)",
             "- Max generated tokens: \(report.maxGeneratedTokens)",
+            "- Temperature: \(report.model.generation.temperature)",
+            "- Top-p: \(report.model.generation.topP)",
+            "- Top-k: \(report.model.generation.topK)",
+            "- Thinking enabled: \(report.model.generation.thinkingEnabled)",
+            "- Per-case timeout seconds: \(report.timeoutSeconds.map(String.init) ?? "unknown")",
             "- Evaluation contract: \(report.evaluationContract.version)",
             "- Physical-device evidence: \(evidenceState)",
             "",
-            "| Fixture | Context | Execution | Output | Cold load | Load s | First token s | Generation s | Tokens | tok/s | Finish |",
-            "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+            "| Fixture | Mode | Context | Execution | Output | Duration s | Cold load | Load s | First token s | Generation s | Tokens | tok/s | Finish |",
+            "| --- | --- | ---: | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
 
         for result in report.results {
@@ -441,9 +525,10 @@ public enum TranslationBenchmarkExporter {
             let generation = format(result.generationSeconds)
             let tokens = result.generatedTokenCount.map(String.init) ?? "unknown"
             let rate = format(result.tokensPerSecond)
+            let duration = format(result.durationSeconds)
             let finish = sanitize(result.finishReason ?? "unknown")
             lines.append(
-                "| \(sanitize(result.fixtureID)) | \(result.contextWindow) | \(result.termination.rawValue) | \(result.outputValidity.rawValue) | \(cold) | \(load) | \(first) | \(generation) | \(tokens) | \(rate) | \(finish) |"
+                "| \(sanitize(result.fixtureID)) | \(result.contextMode.rawValue) | \(result.contextWindow) | \(result.termination.rawValue) | \(result.outputValidity.rawValue) | \(duration) | \(cold) | \(load) | \(first) | \(generation) | \(tokens) | \(rate) | \(finish) |"
             )
         }
 

@@ -190,8 +190,10 @@ jobs:
           path, and runs deterministic tests for fixture identity, outcome classification,
           timeout behavior, and result export. P0.2d2a additionally builds the dedicated Qwen
           device benchmark app for the iOS Simulator and tests its host-independent harness
-          state/session plumbing. CI does not download Qwen model weights and does not run MLX
-          inference or claim a physical-device result.
+          state/session plumbing. This workflow does not download Qwen model weights or run
+          MLX inference; the separate Qwen functional CI workflow owns that experiment and
+          labels native macOS fallback evidence explicitly. Neither workflow claims a
+          physical-device result.
 
           Neither these package/app builds nor the Simulator build validate Qwen translation
           quality, physical-iPhone latency/memory/thermal behavior, Foundation Models inference,

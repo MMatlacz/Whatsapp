@@ -9,7 +9,7 @@ This directory contains the native SwiftUI implementation slices for the Apple-n
 - native WebKit integration
 - diagnostics for model availability, context size, advertised Indonesian/Polish support, and WebKit state
 - P0.1 benchmark harness for contextual Indonesian -> Polish translation experiments
-- P0.2 Qwen3-0.6B 4-bit local-model validation plan (runtime not bundled yet)
+- P0.2 Qwen3-0.6B 4-bit local-model validation: isolated runtime, functional CI benchmark, and deferred physical-device evaluation
 - P0.3/P0.4 off-screen WhatsApp Web session probe using a dedicated persistent WebKit profile
 - defensive phone-number-linking bridge, transient pairing-code probe, session-state heuristic, and dedicated-profile disconnect action
 - deterministic Swift-side bridge parsing and session-contract tests
@@ -168,9 +168,11 @@ The benchmark screen exports Markdown; use **Copy all results** to copy the comp
 
 The first custom multilingual candidate is Qwen3-0.6B in a 4-bit MLX
 conversion. See [`docs/native/p0.2-qwen3-local-model.md`](../docs/native/p0.2-qwen3-local-model.md)
-for the selection evidence and validation checklist. The candidate is not
-installed or enabled in the app yet; do not treat the model-card language claim
-as proof of Indonesian -> Polish quality.
+for the selection evidence and validation checklist. Issue #112 now owns
+functional CI inference and human review of synthetic Indonesian -> Polish
+outputs. Issue #114 owns physical-iPhone performance, offline, cancellation,
+memory, thermal/battery, and final candidate-decision evidence. The candidate
+remains diagnostic-only and is not enabled in the production router.
 
 ## Issue #2 acceptance check
 

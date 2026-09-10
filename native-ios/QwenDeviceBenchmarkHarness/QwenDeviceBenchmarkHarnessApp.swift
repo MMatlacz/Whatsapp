@@ -2,11 +2,22 @@ import Darwin
 import Foundation
 import QwenMLXDiagnosticAdapter
 import SwiftUI
+import TranslationCore
 import UniformTypeIdentifiers
 import UIKit
 
 @main
 struct QwenDeviceBenchmarkHarnessApp: App {
+    init() {
+        guard let configuration = QwenSimulatorCIConfiguration.current else {
+            return
+        }
+
+        Task { @MainActor in
+            await QwenSimulatorCIRunner.run(configuration)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             QwenDeviceBenchmarkView()
@@ -49,8 +60,8 @@ private struct QwenDeviceBenchmarkView: View {
                     }
                     .disabled(controller.isBusy)
 
-                    Button("Run shared P0.1 benchmark") {
-                        controller.runFullBenchmark()
+                    Button("Run Qwen functional benchmark") {
+                        controller.runFunctionalBenchmark()
                     }
                     .disabled(!controller.canRun)
 
@@ -71,7 +82,7 @@ private struct QwenDeviceBenchmarkView: View {
                     LabeledContent("Thermal", value: controller.thermalSummary)
                     LabeledContent("Battery", value: controller.batterySummary)
                     Text(
-                        "Simulator/macOS validation is never promoted to physical-device acceptance. On-device evidence remains unknown until #112 records the complete run, memory measurement, quality review, and decision."
+                        "Simulator/macOS validation is never promoted to physical-device acceptance. On-device evidence remains unknown until #114 records the complete run, memory measurement, quality review, and decision."
                     )
                     .font(.caption)
                 }
@@ -80,7 +91,11 @@ private struct QwenDeviceBenchmarkView: View {
                     Section("Last report") {
                         LabeledContent(
                             "Cases",
-                            value: "\(report.results.count) / 7"
+                            value: "\(report.results.count)"
+                        )
+                        LabeledContent(
+                            "Corpus",
+                            value: report.corpus
                         )
                         LabeledContent(
                             "Device evidence",
@@ -229,7 +244,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         )
     }
 
-    func runFullBenchmark() {
+    func runFunctionalBenchmark() {
         guard runTask == nil, let session else { return }
         guard state.beginRun() else { return }
 
@@ -249,7 +264,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             defer { runTask = nil }
 
             do {
-                let initialReport = try await session.runSharedP01(
+                let initialReport = try await session.runQwenFunctional(
                     timestamp: timestamp,
                     sourceRevision: revision,
                     physicalDeviceEvidence: initialEvidence,
@@ -272,9 +287,12 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
                     maxGeneratedTokens: initialReport.maxGeneratedTokens,
                     evaluationContract: initialReport.evaluationContract,
                     physicalDeviceEvidence: environmentEvidence(
-                        cancellationBehavior: cancellationEvidence
+                        cancellationBehavior: cancellationEvidence,
+                        baseline: initialEvidence
                     ),
-                    results: initialReport.results
+                    results: initialReport.results,
+                    corpus: initialReport.corpus,
+                    timeoutSeconds: initialReport.timeoutSeconds
                 )
 
                 report = finalReport
@@ -345,7 +363,8 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     }
 
     private func environmentEvidence(
-        cancellationBehavior: PhysicalDeviceEvidenceState
+        cancellationBehavior: PhysicalDeviceEvidenceState,
+        baseline: PhysicalDeviceEnvironmentEvidence? = nil
     ) -> PhysicalDeviceEnvironmentEvidence {
         let xcodeVersion = Self.bundleString("DTXcode")
         let xcodeBuild = Self.bundleString("DTXcodeBuild")
@@ -375,6 +394,17 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         if xcodeBuild == nil { unknown.append("xcodeBuild") }
         if sdkVersion == nil { unknown.append("sdkVersion") }
 
+        let thermalObservation = Self.observationWithBaseline(
+            baseline?.thermalObservation,
+            current: Self.thermalStateDescription(
+                ProcessInfo.processInfo.thermalState
+            )
+        )
+        let batteryObservation = Self.observationWithBaseline(
+            baseline?.batteryObservation,
+            current: Self.batteryObservation()
+        )
+
         return PhysicalDeviceEnvironmentEvidence(
             state: evidenceState,
             deviceModel: Self.machineIdentifier(),
@@ -389,12 +419,20 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             cancellationBehavior: cancellationBehavior,
             peakMemoryBytes: nil,
             peakMemoryMeasurementSource: nil,
-            thermalObservation: Self.thermalStateDescription(
-                ProcessInfo.processInfo.thermalState
-            ),
-            batteryObservation: Self.batteryObservation(),
+            thermalObservation: thermalObservation,
+            batteryObservation: batteryObservation,
             unknownMeasurements: unknown
         )
+    }
+
+    private static func observationWithBaseline(
+        _ baseline: String?,
+        current: String
+    ) -> String {
+        guard let baseline else {
+            return current
+        }
+        return "before=\(baseline); after=\(current)"
     }
 
     private func writeExport(
@@ -538,4 +576,227 @@ private struct ActivityView: UIViewControllerRepresentable {
         _ uiViewController: UIActivityViewController,
         context: Context
     ) {}
+}
+
+private struct QwenSimulatorCIConfiguration: Sendable {
+    let modelDirectory: URL
+    let outputFile: URL
+    let sourceRevision: String?
+
+    static var current: QwenSimulatorCIConfiguration? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard
+            let modelPath = value(
+                for: "--qwen-ci-model-dir",
+                in: arguments
+            ),
+            let outputPath = value(
+                for: "--qwen-ci-output",
+                in: arguments
+            ),
+            let documents = FileManager.default.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first
+        else {
+            return nil
+        }
+
+        return QwenSimulatorCIConfiguration(
+            modelDirectory: documents.appendingPathComponent(
+                modelPath,
+                isDirectory: true
+            ),
+            outputFile: documents.appendingPathComponent(outputPath),
+            sourceRevision: value(
+                for: "--qwen-ci-source-revision",
+                in: arguments
+            )
+        )
+    }
+
+    private static func value(
+        for name: String,
+        in arguments: [String]
+    ) -> String? {
+        guard let index = arguments.firstIndex(of: name) else {
+            return nil
+        }
+        let valueIndex = arguments.index(after: index)
+        guard valueIndex < arguments.endIndex else { return nil }
+        let value = arguments[valueIndex]
+        return value.isEmpty ? nil : value
+    }
+}
+
+private struct QwenSimulatorCIResult: Codable {
+    let timestamp: String
+    let status: String
+    let executionEnvironment: String
+    let durationSeconds: TimeInterval
+    let model: TranslationBenchmarkModelProvenance?
+    let result: TranslationBenchmarkResultRecord?
+    let fullResultCount: Int?
+    let fullFailureCount: Int?
+    let fullReportDirectory: String?
+    let failure: String?
+}
+
+private enum QwenSimulatorCIRunner {
+    static func run(
+        _ configuration: QwenSimulatorCIConfiguration
+    ) async {
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+
+        do {
+            let verified = try QwenMLXArtifactVerifier.verify(
+                directory: configuration.modelDirectory
+            )
+            let limits = QwenMLXDiagnosticLimits.functionalCI
+            let provenance = TranslationBenchmarkModelProvenance(
+                manifest: verified.manifest,
+                generation: QwenMLXGenerationSettings(limits: limits),
+                executionEnvironment: "ios-simulator"
+            )
+            let runner = try makeRunner(
+                verified: verified,
+                limits: limits
+            )
+            guard let result = await runner.run(
+                fixtures: [QwenFunctionalTranslationBenchmarkFixtures.smoke]
+            ).first else {
+                throw NSError(
+                    domain: "QwenSimulatorCIRunner",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "No smoke result was produced."]
+                )
+            }
+            let passed = isSuccessful(result)
+            guard passed else {
+                let envelope = QwenSimulatorCIResult(
+                    timestamp: timestamp,
+                    status: "failed",
+                    executionEnvironment: "ios-simulator",
+                    durationSeconds: elapsed(since: startedAt),
+                    model: provenance,
+                    result: result,
+                    fullResultCount: nil,
+                    fullFailureCount: nil,
+                    fullReportDirectory: nil,
+                    failure: "Smoke result was not valid non-empty text."
+                )
+                try write(envelope, to: configuration.outputFile)
+                print("QWEN_CI_SIMULATOR_SMOKE_STATUS=failed")
+                Darwin.exit(EXIT_FAILURE)
+            }
+
+            let results = await runner.run(
+                fixtures: QwenFunctionalTranslationBenchmarkFixtures.fixtures
+            )
+            let reportDirectory = configuration.outputFile
+                .deletingLastPathComponent()
+                .appendingPathComponent("QwenFunctionalReport", isDirectory: true)
+            let report = TranslationBenchmarkReport(
+                timestamp: timestamp,
+                sourceRevision: configuration.sourceRevision,
+                model: provenance,
+                maxGeneratedTokens: limits.maxGeneratedTokens,
+                results: results,
+                corpus: "qwen-functional",
+                timeoutSeconds: 120
+            )
+            try TranslationBenchmarkExporter.write(
+                report: report,
+                to: reportDirectory
+            )
+            let failures = results.filter { !isSuccessful($0) }.count
+            let fullPassed = failures == 0
+            let envelope = QwenSimulatorCIResult(
+                timestamp: timestamp,
+                status: fullPassed ? "passed" : "failed",
+                executionEnvironment: "ios-simulator",
+                durationSeconds: elapsed(since: startedAt),
+                model: provenance,
+                result: result,
+                fullResultCount: results.count,
+                fullFailureCount: failures,
+                fullReportDirectory: reportDirectory.lastPathComponent,
+                failure: fullPassed ? nil : "Full functional benchmark had invalid result records."
+            )
+            try write(envelope, to: configuration.outputFile)
+            print("QWEN_CI_SIMULATOR_SMOKE_STATUS=passed")
+            print("QWEN_CI_SIMULATOR_BENCHMARK_STATUS=\(fullPassed ? "passed" : "failed")")
+            Darwin.exit(fullPassed ? EXIT_SUCCESS : EXIT_FAILURE)
+        } catch {
+            let envelope = QwenSimulatorCIResult(
+                timestamp: timestamp,
+                status: "failed",
+                executionEnvironment: "ios-simulator",
+                durationSeconds: elapsed(since: startedAt),
+                model: nil,
+                result: nil,
+                fullResultCount: nil,
+                fullFailureCount: nil,
+                fullReportDirectory: nil,
+                failure: String(describing: error)
+            )
+            try? write(envelope, to: configuration.outputFile)
+            print("QWEN_CI_SIMULATOR_SMOKE_STATUS=failed")
+            print("QWEN_CI_SIMULATOR_SMOKE_ERROR=\(error)")
+            Darwin.exit(EXIT_FAILURE)
+        }
+    }
+
+    private static func makeRunner(
+        verified: QwenMLXVerifiedArtifacts,
+        limits: QwenMLXDiagnosticLimits
+    ) throws -> TranslationBenchmarkRunner {
+        let model = QwenMLXDiagnosticModel(
+            verifiedArtifacts: verified,
+            limits: limits
+        )
+        let executor = QwenMLXBenchmarkExecutor(
+            model: model,
+            limits: limits
+        )
+        guard let runner = TranslationBenchmarkRunner(
+            executor: executor,
+            timeoutSeconds: 120
+        ) else {
+            throw NSError(
+                domain: "QwenSimulatorCIRunner",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid smoke timeout."]
+            )
+        }
+        return runner
+    }
+
+    private static func isSuccessful(
+        _ result: TranslationBenchmarkResultRecord
+    ) -> Bool {
+        result.termination == .returned
+            && result.outputValidity == .validText
+            && !(result.output ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty
+    }
+
+    private static func write(
+        _ result: QwenSimulatorCIResult,
+        to fileURL: URL
+    ) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try encoder.encode(result).write(to: fileURL, options: .atomic)
+    }
+
+    private static func elapsed(since startedAt: TimeInterval) -> TimeInterval {
+        max(0, ProcessInfo.processInfo.systemUptime - startedAt)
+    }
 }

@@ -11,7 +11,10 @@ struct QwenMLXBenchmarkCommand {
             let verified = try QwenMLXArtifactVerifier.verify(
                 directory: options.modelDirectory
             )
-            let limits = QwenMLXDiagnosticLimits.benchmark
+            // The CI command is the functional path. Keep its generation
+            // settings aligned with the Simulator harness so the fallback
+            // cannot silently benchmark a different decoding configuration.
+            let limits = QwenMLXDiagnosticLimits.functionalCI
             let model = QwenMLXDiagnosticModel(
                 verifiedArtifacts: verified,
                 limits: limits
@@ -27,17 +30,49 @@ struct QwenMLXBenchmarkCommand {
                 throw CommandError.invalidTimeout
             }
 
+            let fileManager = FileManager.default
+            try fileManager.createDirectory(
+                at: options.outputDirectory,
+                withIntermediateDirectories: true
+            )
+
+            let smokeRecords = await runner.run(
+                fixtures: [QwenFunctionalTranslationBenchmarkFixtures.smoke]
+            )
+            guard let smoke = smokeRecords.first else {
+                throw CommandError.smokeDidNotProduceARecord
+            }
+            try TranslationBenchmarkExporter.writeResult(
+                smoke,
+                to: options.outputDirectory.appendingPathComponent("smoke.json")
+            )
+            print("Smoke status: \(smokeStatus(smoke))")
+            guard isSuccessful(smoke) else {
+                throw CommandError.smokeFailed
+            }
+
+            let fixtures: [TranslationBenchmarkFixture]
+            switch options.corpus {
+            case .functional:
+                fixtures = QwenFunctionalTranslationBenchmarkFixtures.fixtures
+            case .sharedP01:
+                fixtures = P01SharedTranslationBenchmarkFixtures.unencoded
+            }
             let results = await runner.run(
-                fixtures: P01SharedTranslationBenchmarkFixtures.unencoded
+                fixtures: fixtures
             )
             let report = TranslationBenchmarkReport(
                 timestamp: ISO8601DateFormatter().string(from: Date()),
                 sourceRevision: options.sourceRevision,
                 model: TranslationBenchmarkModelProvenance(
-                    manifest: verified.manifest
+                    manifest: verified.manifest,
+                    generation: QwenMLXGenerationSettings(limits: limits),
+                    executionEnvironment: options.executionEnvironment
                 ),
                 maxGeneratedTokens: limits.maxGeneratedTokens,
-                results: results
+                results: results,
+                corpus: options.corpus.rawValue,
+                timeoutSeconds: options.timeoutSeconds
             )
             try TranslationBenchmarkExporter.write(
                 report: report,
@@ -46,27 +81,56 @@ struct QwenMLXBenchmarkCommand {
 
             print(TranslationBenchmarkExporter.markdownSummary(report))
             print("Wrote benchmark artifacts to \(options.outputDirectory.path)")
+            let failed = results.filter { !isSuccessful($0) }
+            if !failed.isEmpty {
+                throw CommandError.benchmarkFailed(failed.count)
+            }
         } catch {
             let message = "qwen-mlx-benchmark: \(error)\n\n\(Options.usage)\n"
             FileHandle.standardError.write(Data(message.utf8))
             Darwin.exit(EXIT_FAILURE)
         }
     }
+
+    private static func isSuccessful(
+        _ result: TranslationBenchmarkResultRecord
+    ) -> Bool {
+        result.termination == .returned
+            && result.outputValidity == .validText
+            && !(result.output ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty
+    }
+
+    private static func smokeStatus(
+        _ result: TranslationBenchmarkResultRecord
+    ) -> String {
+        isSuccessful(result) ? "passed" : "failed"
+    }
 }
 
 private struct Options {
+    enum Corpus: String {
+        case functional
+        case sharedP01 = "shared-p01"
+    }
+
     let modelDirectory: URL
     let outputDirectory: URL
     let sourceRevision: String?
     let timeoutSeconds: Int
+    let corpus: Corpus
+    let executionEnvironment: String
 
     static let usage = """
     Usage:
-      qwen-mlx-benchmark --model-dir PATH --output-dir PATH [--source-revision SHA] [--timeout-seconds N]
+      qwen-mlx-benchmark --model-dir PATH --output-dir PATH [--corpus functional|shared-p01]
+        [--execution-environment NAME] [--source-revision SHA] [--timeout-seconds N]
 
-    The command uses the source-controlled unencoded P0.1 fixture corpus, including
-    context windows 0/3/8/16. It never downloads model artifacts and does not make
-    a translation-quality or physical-device acceptance decision.
+    The command always runs a one-case real-inference smoke test before the selected
+    corpus. It never downloads model artifacts and does not make a translation-quality
+    or physical-device acceptance decision. The functional corpus is synthetic and
+    includes context-free and bounded-context Indonesian -> Polish comparisons.
     """
 
     init(arguments: [String]) throws {
@@ -74,6 +138,8 @@ private struct Options {
         var outputDirectory: URL?
         var sourceRevision: String?
         var timeoutSeconds = 120
+        var corpus = Corpus.sharedP01
+        var executionEnvironment = "not-specified"
         var index = 0
 
         while index < arguments.count {
@@ -100,6 +166,27 @@ private struct Options {
                     in: .whitespacesAndNewlines
                 )
                 sourceRevision = value.isEmpty ? nil : value
+            case "--corpus":
+                index += 1
+                guard
+                    index < arguments.count,
+                    let value = Corpus(rawValue: arguments[index])
+                else {
+                    throw CommandError.invalidCorpus
+                }
+                corpus = value
+            case "--execution-environment":
+                index += 1
+                guard index < arguments.count else {
+                    throw CommandError.missingValue(argument)
+                }
+                let value = arguments[index].trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+                guard !value.isEmpty else {
+                    throw CommandError.invalidExecutionEnvironment
+                }
+                executionEnvironment = value
             case "--timeout-seconds":
                 index += 1
                 guard
@@ -130,6 +217,8 @@ private struct Options {
         self.outputDirectory = outputDirectory.standardizedFileURL
         self.sourceRevision = sourceRevision
         self.timeoutSeconds = timeoutSeconds
+        self.corpus = corpus
+        self.executionEnvironment = executionEnvironment
     }
 }
 
@@ -138,6 +227,11 @@ private enum CommandError: Error, CustomStringConvertible {
     case missingValue(String)
     case unknownArgument(String)
     case invalidTimeout
+    case invalidCorpus
+    case invalidExecutionEnvironment
+    case smokeDidNotProduceARecord
+    case smokeFailed
+    case benchmarkFailed(Int)
 
     var description: String {
         switch self {
@@ -149,6 +243,16 @@ private enum CommandError: Error, CustomStringConvertible {
             "unknown argument \(argument)"
         case .invalidTimeout:
             "timeout must be a positive integer number of seconds"
+        case .invalidCorpus:
+            "corpus must be functional or shared-p01"
+        case .invalidExecutionEnvironment:
+            "execution environment must not be empty"
+        case .smokeDidNotProduceARecord:
+            "smoke test did not produce a result record"
+        case .smokeFailed:
+            "real-inference smoke test failed"
+        case .benchmarkFailed(let count):
+            "benchmark produced \(count) failed, empty, truncated, or otherwise invalid result(s)"
         }
     }
 }

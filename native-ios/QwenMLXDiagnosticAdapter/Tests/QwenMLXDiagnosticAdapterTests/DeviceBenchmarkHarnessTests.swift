@@ -1,4 +1,5 @@
 import Foundation
+import TranslationCore
 import XCTest
 
 @testable import QwenMLXDiagnosticAdapter
@@ -39,6 +40,24 @@ final class DeviceBenchmarkHarnessTests: XCTestCase {
         XCTAssertTrue(state.statusMessage.contains("cold"))
     }
 
+    func testFunctionalCorpusHasStableContextComparisons() {
+        let fixtures = QwenFunctionalTranslationBenchmarkFixtures.fixtures
+
+        XCTAssertEqual(fixtures.count, 32)
+        XCTAssertEqual(Set(fixtures.map(\.id)).count, fixtures.count)
+        XCTAssertEqual(
+            fixtures.filter { $0.contextMode == .bounded }.count,
+            8
+        )
+        XCTAssertTrue(
+            fixtures.allSatisfy {
+                $0.route == "Indonesian -> Polish"
+                    && $0.request.languages.sourceLanguage == "id"
+                    && $0.request.languages.targetLanguage == "pl"
+            }
+        )
+    }
+
     func testBenchmarkSessionRejectsInvalidTimeoutBeforeInference() async throws {
         let fixture = try makeArtifactFixture()
         defer { fixture.cleanup() }
@@ -55,6 +74,17 @@ final class DeviceBenchmarkHarnessTests: XCTestCase {
                 timeoutSeconds: 0
             )
             XCTFail("Expected invalid timeout")
+        } catch let error as QwenMLXBenchmarkSessionError {
+            XCTAssertEqual(error, .invalidTimeout)
+        }
+
+        do {
+            _ = try await session.runQwenFunctional(
+                timestamp: "2026-09-09T18:00:00Z",
+                sourceRevision: "fixture",
+                timeoutSeconds: 0
+            )
+            XCTFail("Expected invalid timeout for functional corpus")
         } catch let error as QwenMLXBenchmarkSessionError {
             XCTAssertEqual(error, .invalidTimeout)
         }

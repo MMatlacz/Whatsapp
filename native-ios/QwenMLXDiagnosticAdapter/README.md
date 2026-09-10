@@ -45,13 +45,13 @@ The model receives only `QwenMLXVerifiedArtifacts`. Its MLX loader uses `LLMMode
 
 `QwenMLXDiagnosticModel` consumes the complete `TranslationRequest` delivered by P0.2a. It requires the explicit `sourceText` and bounds source/prompt input size. The canonical contextual model input remains the versioned `TranslationPrompt`: immutable instructions become the session instructions and the untrusted JSON payload becomes the user input.
 
-Generation uses a bounded token budget and requests Qwen's chat-template `enable_thinking = false` context. A new `ChatSession` is created for every translation so retained transcript/KV state cannot leak between benchmark cases or chats. The loaded `ModelContainer` may be reused.
+Generation uses a bounded token budget and requests Qwen's chat-template `enable_thinking = false` context. The functional CI profile records and uses Qwen's recommended non-thinking sampling settings (`temperature = 0.7`, `topP = 0.8`, `topK = 20`); the stable export ordering is deterministic, but sampled model text is not promised byte-identical. A new `ChatSession` is created for every translation so retained transcript/KV state cannot leak between benchmark cases or chats. The loaded `ModelContainer` may be reused.
 
 The normal `MultilingualLocalModel.translate(_:)` contract still rejects empty final text. The diagnostic benchmark uses a separate internal raw-generation boundary so empty output can be exported and classified instead of being silently collapsed into a generic permanent failure.
 
-## P0.2c shared benchmark runner
+## P0.2 functional CI benchmark runner
 
-Issue #103 added the `qwen-mlx-benchmark` executable and deterministic export schema. The runner reuses the original unencoded P0.1 fixtures directly from `TranslationCore`, including context windows 0, 3, 8, and 16. Encoded prompt experiments are intentionally excluded from the shared comparison corpus.
+Issue #103 added the `qwen-mlx-benchmark` executable and deterministic export schema. The default shared runner still reuses the original unencoded P0.1 fixtures directly from `TranslationCore`, including context windows 0, 3, 8, and 16. The functional Qwen CI corpus is selected explicitly with `--corpus functional` and contains synthetic Indonesian -> Polish cases with context-free and bounded-context comparisons. Encoded prompt experiments are intentionally excluded.
 
 Run it only after provisioning the verified local model snapshot:
 
@@ -59,6 +59,13 @@ Run it only after provisioning the verified local model snapshot:
 swift run qwen-mlx-benchmark \
   --model-dir .models/Qwen3-0.6B-4bit \
   --output-dir ../../docs/native/qwen3-benchmark-run \
+  --source-revision "$(git rev-parse HEAD)"
+
+swift run qwen-mlx-benchmark \
+  --model-dir .models/Qwen3-0.6B-4bit \
+  --output-dir ../../docs/native/qwen3-functional-run \
+  --corpus functional \
+  --execution-environment macos-arm64-local \
   --source-revision "$(git rev-parse HEAD)"
 ```
 
@@ -68,7 +75,9 @@ The output directory contains:
 - `summary.md` — a compact human-review table;
 - `results/<fixture-id>.json` — one deterministic record per fixture.
 
-Each result records fixture identity, language pair, context size, prompt version, execution termination, output-validity classification, raw output, available runtime metrics, explicit unknown measurements, and errors. Runtime execution, output validity, translation quality, and physical-device acceptance remain separate outcomes. A non-empty answer is never automatically treated as a quality pass.
+Each result records fixture identity, input, supplied context, intended meaning, preservation notes, language pair, context mode/size, prompt version, execution termination, output-validity classification, raw output, duration, model/runtime/dependency provenance, generation settings, available runtime metrics, explicit unknown measurements, and errors. Runtime execution, output validity, translation quality, and physical-device acceptance remain separate outcomes. A non-empty answer is never automatically treated as a quality pass.
+
+The `Qwen functional CI` workflow provisions the pinned snapshot without committing weights, tries the iOS Simulator inference path first, and falls back to native macOS arm64 only when Simulator cannot complete. The fallback is explicitly labelled in the exported report. It runs a one-case smoke test before the full corpus and uploads reports/logs for failed runs as well as successful runs.
 
 ## P0.2d1 physical-device measurement contract
 
@@ -78,7 +87,7 @@ The benchmark also measures whether the reusable `ModelContainer` load was cold 
 
 The report schema includes the predeclared `p0.2d1-v1` performance/quality contract and a `physicalDeviceEvidence` object. Runs that are not executed on a physical iPhone must leave that evidence state as `notRun`; Simulator/macOS CI must never upgrade it.
 
-The predeclared selection criteria and exact evidence-capture sequence live in `docs/native/p0.2-physical-device-evaluation-plan.md`. Actual physical-iPhone observations, human quality scoring, and the accept/reject/continue-evaluation decision remain issue #109.
+The predeclared selection criteria and exact evidence-capture sequence live in `docs/native/p0.2-physical-device-evaluation-plan.md`. The physical harness calls `runQwenFunctional` so its named-iPhone run uses the same fixed 32-record corpus as CI; `runSharedP01` remains available for generic P0.1 diagnostics. Actual physical-iPhone observations, human quality scoring, and the accept/reject/continue-evaluation decision remain issue #114. The first device attempt (signed build succeeded; installation was blocked by the free-profile app limit) is recorded in [`qwen3-physical-device-evaluation.md`](../../docs/native/qwen3-physical-device-evaluation.md). Functional CI execution and human review of its synthetic outputs are issue #112.
 
 This runner is diagnostic only. It does not select Qwen for production, enable fallback routing, or satisfy the physical-iPhone acceptance work by itself.
 
@@ -105,4 +114,4 @@ xcodebuild \
   build
 ```
 
-These commands prove package compilation and deterministic boundary behavior. They do not load Qwen, run Indonesian-to-Polish translation, or establish physical-iPhone performance or quality.
+The ordinary package tests and `--help` path prove compilation and deterministic boundary behavior without weights. The functional command loads the verified local snapshot and performs real inference; it must only be run with the pinned artifacts. Neither CI nor macOS fallback establishes physical-iPhone performance or quality.

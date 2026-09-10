@@ -347,8 +347,9 @@ final class TranslationCoreTests: XCTestCase {
 
         XCTAssertEqual(first, second)
         XCTAssertEqual(first.version, TranslationPromptBuilder.currentVersion)
-        XCTAssertEqual(first.version.rawValue, "contextual-translation-v1")
-        XCTAssertEqual(first.instructions, TranslationPromptBuilder.immutableInstructions)
+        XCTAssertEqual(first.version.rawValue, "contextual-translation-v3")
+        XCTAssertTrue(first.instructions.contains("Indonesian (id)"))
+        XCTAssertTrue(first.instructions.contains("Polish (pl)"))
     }
 
     func testPromptInstructionsStayImmutableAcrossUntrustedChatContent() throws {
@@ -484,7 +485,11 @@ final class TranslationCoreTests: XCTestCase {
             $0.promptVersion == TranslationPromptBuilder.currentVersion
         })
         XCTAssertTrue(P01BenchmarkFixtures.requests.allSatisfy {
-            $0.instructions == TranslationPromptBuilder.immutableInstructions
+            $0.instructions.hasPrefix(TranslationPromptBuilder.immutableInstructions)
+                && $0.instructions.contains(
+                    "For this request, translate from"
+                )
+                && $0.instructions.contains("Return only the")
         })
     }
 

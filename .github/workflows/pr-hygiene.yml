@@ -20,7 +20,7 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - name: Require exactly one closing issue reference
+      - name: Require exactly one issue reference
         shell: bash
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -28,14 +28,19 @@ jobs:
           set -euo pipefail
 
           body="${PR_BODY:-}"
-          pattern='\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#[0-9]+'
-          matches="$(printf '%s\n' "$body" | grep -Eio "$pattern" || true)"
+          closing_pattern='\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#[0-9]+'
+          related_pattern='\brelated\s+to\s+#[0-9]+'
+          matches="$(
+            {
+              printf '%s\n' "$body" | grep -Eio "$closing_pattern" || true
+              printf '%s\n' "$body" | grep -Eio "$related_pattern" || true
+            } | sed '/^$/d'
+          )"
           count="$(printf '%s\n' "$matches" | sed '/^$/d' | wc -l | tr -d ' ')"
 
           if [[ "$count" != "1" ]]; then
-            echo "Expected exactly one GitHub closing reference in the PR body."
-            echo "Use one of: Closes #<issue>, Fixes #<issue>, Resolves #<issue>."
-            echo "If the issue is too broad, split it before implementation and close the smaller issue instead."
+            echo "Expected exactly one GitHub closing or related reference in the PR body."
+            echo "Use one of: Closes #<issue>, Fixes #<issue>, Resolves #<issue>, Related to #<issue>."
             echo "Found $count closing reference(s)."
             exit 1
           fi

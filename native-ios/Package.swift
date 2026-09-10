@@ -5,6 +5,10 @@ let package = Package(
     name: "WhatsAppTranslatorCore",
     platforms: [
         .macOS(.v13),
+        // Swift 6.0's PackageDescription does not expose the iOS 26
+        // convenience constant. The app target itself is pinned to iOS 26;
+        // this shared core only needs iOS 13 for its concurrency APIs.
+        .iOS(.v13),
     ],
     products: [
         .library(name: "WhatsAppDomainCore", targets: ["WhatsAppDomainCore"]),
@@ -30,6 +34,7 @@ let package = Package(
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
@@ -52,6 +57,7 @@ let package = Package(
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
                 "TranslationCore.swift",
@@ -87,6 +93,7 @@ let package = Package(
             ],
             sources: [
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
             ]
@@ -98,6 +105,7 @@ let package = Package(
             exclude: [
                 "DiagnosticsView.swift",
                 "TranslationBenchmarkFixtures.swift",
+                "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
