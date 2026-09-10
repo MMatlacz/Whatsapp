@@ -11,7 +11,10 @@ struct QwenMLXBenchmarkCommand {
             let verified = try QwenMLXArtifactVerifier.verify(
                 directory: options.modelDirectory
             )
-            let limits = QwenMLXDiagnosticLimits.benchmark
+            // The CI command is the functional path. Keep its generation
+            // settings aligned with the Simulator harness so the fallback
+            // cannot silently benchmark a different decoding configuration.
+            let limits = QwenMLXDiagnosticLimits.functionalCI
             let model = QwenMLXDiagnosticModel(
                 verifiedArtifacts: verified,
                 limits: limits
