@@ -1,0 +1,260 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B20000000000000000000001 /* QwenDeviceBenchmarkHarnessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* QwenDeviceBenchmarkHarnessApp.swift */; };
+		B20000000000000000000002 /* QwenMLXDiagnosticAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000081 /* QwenMLXDiagnosticAdapter */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B20000000000000000000010 /* QwenDeviceBenchmarkHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QwenDeviceBenchmarkHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000011 /* QwenDeviceBenchmarkHarnessApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QwenDeviceBenchmarkHarnessApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B20000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20000000000000000000002 /* QwenMLXDiagnosticAdapter in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B20000000000000000000030 = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000031 /* QwenDeviceBenchmarkHarness */,
+				B20000000000000000000032 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B20000000000000000000031 /* QwenDeviceBenchmarkHarness */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000011 /* QwenDeviceBenchmarkHarnessApp.swift */,
+			);
+			path = QwenDeviceBenchmarkHarness;
+			sourceTree = "<group>";
+		};
+		B20000000000000000000032 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000010 /* QwenDeviceBenchmarkHarness.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B20000000000000000000040 /* QwenDeviceBenchmarkHarness */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B20000000000000000000061 /* Build configuration list for PBXNativeTarget "QwenDeviceBenchmarkHarness" */;
+			buildPhases = (
+				B20000000000000000000021 /* Sources */,
+				B20000000000000000000020 /* Frameworks */,
+				B20000000000000000000022 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = QwenDeviceBenchmarkHarness;
+			packageProductDependencies = (
+				B20000000000000000000081 /* QwenMLXDiagnosticAdapter */,
+			);
+			productName = QwenDeviceBenchmarkHarness;
+			productReference = B20000000000000000000010 /* QwenDeviceBenchmarkHarness.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B20000000000000000000050 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					B20000000000000000000040 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = B20000000000000000000060 /* Build configuration list for PBXProject "QwenDeviceBenchmarkHarness" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B20000000000000000000030;
+			packageReferences = (
+				B20000000000000000000080 /* XCLocalSwiftPackageReference "QwenMLXDiagnosticAdapter" */,
+			);
+			productRefGroup = B20000000000000000000032 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B20000000000000000000040 /* QwenDeviceBenchmarkHarness */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B20000000000000000000022 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B20000000000000000000021 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20000000000000000000001 /* QwenDeviceBenchmarkHarnessApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B20000000000000000000070 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		B20000000000000000000071 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		B20000000000000000000072 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8AQ98242AE;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Qwen Device Benchmark";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.QwenDeviceBenchmarkHarness;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B20000000000000000000073 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8AQ98242AE;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Qwen Device Benchmark";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mmatlacz.QwenDeviceBenchmarkHarness;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B20000000000000000000060 /* Build configuration list for PBXProject "QwenDeviceBenchmarkHarness" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B20000000000000000000070 /* Debug */,
+				B20000000000000000000071 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B20000000000000000000061 /* Build configuration list for PBXNativeTarget "QwenDeviceBenchmarkHarness" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B20000000000000000000072 /* Debug */,
+				B20000000000000000000073 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B20000000000000000000080 /* XCLocalSwiftPackageReference "QwenMLXDiagnosticAdapter" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = QwenMLXDiagnosticAdapter;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B20000000000000000000081 /* QwenMLXDiagnosticAdapter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B20000000000000000000080 /* XCLocalSwiftPackageReference "QwenMLXDiagnosticAdapter" */;
+			productName = QwenMLXDiagnosticAdapter;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B20000000000000000000050 /* Project object */;
+}
