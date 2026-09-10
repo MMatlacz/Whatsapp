@@ -417,7 +417,7 @@ public struct TranslationBenchmarkRunner: Sendable {
         _ request: TranslationRequest
     ) async -> TranslationBenchmarkExecution {
         let startedAt = ProcessInfo.processInfo.systemUptime
-        await withTaskGroup(
+        return await withTaskGroup(
             of: TranslationBenchmarkExecution.self,
             returning: TranslationBenchmarkExecution.self
         ) { group in
