@@ -38,7 +38,9 @@ jobs:
           sw_vers
           xcodebuild -version
           xcodebuild -showsdks
-          printf 'machine_architecture='; uname -m
+          machine_architecture="$(uname -m)"
+          printf 'machine_architecture=%s\n' "$machine_architecture"
+          test "$machine_architecture" = arm64
 
       - name: Install Metal toolchain
         run: |
