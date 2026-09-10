@@ -87,7 +87,7 @@ The benchmark also measures whether the reusable `ModelContainer` load was cold 
 
 The report schema includes the predeclared `p0.2d1-v1` performance/quality contract and a `physicalDeviceEvidence` object. Runs that are not executed on a physical iPhone must leave that evidence state as `notRun`; Simulator/macOS CI must never upgrade it.
 
-The predeclared selection criteria and exact evidence-capture sequence live in `docs/native/p0.2-physical-device-evaluation-plan.md`. Actual physical-iPhone observations, human quality scoring, and the accept/reject/continue-evaluation decision remain issue #114, while functional CI execution and human review of its synthetic outputs are issue #112.
+The predeclared selection criteria and exact evidence-capture sequence live in `docs/native/p0.2-physical-device-evaluation-plan.md`. The physical harness calls `runQwenFunctional` so its named-iPhone run uses the same fixed 32-record corpus as CI; `runSharedP01` remains available for generic P0.1 diagnostics. Actual physical-iPhone observations, human quality scoring, and the accept/reject/continue-evaluation decision remain issue #114. The first device attempt (signed build succeeded; installation was blocked by the free-profile app limit) is recorded in [`qwen3-physical-device-evaluation.md`](../../docs/native/qwen3-physical-device-evaluation.md). Functional CI execution and human review of its synthetic outputs are issue #112.
 
 This runner is diagnostic only. It does not select Qwen for production, enable fallback routing, or satisfy the physical-iPhone acceptance work by itself.
 
