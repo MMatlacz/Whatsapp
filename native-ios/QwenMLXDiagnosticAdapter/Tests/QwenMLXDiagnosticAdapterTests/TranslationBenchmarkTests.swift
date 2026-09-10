@@ -149,7 +149,7 @@ final class TranslationBenchmarkTests: XCTestCase {
         XCTAssertEqual(records[0].finishReason, "stop")
         XCTAssertEqual(records[0].generatedTokenCount, 7)
         XCTAssertEqual(records[0].tokensPerSecond, 10)
-        XCTAssertTrue(records[0].unknownMeasurements.isEmpty)
+        XCTAssertEqual(records[0].unknownMeasurements, ["durationSeconds"])
         XCTAssertEqual(records[3].finishReason, "length")
         XCTAssertEqual(records[3].generatedTokenCount, 512)
         XCTAssertTrue(
