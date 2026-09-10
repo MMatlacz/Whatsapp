@@ -164,9 +164,9 @@ jobs:
           set -euo pipefail
           xcodebuild \
             -project native-ios/QwenDeviceBenchmarkHarness.xcodeproj \
-            -target QwenDeviceBenchmarkHarness \
+            -scheme QwenDeviceBenchmarkHarness \
             -configuration Debug \
-            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/qwen-device-benchmark-derived-data" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
