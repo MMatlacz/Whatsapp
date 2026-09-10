@@ -167,8 +167,10 @@ jobs:
             -target QwenDeviceBenchmarkHarness \
             -configuration Debug \
             -sdk iphonesimulator \
+            -derivedDataPath "$RUNNER_TEMP/qwen-device-benchmark-derived-data" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
+            INDEX_STORE_PATH="$RUNNER_TEMP/qwen-device-benchmark-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
