@@ -621,7 +621,7 @@ final class TranslationEngineCoreTests: XCTestCase {
         XCTAssertEqual(captured.prompt.version, request.prompt.version)
         XCTAssertEqual(
             captured.prompt.instructions,
-            TranslationPromptBuilder.immutableInstructions
+            request.prompt.instructions
         )
         XCTAssertTrue(captured.prompt.untrustedInput.contains(adversarialBody))
         XCTAssertTrue(captured.prompt.untrustedInput.contains("P4"))

@@ -347,8 +347,9 @@ final class TranslationCoreTests: XCTestCase {
 
         XCTAssertEqual(first, second)
         XCTAssertEqual(first.version, TranslationPromptBuilder.currentVersion)
-        XCTAssertEqual(first.version.rawValue, "contextual-translation-v2")
-        XCTAssertEqual(first.instructions, TranslationPromptBuilder.immutableInstructions)
+        XCTAssertEqual(first.version.rawValue, "contextual-translation-v3")
+        XCTAssertTrue(first.instructions.contains("Indonesian (id)"))
+        XCTAssertTrue(first.instructions.contains("Polish (pl)"))
     }
 
     func testPromptInstructionsStayImmutableAcrossUntrustedChatContent() throws {
