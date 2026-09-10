@@ -27,6 +27,18 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         )
     }
 
+    func testFunctionalCIUsesPublishedQwenNonThinkingSamplingDefaults() {
+        let limits = QwenMLXDiagnosticLimits.functionalCI
+        XCTAssertEqual(limits.generationTemperature, 0.7)
+        XCTAssertEqual(limits.generationTopP, 0.8)
+        XCTAssertEqual(limits.generationTopK, 20)
+        XCTAssertFalse(limits.thinkingEnabled)
+
+        let settings = QwenMLXGenerationSettings(limits: limits)
+        XCTAssertEqual(settings.topP, 0.8)
+        XCTAssertEqual(settings.topK, 20)
+    }
+
     func testVerifierAcceptsCompleteMatchingFixture() throws {
         let fixture = try makeArtifactFixture()
         defer { fixture.cleanup() }
@@ -142,9 +154,11 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         XCTAssertEqual(output, "Ona dołączy później.")
         let captured = await generator.requests()
         XCTAssertEqual(captured, [request])
-        XCTAssertEqual(
-            captured.first?.prompt.instructions,
-            TranslationPromptBuilder.immutableInstructions
+        XCTAssertTrue(
+            captured.first?.prompt.instructions.contains("Indonesian (id)") == true
+        )
+        XCTAssertTrue(
+            captured.first?.prompt.instructions.contains("Polish (pl)") == true
         )
         XCTAssertTrue(
             captured.first?.prompt.untrustedInput.contains("P2") == true

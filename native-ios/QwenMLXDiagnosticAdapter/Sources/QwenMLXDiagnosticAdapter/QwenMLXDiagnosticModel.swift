@@ -10,6 +10,8 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
     public let maxSourceUTF8Bytes: Int
     public let maxPromptUTF8Bytes: Int
     public let generationTemperature: Double
+    public let generationTopP: Double
+    public let generationTopK: Int
     public let thinkingEnabled: Bool
 
     public init?(
@@ -17,6 +19,8 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         maxSourceUTF8Bytes: Int,
         maxPromptUTF8Bytes: Int,
         generationTemperature: Double = 0,
+        generationTopP: Double = 1,
+        generationTopK: Int = 0,
         thinkingEnabled: Bool = false
     ) {
         guard
@@ -24,7 +28,11 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
             maxSourceUTF8Bytes > 0,
             maxPromptUTF8Bytes > 0,
             generationTemperature.isFinite,
-            generationTemperature >= 0
+            generationTemperature >= 0,
+            generationTopP.isFinite,
+            generationTopP > 0,
+            generationTopP <= 1,
+            generationTopK >= 0
         else {
             return nil
         }
@@ -33,6 +41,8 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         self.maxSourceUTF8Bytes = maxSourceUTF8Bytes
         self.maxPromptUTF8Bytes = maxPromptUTF8Bytes
         self.generationTemperature = generationTemperature
+        self.generationTopP = generationTopP
+        self.generationTopK = generationTopK
         self.thinkingEnabled = thinkingEnabled
     }
 
@@ -46,7 +56,9 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         maxGeneratedTokens: 96,
         maxSourceUTF8Bytes: 16 * 1_024,
         maxPromptUTF8Bytes: 256 * 1_024,
-        generationTemperature: 0,
+        generationTemperature: 0.7,
+        generationTopP: 0.8,
+        generationTopK: 20,
         thinkingEnabled: false
     )!
 }
@@ -54,11 +66,15 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
 public struct QwenMLXGenerationSettings: Codable, Equatable, Sendable {
     public let maxGeneratedTokens: Int
     public let temperature: Double
+    public let topP: Double
+    public let topK: Int
     public let thinkingEnabled: Bool
 
     public init(limits: QwenMLXDiagnosticLimits) {
         self.maxGeneratedTokens = limits.maxGeneratedTokens
         self.temperature = limits.generationTemperature
+        self.topP = limits.generationTopP
+        self.topK = limits.generationTopK
         self.thinkingEnabled = limits.thinkingEnabled
     }
 }
@@ -290,7 +306,9 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
             instructions: request.prompt.instructions,
             generateParameters: GenerateParameters(
                 maxTokens: limits.maxGeneratedTokens,
-                temperature: Float(limits.generationTemperature)
+                temperature: Float(limits.generationTemperature),
+                topP: Float(limits.generationTopP),
+                topK: limits.generationTopK
             ),
             additionalContext: ["enable_thinking": limits.thinkingEnabled]
         )

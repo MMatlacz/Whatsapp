@@ -45,7 +45,7 @@ The model receives only `QwenMLXVerifiedArtifacts`. Its MLX loader uses `LLMMode
 
 `QwenMLXDiagnosticModel` consumes the complete `TranslationRequest` delivered by P0.2a. It requires the explicit `sourceText` and bounds source/prompt input size. The canonical contextual model input remains the versioned `TranslationPrompt`: immutable instructions become the session instructions and the untrusted JSON payload becomes the user input.
 
-Generation uses a bounded token budget and requests Qwen's chat-template `enable_thinking = false` context. A new `ChatSession` is created for every translation so retained transcript/KV state cannot leak between benchmark cases or chats. The loaded `ModelContainer` may be reused.
+Generation uses a bounded token budget and requests Qwen's chat-template `enable_thinking = false` context. The functional CI profile records and uses Qwen's recommended non-thinking sampling settings (`temperature = 0.7`, `topP = 0.8`, `topK = 20`); the stable export ordering is deterministic, but sampled model text is not promised byte-identical. A new `ChatSession` is created for every translation so retained transcript/KV state cannot leak between benchmark cases or chats. The loaded `ModelContainer` may be reused.
 
 The normal `MultilingualLocalModel.translate(_:)` contract still rejects empty final text. The diagnostic benchmark uses a separate internal raw-generation boundary so empty output can be exported and classified instead of being silently collapsed into a generic permanent failure.
 

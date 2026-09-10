@@ -507,6 +507,8 @@ public enum TranslationBenchmarkExporter {
             "- Corpus: \(report.corpus)",
             "- Max generated tokens: \(report.maxGeneratedTokens)",
             "- Temperature: \(report.model.generation.temperature)",
+            "- Top-p: \(report.model.generation.topP)",
+            "- Top-k: \(report.model.generation.topK)",
             "- Thinking enabled: \(report.model.generation.thinkingEnabled)",
             "- Per-case timeout seconds: \(report.timeoutSeconds.map(String.init) ?? "unknown")",
             "- Evaluation contract: \(report.evaluationContract.version)",
