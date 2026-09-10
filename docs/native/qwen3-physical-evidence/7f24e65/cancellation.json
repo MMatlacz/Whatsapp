@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.10672279167920351,
+  "errorCategory" : "cancelled",
+  "errorDescription" : "Benchmark timeout task was cancelled.",
+  "fixtureID" : "qwen-straight-arrival-no-context",
+  "focus" : "basic informal statement",
+  "input" : "Aku sudah sampai di rumah.",
+  "intendedMeaning" : "The speaker has already arrived home.",
+  "outputValidity" : "notProduced",
+  "preservationNotes" : "Keep the first-person voice and informal but neutral register.",
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-arrival",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "cancelled",
+  "title" : "Straightforward arrival",
+  "unknownMeasurements" : [
+    "modelLoadWasCold",
+    "modelLoadSeconds",
+    "firstTokenSecondsAfterModelReady",
+    "generationSeconds",
+    "promptTokenCount",
+    "finishReason",
+    "generatedTokenCount",
+    "tokensPerSecond"
+  ]
+}
