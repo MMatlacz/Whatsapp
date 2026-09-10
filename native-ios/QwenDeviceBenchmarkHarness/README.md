@@ -70,9 +70,18 @@ The source revision field should contain the exact Git revision installed on the
 phone. Runtime evidence also records the hardware machine identifier, iOS
 version/build observation, Xcode/SDK metadata embedded by the build, thermal
 state, and battery level/charging state. A completed run exports the latter two
-as `before=...; after=...` observations. Peak resident memory remains explicitly
-unknown in the harness because #114 must capture it from a named
-Xcode/Instruments/device measurement source.
+as `before=...; after=...` observations.
+
+For a scripted physical run, pass `--qwen-device-model-dir model`,
+`--qwen-device-output physical-run.json`, and
+`--qwen-device-source-revision <sha>`. Add
+`--qwen-device-cancel-after-seconds <seconds>` to exercise cancellation and add
+`--qwen-device-offline-verified` only after the operator has disabled network
+access and observed a representative case succeed. After recording with
+Xcode/Instruments, pass the measured byte count and its exact source back into
+the harness with `--qwen-device-peak-memory-bytes <bytes>` and
+`--qwen-device-memory-measurement-source <name>`. If either value is omitted,
+the report keeps the metric explicitly unknown.
 
 ## Export
 
