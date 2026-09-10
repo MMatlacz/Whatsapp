@@ -19,6 +19,13 @@ use the repository owner's development team for signing. CI builds this project
 for the iOS Simulator with code signing disabled, but Simulator compilation is
 not physical-device evidence.
 
+On a free Apple development profile, a device may reject a newly signed app
+after three profile-backed apps are installed. Do not remove or replace an
+existing app automatically. Free one slot explicitly on the device (or select
+a paid development team/profile) and retry the install; record the blocker if
+the slot cannot be freed. See the [physical-device run record](../../docs/native/qwen3-physical-device-evaluation.md)
+for the latest observed failure.
+
 ## Model provisioning
 
 Provision the exact pinned snapshot outside inference:
@@ -42,8 +49,11 @@ to Git.
 
 ## Benchmark controls
 
-- **Run shared P0.1 benchmark** runs the source-controlled unencoded fixture set,
-  including context windows 0/3/8/16, through the #108 measurement contract.
+- **Run Qwen functional benchmark** runs the same fixed 32-record Indonesian ->
+  Polish corpus used by functional CI, including context-free and bounded
+  context comparisons, through the #108 measurement contract. The older
+  `runSharedP01` API remains available for generic P0.1 diagnostics but is not
+  the physical-device acceptance run.
 - **Cancel in-flight benchmark** cancels the active task. A cancellation request
   is considered passed only when the exported result contains a categorized
   cancelled execution.
@@ -58,9 +68,10 @@ to Git.
 
 The source revision field should contain the exact Git revision installed on the
 phone. Runtime evidence also records the hardware machine identifier, iOS
-version/build observation, Xcode/SDK metadata embedded by the build, current
-thermal state, and battery level/charging state. Peak resident memory remains
-explicitly unknown in the harness because #114 must capture it from a named
+version/build observation, Xcode/SDK metadata embedded by the build, thermal
+state, and battery level/charging state. A completed run exports the latter two
+as `before=...; after=...` observations. Peak resident memory remains explicitly
+unknown in the harness because #114 must capture it from a named
 Xcode/Instruments/device measurement source.
 
 ## Export

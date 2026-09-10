@@ -60,8 +60,8 @@ private struct QwenDeviceBenchmarkView: View {
                     }
                     .disabled(controller.isBusy)
 
-                    Button("Run shared P0.1 benchmark") {
-                        controller.runFullBenchmark()
+                    Button("Run Qwen functional benchmark") {
+                        controller.runFunctionalBenchmark()
                     }
                     .disabled(!controller.canRun)
 
@@ -91,7 +91,11 @@ private struct QwenDeviceBenchmarkView: View {
                     Section("Last report") {
                         LabeledContent(
                             "Cases",
-                            value: "\(report.results.count) / 7"
+                            value: "\(report.results.count)"
+                        )
+                        LabeledContent(
+                            "Corpus",
+                            value: report.corpus
                         )
                         LabeledContent(
                             "Device evidence",
@@ -240,7 +244,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         )
     }
 
-    func runFullBenchmark() {
+    func runFunctionalBenchmark() {
         guard runTask == nil, let session else { return }
         guard state.beginRun() else { return }
 
@@ -260,7 +264,7 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             defer { runTask = nil }
 
             do {
-                let initialReport = try await session.runSharedP01(
+                let initialReport = try await session.runQwenFunctional(
                     timestamp: timestamp,
                     sourceRevision: revision,
                     physicalDeviceEvidence: initialEvidence,
@@ -283,7 +287,8 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
                     maxGeneratedTokens: initialReport.maxGeneratedTokens,
                     evaluationContract: initialReport.evaluationContract,
                     physicalDeviceEvidence: environmentEvidence(
-                        cancellationBehavior: cancellationEvidence
+                        cancellationBehavior: cancellationEvidence,
+                        baseline: initialEvidence
                     ),
                     results: initialReport.results,
                     corpus: initialReport.corpus,
@@ -358,7 +363,8 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
     }
 
     private func environmentEvidence(
-        cancellationBehavior: PhysicalDeviceEvidenceState
+        cancellationBehavior: PhysicalDeviceEvidenceState,
+        baseline: PhysicalDeviceEnvironmentEvidence? = nil
     ) -> PhysicalDeviceEnvironmentEvidence {
         let xcodeVersion = Self.bundleString("DTXcode")
         let xcodeBuild = Self.bundleString("DTXcodeBuild")
@@ -388,6 +394,17 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
         if xcodeBuild == nil { unknown.append("xcodeBuild") }
         if sdkVersion == nil { unknown.append("sdkVersion") }
 
+        let thermalObservation = Self.observationWithBaseline(
+            baseline?.thermalObservation,
+            current: Self.thermalStateDescription(
+                ProcessInfo.processInfo.thermalState
+            )
+        )
+        let batteryObservation = Self.observationWithBaseline(
+            baseline?.batteryObservation,
+            current: Self.batteryObservation()
+        )
+
         return PhysicalDeviceEnvironmentEvidence(
             state: evidenceState,
             deviceModel: Self.machineIdentifier(),
@@ -402,12 +419,20 @@ private final class QwenDeviceBenchmarkController: ObservableObject {
             cancellationBehavior: cancellationBehavior,
             peakMemoryBytes: nil,
             peakMemoryMeasurementSource: nil,
-            thermalObservation: Self.thermalStateDescription(
-                ProcessInfo.processInfo.thermalState
-            ),
-            batteryObservation: Self.batteryObservation(),
+            thermalObservation: thermalObservation,
+            batteryObservation: batteryObservation,
             unknownMeasurements: unknown
         )
+    }
+
+    private static func observationWithBaseline(
+        _ baseline: String?,
+        current: String
+    ) -> String {
+        guard let baseline else {
+            return current
+        }
+        return "before=\(baseline); after=\(current)"
     }
 
     private func writeExport(

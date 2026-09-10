@@ -28,6 +28,49 @@ public actor QwenMLXBenchmarkSession {
         physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence = .notRun,
         timeoutSeconds: Int = 120
     ) async throws -> TranslationBenchmarkReport {
+        try await run(
+            fixtures: P01SharedTranslationBenchmarkFixtures.unencoded,
+            corpus: "shared-p01",
+            timestamp: timestamp,
+            sourceRevision: sourceRevision,
+            physicalDeviceEvidence: physicalDeviceEvidence,
+            timeoutSeconds: timeoutSeconds
+        )
+    }
+
+    /// Runs the same fixed 32-record corpus used by functional Qwen CI.
+    ///
+    /// Keeping the physical run on this corpus ensures that Simulator/macOS
+    /// fallback evidence and the named-iPhone evidence are comparable, while
+    /// preserving the shared measurement/export contract.
+    public func runQwenFunctional(
+        timestamp: String,
+        sourceRevision: String?,
+        physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence = .notRun,
+        timeoutSeconds: Int = 120
+    ) async throws -> TranslationBenchmarkReport {
+        try await run(
+            fixtures: QwenFunctionalTranslationBenchmarkFixtures.fixtures,
+            corpus: "qwen-functional",
+            timestamp: timestamp,
+            sourceRevision: sourceRevision,
+            physicalDeviceEvidence: physicalDeviceEvidence,
+            timeoutSeconds: timeoutSeconds
+        )
+    }
+
+    private func run(
+        fixtures: [TranslationBenchmarkFixture],
+        corpus: String,
+        timestamp: String,
+        sourceRevision: String?,
+        physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence,
+        timeoutSeconds: Int
+    ) async throws -> TranslationBenchmarkReport {
+        guard timeoutSeconds > 0 else {
+            throw QwenMLXBenchmarkSessionError.invalidTimeout
+        }
+
         guard let runner = TranslationBenchmarkRunner(
             executor: QwenMLXBenchmarkExecutor(
                 model: activeModel(),
@@ -39,7 +82,7 @@ public actor QwenMLXBenchmarkSession {
         }
 
         let results = await runner.run(
-            fixtures: P01SharedTranslationBenchmarkFixtures.unencoded
+            fixtures: fixtures
         )
         return TranslationBenchmarkReport(
             timestamp: timestamp,
@@ -49,7 +92,9 @@ public actor QwenMLXBenchmarkSession {
             ),
             maxGeneratedTokens: limits.maxGeneratedTokens,
             physicalDeviceEvidence: physicalDeviceEvidence,
-            results: results
+            results: results,
+            corpus: corpus,
+            timeoutSeconds: timeoutSeconds
         )
     }
 
@@ -117,7 +162,7 @@ public struct QwenDeviceBenchmarkHarnessState: Equatable, Sendable {
         }
         phase = .running
         exportAvailable = false
-        statusMessage = "Running the shared P0.1 benchmark…"
+        statusMessage = "Running the Qwen functional benchmark…"
         return true
     }
 
