@@ -14,6 +14,7 @@ struct QwenDeviceBenchmarkHarnessApp: App {
     }
 }
 
+@MainActor
 private struct QwenDeviceBenchmarkView: View {
     @StateObject private var controller = QwenDeviceBenchmarkController()
     @State private var showingImporter = false
