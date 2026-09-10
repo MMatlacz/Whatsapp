@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.608108666667249,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.3849160671234131,
+  "fixtureID" : "qwen-straight-plan-no-context",
+  "focus" : "future plan and casual question particle",
+  "generatedTokenCount" : 17,
+  "generationSeconds" : 0.21284496784210205,
+  "input" : "Besok kita makan siang jam satu ya.",
+  "intendedMeaning" : "The speaker proposes lunch together tomorrow at one o'clock.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish:  \nBesok, makan siang jam satu, toczy.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the friendly confirmation-seeking tone of ya.",
+  "promptTokenCount" : 349,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-plan",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward plan",
+  "tokensPerSecond" : 79.87034024037328,
+  "unknownMeasurements" : [
+
+  ]
+}

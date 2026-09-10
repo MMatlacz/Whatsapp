@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5769293750054203,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.39578700065612793,
+  "fixtureID" : "qwen-particle-masa-no-context",
+  "focus" : "masa as disbelief or incredulity",
+  "generatedTokenCount" : 12,
+  "generationSeconds" : 0.16975700855255127,
+  "input" : "Masa harus aku jelasin lagi?",
+  "intendedMeaning" : "Do I really have to explain it again?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: Masa harus aku jelasin lagi?",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve incredulity, not a neutral information question.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-masa",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Masa incredulous question",
+  "tokensPerSecond" : 70.68927582029809,
+  "unknownMeasurements" : [
+
+  ]
+}

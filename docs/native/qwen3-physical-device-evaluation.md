@@ -69,6 +69,12 @@ value through `--qwen-device-peak-memory-bytes` and records the exact source
 through `--qwen-device-memory-measurement-source`; omitted measurements remain
 explicitly unknown.
 
+The raw synthetic export from the physical run is preserved in
+[`docs/native/qwen3-physical-evidence/7f24e65/`](qwen3-physical-evidence/7f24e65/).
+That export is explicitly marked as the pre-evidence-plumbing baseline; the
+offline gate and a fresh report from the committed evidence-plumbing revision
+still need to be captured before closing #114.
+
 ### Manual rubric review
 
 The review uses the committed `p0.2d1-v1` rubric. Scores are
