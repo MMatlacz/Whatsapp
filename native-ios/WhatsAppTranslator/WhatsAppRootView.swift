@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct WhatsAppRootView: View {
-    @State private var model = NativeChatModel()
+    @State private var model = NativeChatModel(translations: .applicationStore())
 
     var body: some View {
         TabView {
@@ -149,7 +149,8 @@ private struct NativeConversation: View {
                     Text(model.isSample ? "LOCAL SAMPLE · NO NETWORK" : "Translation disabled")
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in
-                        NativeMessageBubble(message: message)
+                        NativeMessageBubble(message: message, translations: model.translations,
+                                            translationKey: model.translationKey(chatID: chatID, messageID: message.id))
                             .contextMenu {
                                 Button("Reply", systemImage: "arrowshape.turn.up.left") {
                                     model.quotes[chatID] = message
@@ -180,6 +181,8 @@ private struct NativeConversation: View {
 
 private struct NativeMessageBubble: View {
     let message: WhatsAppTransportMessage
+    let translations: NativeTranslationModel
+    let translationKey: NativeTranslationKey
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -189,8 +192,11 @@ private struct NativeMessageBubble: View {
                     .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                     .background(.primary.opacity(0.06), in: .rect(cornerRadius: 8))
             }
-            Text(message.body ?? "Unsupported attachment")
-                .textSelection(.enabled)
+            if let body = message.body {
+                NativeTranslationCard(model: translations, key: translationKey, original: body)
+            } else {
+                Text("Unsupported attachment")
+            }
             HStack(spacing: 4) {
                 Text(Date(timeIntervalSince1970: Double(message.timestampMilliseconds) / 1_000),
                      format: .dateTime.hour().minute())
@@ -204,7 +210,7 @@ private struct NativeMessageBubble: View {
                     in: .rect(cornerRadius: 16))
         .containerRelativeFrame(.horizontal, count: 6, span: 5, spacing: 0)
         .frame(maxWidth: .infinity, alignment: message.fromMe ? .trailing : .leading)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 }
 

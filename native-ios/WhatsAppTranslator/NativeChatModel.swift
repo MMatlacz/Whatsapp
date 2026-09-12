@@ -4,6 +4,7 @@ import Observation
 @available(iOS 17, macOS 14, *)
 @MainActor @Observable
 final class NativeChatModel {
+    let translations: NativeTranslationModel
     enum Filter { case all, unread, groups }
     private(set) var chats: [WhatsAppTransportChat] = []
     private(set) var visibleChats: [WhatsAppTransportChat] = []
@@ -17,8 +18,9 @@ final class NativeChatModel {
     var filter: Filter = .all { didSet { updateFilter() } }
     @ObservationIgnored private var transport: (any WhatsAppTransport)?
 
-    init(transport: (any WhatsAppTransport)? = nil) {
+    init(transport: (any WhatsAppTransport)? = nil, translations: NativeTranslationModel? = nil) {
         self.transport = transport
+        self.translations = translations ?? NativeTranslationModel()
     }
 
     subscript(draft chatID: String) -> String {
@@ -48,15 +50,28 @@ final class NativeChatModel {
         for chat in chats {
             messages[chat.id] = [
                 sampleMessage(id: "\(chat.id)-1", chatID: chat.id,
-                              body: "These are local sample messages, not your WhatsApp history.", fromMe: false),
+                              body: "Aku minum kopi.", fromMe: false),
                 sampleMessage(id: "\(chat.id)-2", chatID: chat.id,
                               body: "Try typing a message or long-press a bubble to reply.", fromMe: false)
             ]
+            translations.seedSample(
+                key: translationKey(chatID: chat.id, messageID: "\(chat.id)-1"),
+                original: "Aku minum kopi.", parts: [
+                    .init(id: "verb", source: "Aku minum", translation: "Piję"),
+                    .init(id: "space", source: nil, translation: " "),
+                    .init(id: "coffee", source: "kopi", translation: "kawę"),
+                    .init(id: "period", source: nil, translation: ".")
+                ]
+            )
         }
         updateFilter()
     }
 
     func title(for chatID: String) -> String { chats.first { $0.id == chatID }?.title ?? "Chat" }
+    func translationKey(chatID: String, messageID: String) -> NativeTranslationKey {
+        .init(chatID: chatID, messageID: messageID,
+              sourceLanguage: isSample && messageID == "\(chatID)-1" ? "id" : "und", targetLanguage: "pl")
+    }
     func preview(for chatID: String) -> String { messages[chatID]?.last?.body ?? "Open conversation" }
 
     func canSend(chatID: String) -> Bool {

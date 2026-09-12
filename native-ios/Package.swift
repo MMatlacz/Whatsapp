@@ -30,6 +30,8 @@ let package = Package(
             name: "WhatsAppDomainCore",
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
                 "WhatsAppRootView.swift",
@@ -55,6 +57,7 @@ let package = Package(
             dependencies: ["WhatsAppDomainCore"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationView.swift",
                 "DiagnosticsView.swift",
                 "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
@@ -75,6 +78,7 @@ let package = Package(
                 "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppWebTransportCore.swift",
                 "NativeChatModel.swift",
+                "NativeTranslationModel.swift",
             ]
         ),
         .target(
@@ -82,6 +86,8 @@ let package = Package(
             dependencies: ["WhatsAppDomainCore"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
                 "WhatsAppRootView.swift",
@@ -109,6 +115,8 @@ let package = Package(
             dependencies: ["WhatsAppDomainCore", "CSQLite"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
                 "WhatsAppRootView.swift",
