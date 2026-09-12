@@ -4,8 +4,9 @@ import WebKit
 
 @MainActor
 struct WhatsAppWebProbeView: View {
-    @StateObject private var session = WhatsAppSessionController()
-    @State private var showingWebPage = false
+    @ObservedObject var session: WhatsAppSessionController
+    var showChats: () -> Void
+    @State private var confirmingDisconnect = false
 
     var body: some View {
         NavigationStack {
@@ -17,16 +18,11 @@ struct WhatsAppWebProbeView: View {
                 }
 
                 Section("WhatsApp Web") {
-                    Button(session.isLoading ? "Loading WhatsApp Web..." : "Load WhatsApp Web") {
-                        session.loadWhatsAppWeb()
-                        showingWebPage = true
+                    Button("Open Chats") {
+                        if session.webView == nil { session.loadWhatsAppWeb() }
+                        showChats()
                     }
                     .disabled(session.isLoading || session.isDisconnecting)
-
-                    Button("Show WhatsApp Web") {
-                        showingWebPage = true
-                    }
-                    .disabled(session.webView == nil || session.isDisconnecting)
 
                     sessionRow("Load state", value: session.loadState)
                     sessionRow("Current URL", value: session.currentURL)
@@ -37,7 +33,7 @@ struct WhatsAppWebProbeView: View {
                 Section("Phone-number linking") {
                     Button("Start phone-number linking") {
                         session.startPhoneNumberLinking()
-                        showingWebPage = true
+                        showChats()
                     }
                     .disabled(session.isLoading || session.isDisconnecting)
 
@@ -78,9 +74,7 @@ struct WhatsAppWebProbeView: View {
 
                 Section("Disconnect") {
                     Button("Disconnect WhatsApp", role: .destructive) {
-                        Task {
-                            await session.disconnect()
-                        }
+                        confirmingDisconnect = true
                     }
                     .disabled(session.isDisconnecting)
 
@@ -108,19 +102,12 @@ struct WhatsAppWebProbeView: View {
                 }
             }
             .navigationTitle("WhatsApp Web Session")
-            .sheet(isPresented: $showingWebPage, onDismiss: session.refreshSessionState) {
-                NavigationStack {
-                    if let webView = session.webView {
-                        WhatsAppWebPage(webView: webView)
-                            .navigationTitle("WhatsApp Web")
-                            .toolbar {
-                                ToolbarItem(placement: .confirmationAction) {
-                                    Button("Done") { showingWebPage = false }
-                                }
-                            }
-                    }
+            .confirmationDialog("Disconnect WhatsApp?", isPresented: $confirmingDisconnect, titleVisibility: .visible) {
+                Button("Disconnect", role: .destructive) {
+                    Task { await session.disconnect() }
                 }
-                .interactiveDismissDisabled()
+            } message: {
+                Text("This removes the local WhatsApp profile. You will need to link your account again.")
             }
         }
     }
@@ -139,14 +126,14 @@ struct WhatsAppWebProbeView: View {
 // Reuse the controller's exact web view so presenting or dismissing the page
 // never creates a second session or reloads an in-progress linking flow.
 #if os(iOS)
-private struct WhatsAppWebPage: UIViewRepresentable {
+struct WhatsAppWebPage: UIViewRepresentable {
     let webView: WKWebView
 
     func makeUIView(context: Context) -> WKWebView { webView }
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
 #else
-private struct WhatsAppWebPage: NSViewRepresentable {
+struct WhatsAppWebPage: NSViewRepresentable {
     let webView: WKWebView
 
     func makeNSView(context: Context) -> WKWebView { webView }
@@ -177,7 +164,8 @@ enum WhatsAppWebProfile {
 }
 
 @MainActor
-final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationDelegate {
+final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
+    private static let restorePreference = "whatsApp.restoreSession"
     @Published private(set) var loadState = "not started"
     @Published private(set) var currentURL = "not loaded"
     @Published private(set) var javaScriptState = "not evaluated"
@@ -189,6 +177,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     @Published private(set) var diagnostics: [String] = []
     @Published private(set) var isLoading = false
     @Published private(set) var isDisconnecting = false
+    @Published private(set) var pageZoom = 1.0
 
     let profileIdentifier = WhatsAppWebProfile.identifier.uuidString
     let userAgentState = "desktop Safari"
@@ -204,11 +193,27 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     }
 
     func loadWhatsAppWeb() {
+        guard !isDisconnecting else { return }
         startPairingAfterLoad = false
         apply(reset: .newLoad)
         diagnostics = []
         primitives = BrowserPrimitiveStatus()
         beginWhatsAppLoad()
+    }
+
+    func restoreIfNeeded() {
+        guard !isDisconnecting, UserDefaults.standard.bool(forKey: Self.restorePreference) else { return }
+        if webView == nil {
+            loadWhatsAppWeb()
+        } else if !isLoading {
+            refreshSessionState()
+        }
+    }
+
+    func setPageZoom(_ zoom: Double) {
+        guard zoom.isFinite, (0.5...1.5).contains(zoom) else { return }
+        pageZoom = zoom
+        webView?.pageZoom = zoom
     }
 
     func startPhoneNumberLinking() {
@@ -260,7 +265,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         """
 
         webView.evaluateJavaScript(script) { [weak self] result, error in
-            guard let self else { return }
+            guard let self, self.webView === webView else { return }
 
             if let error {
                 self.pairingCode = nil
@@ -321,7 +326,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         """
 
         webView.evaluateJavaScript(script) { [weak self] result, error in
-            guard let self else { return }
+            guard let self, self.webView === webView else { return }
 
             if let error {
                 self.sessionState = "session-state-read-failed"
@@ -357,6 +362,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         }
 
         if removalResult.succeeded {
+            UserDefaults.standard.removeObject(forKey: Self.restorePreference)
             disconnectState = "profile removed"
             let attemptDescription = removalResult.attempts == 1
                 ? ""
@@ -371,6 +377,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        isLoading = true
         loadState = "loading"
         updateCurrentURL(from: webView)
     }
@@ -394,14 +401,17 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
         finishWithNavigationError(prefix: "Navigation failed", webView: webView, error: error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
         finishWithNavigationError(prefix: "Provisional navigation failed", webView: webView, error: error)
     }
 
     private func beginWhatsAppLoad() {
+        UserDefaults.standard.set(true, forKey: Self.restorePreference)
         let webView = ensureWebView()
         webView.load(URLRequest(url: WhatsAppWebProfile.webURL))
     }
@@ -413,13 +423,62 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
 
         let webView = WhatsAppWebProfile.makeWebView()
         webView.navigationDelegate = self
+        webView.uiDelegate = self
+        webView.pageZoom = pageZoom
         self.webView = webView
         return webView
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        isLoading = false
+        loadState = "failed"
+        sessionState = "not evaluated"
+        pairingCode = nil
+        recordDiagnostic("WhatsApp's page process stopped. Reload the page to reconnect.")
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction
+    ) async -> WKNavigationActionPolicy {
+        guard let url = navigationAction.request.url else {
+            return .cancel
+        }
+        if navigationAction.targetFrame?.isMainFrame == false
+            || (url.scheme == "https" && url.host == "web.whatsapp.com") {
+            return .allow
+        }
+        // Keep the chat session in its own browser. User-activated web links
+        // open in the system browser; script redirects cannot replace Chats.
+        if navigationAction.navigationType == .linkActivated,
+           url.scheme == "https" || url.scheme == "http" {
+            #if os(iOS)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            #else
+            NSWorkspace.shared.open(url)
+            #endif
+        }
+        return .cancel
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        if navigationAction.targetFrame == nil,
+           let url = navigationAction.request.url,
+           url.scheme == "https", url.host == "web.whatsapp.com" {
+            webView.load(navigationAction.request)
+        }
+        return nil
     }
 
     private func releaseWebView() {
         webView?.stopLoading()
         webView?.navigationDelegate = nil
+        webView?.uiDelegate = nil
         webView = nil
     }
 
@@ -455,7 +514,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         """
 
         webView.evaluateJavaScript(script) { [weak self] result, error in
-            guard let self else { return }
+            guard let self, self.webView === webView else { return }
 
             if let error {
                 self.pairingFlowState = "phone-link-entry-probe-failed"
@@ -487,7 +546,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         """
 
         webView.evaluateJavaScript(script) { [weak self] result, error in
-            guard let self else { return }
+            guard let self, self.webView === webView else { return }
 
             if let error {
                 self.javaScriptState = "failed"

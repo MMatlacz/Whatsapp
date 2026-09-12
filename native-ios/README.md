@@ -98,7 +98,11 @@ The app currently exposes:
 
 ## WhatsApp Web profile and session controls
 
-The WhatsApp Web probe uses one stable, dedicated `WKWebsiteDataStore` identifier rather than the app-wide default store. Its `WKWebView` uses that profile and a desktop Safari user agent. **Load WhatsApp Web** presents an interactive page for manual linking, including phone-number input. **Done** returns to diagnostics and refreshes the session heuristic; **Show WhatsApp Web** reopens the same page without reloading or replacing its session. The diagnostic phone-link shortcut also presents the page, so manual interaction remains available when its English-label heuristic cannot find the control.
+**Chats** is the app's primary screen. It embeds WhatsApp's own interface for account linking, chat browsing, and user-driven messaging; it is not a custom SwiftUI message list or an implementation of the native runtime adapter. Translation remains disabled.
+
+Chats and Session share one `WKWebView` and one stable, dedicated `WKWebsiteDataStore` identifier. **Open WhatsApp** starts the first load. A non-sensitive preference then permits automatic reopening on app launch using the existing WebKit profile. Returning from the background refreshes diagnostics without reloading an existing page. **Session → Open Chats** returns to that same page. The page menu provides size controls and a confirmed reload; disconnect also requires confirmation and disables automatic reopening after successful profile removal.
+
+The browser uses desktop Safari content mode and user agent. User-activated external web links open in the system browser, keeping the chat page in its dedicated view. Page-process termination and navigation failure expose a retry control. Pending JavaScript results from a released browser are ignored.
 
 The session controller can:
 

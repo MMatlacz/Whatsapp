@@ -31,6 +31,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
@@ -54,6 +55,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
@@ -79,6 +81,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "WhatsAppBridge.js",
@@ -104,6 +107,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
