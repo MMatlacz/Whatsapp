@@ -86,3 +86,22 @@ the exact new commit range also passed Gitleaks. CI was not used.
 A separate iPhone 15 Pro Max simulator (iOS 26.5) reproduced the libc++
 null-string assertion with the earlier diagnostic build. This is distinct
 from the physical-device resource exception.
+
+## Reconnected device: complete runs
+
+The preserved first run completed all 36 cases after connection loss. A second
+profiled run also completed 36/36, and the contextual run completed 8/8. These
+counts describe execution, not translation correctness. Reports are archived in
+`physical-device-pool-completed.json`, `physical-device-pool-repeat.json` and
+`physical-device-context.json`.
+
+Source-only median case times were 1.993 and 2.280 seconds; model load times
+were 3.867 and 4.857 seconds. Both runs observed thermal state serious. The
+second run's 106 Instruments samples reached 3,455,028,136 bytes (3.218 GiB)
+physical footprint, despite lower RSS. This supersedes any inference that
+1.22 GiB RSS represents the whole iOS memory budget. The first phone run has
+31/36 exact output matches with the Python Mac run at identical input tokens.
+
+The buffer fix enables loading but does not establish safe operation alongside
+representative WhatsApp/WebKit activity, lifecycle events or sustained pressure.
+No production acceptance or fixed safe memory budget is claimed.
