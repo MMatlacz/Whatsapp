@@ -43,4 +43,6 @@ repos:
         name: validate staged JSON files
         language: system
         types: [json]
-        entry: python3 -m json.tool
+        # json.tool treats a second filename as an output and can overwrite it.
+        entry: >-
+          python3 -c 'import json, pathlib, sys; [json.loads(pathlib.Path(p).read_text(encoding="utf-8")) for p in sys.argv[1:]]'

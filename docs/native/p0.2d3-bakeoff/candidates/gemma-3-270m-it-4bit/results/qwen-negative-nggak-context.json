@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.6584100000036415,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.1875060796737671,
+  "fixtureID" : "qwen-negative-nggak-context",
+  "focus" : "nggak and polite refusal",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 0.7724850177764893,
+  "input" : "Nggak usah dijemput.",
+  "intendedMeaning" : "There is no need to pick me up.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n    \"I can help you with your request. Please provide the information you're looking for. Please be specific. If you need help with a specific task, please provide a task. The key is to provide a helpful context. Please be mindful of the safety and ethical implications. Avoid making any claims that could be harmful. Use data that is suitable for a specific purpose. Ensure that the data is accurate. If you are unsure about a particular aspect",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the polite, practical refusal and first-person implication.",
+  "promptTokenCount" : 379,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-nggak",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Aku bisa menjemputmu setelah kerja.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Aku sudah pesan ojek online.",
+        "speaker" : "SELF"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Nggak informal negation",
+  "tokensPerSecond" : 124.2742548927682,
+  "unknownMeasurements" : [
+
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.0404362499830313,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7857929468154907,
+  "fixtureID" : "qwen-code-switch-meeting-no-context",
+  "focus" : "Indonesian-English code-switching",
+  "generatedTokenCount" : 14,
+  "generationSeconds" : 0.23478198051452637,
+  "input" : "Meeting-nya diundur, jadi kita bisa santai dulu.",
+  "intendedMeaning" : "The meeting has been postponed, so we can relax for now.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Działamy, więc możemy zjedłymy chwilę.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Translate the mixed-language message naturally and keep the relaxed tone.",
+  "promptTokenCount" : 360,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "code-switch-meeting",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Code-switched meeting message",
+  "tokensPerSecond" : 59.62978917427522,
+  "unknownMeasurements" : [
+
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 0.9586878333357163,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7857110500335693,
+  "fixtureID" : "qwen-negative-nggak-context",
+  "focus" : "nggak and polite refusal",
+  "generatedTokenCount" : 9,
+  "generationSeconds" : 0.15076494216918945,
+  "input" : "Nggak usah dijemput.",
+  "intendedMeaning" : "There is no need to pick me up.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Nie, nie musisz jeździć.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the polite, practical refusal and first-person implication.",
+  "promptTokenCount" : 383,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-nggak",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Aku bisa menjemputmu setelah kerja.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Aku sudah pesan ojek online.",
+        "speaker" : "SELF"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Nggak informal negation",
+  "tokensPerSecond" : 59.69557557950136,
+  "unknownMeasurements" : [
+
+  ]
+}

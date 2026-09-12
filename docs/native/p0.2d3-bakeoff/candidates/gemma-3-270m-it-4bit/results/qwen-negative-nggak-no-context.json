@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.423189541674219,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.1711970567703247,
+  "fixtureID" : "qwen-negative-nggak-no-context",
+  "focus" : "nggak and polite refusal",
+  "generatedTokenCount" : 65,
+  "generationSeconds" : 0.5421710014343262,
+  "input" : "Nggak usah dijemput.",
+  "intendedMeaning" : "There is no need to pick me up.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"recentTurns\": [],\n  \"schemaVersion\": 1,\n  \"sourceLanguage\": \"id\",\n  \"target\": {\n    \"body\": \"Nggak usah dijemput.\n  },\n  \"speaker\": \"UNKNOWN\"\n]\n```\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the polite, practical refusal and first-person implication.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-nggak",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Nggak informal negation",
+  "tokensPerSecond" : 119.88837438380321,
+  "unknownMeasurements" : [
+
+  ]
+}

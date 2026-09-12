@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.0351004999829456,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7775810956954956,
+  "fixtureID" : "qwen-joke-treat-no-context",
+  "focus" : "conditional teasing and emoji",
+  "generatedTokenCount" : 13,
+  "generationSeconds" : 0.23660194873809814,
+  "input" : "Kalau telat lagi, kamu traktir ya 😄",
+  "intendedMeaning" : "If you are late again, you have to treat us/pay for the meal, okay?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Jaki tak, niekta, niekta 😄",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the playful joke and emoji; do not turn it into a serious threat.",
+  "promptTokenCount" : 361,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "joke-treat",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Playful joke",
+  "tokensPerSecond" : 54.944602397971344,
+  "unknownMeasurements" : [
+
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.22960654165945,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.2618269920349121,
+  "fixtureID" : "qwen-straight-plan-no-context",
+  "focus" : "future plan and casual question particle",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2625420093536377,
+  "input" : "Besok kita makan siang jam satu ya.",
+  "intendedMeaning" : "The speaker proposes lunch together tomorrow at one o'clock.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"prompt\": [\n    \"Translate the following text into a Polish. \\n\\n\"\n  ]\n  \"instruction\": \"Translate the following text into a Polish. \\n\\n\"\n  \"input_prompt\": [\n    \"Translate the following text into a Polish. \\n\\n\"\n  ]\n  \"output_prompt\": [\n    \"Translate the following text into a Polish. \\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the friendly confirmation-seeking tone of ya.",
+  "promptTokenCount" : 349,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-plan",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward plan",
+  "tokensPerSecond" : 76.03707384687144,
+  "unknownMeasurements" : [
+
+  ]
+}

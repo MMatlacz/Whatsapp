@@ -1,0 +1,20 @@
+{
+  "sourceRevision": "532f6090b10cb40f96935e7134bbd82b16eea717",
+  "sourceOnlyCompletedRuns": [
+    36,
+    36
+  ],
+  "contextCompleted": 8,
+  "sampledPeakPhysicalFootprintBytes": 3455028136,
+  "footprintSampleCount": 106,
+  "footprintScope": "Instruments Activity Monitor, second source-only run including startup, ordinary diagnostic app; no representative WebKit workload",
+  "maximumObservedThermalState": "serious",
+  "safeMemoryBudgetEstablished": false,
+  "recommendation": "TranslateGemma greedy remains the best observed quality comparator; buffer fix permits device execution, but footprint margin, serious thermal state and translation errors prevent production acceptance.",
+  "remaining": [
+    "Representative app/WebKit concurrent workload",
+    "Memory-pressure and lifecycle stability",
+    "Sustained warm/cold thermal and latency characterization",
+    "Safe budget based on whole-app footprint, not RSS"
+  ]
+}

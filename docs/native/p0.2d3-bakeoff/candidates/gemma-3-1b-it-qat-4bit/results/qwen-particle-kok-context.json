@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.7357968333235476,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5887449979782104,
+  "fixtureID" : "qwen-particle-kok-context",
+  "focus" : "kok as surprise or mild reproach",
+  "generatedTokenCount" : 20,
+  "generationSeconds" : 0.4396829605102539,
+  "input" : "Kok kamu belum tidur?",
+  "intendedMeaning" : "Why are you still not asleep?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "P1: Bliżnie, musisz się przebudzić do pracy jutro.\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+  "promptTokenCount" : 377,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-kok",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Besok kamu harus bangun pagi untuk kerja.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Aku masih belum ngantuk.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kok surprised question",
+  "tokensPerSecond" : 45.48732108424196,
+  "unknownMeasurements" : [
+
+  ]
+}

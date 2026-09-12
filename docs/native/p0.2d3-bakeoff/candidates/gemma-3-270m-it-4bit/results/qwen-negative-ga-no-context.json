@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.5906740416830871,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.17412805557250977,
+  "fixtureID" : "qwen-negative-ga-no-context",
+  "focus" : "ga spelling variant and change of plan",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 0.7217749357223511,
+  "input" : "Kamu ga jadi berangkat?",
+  "intendedMeaning" : "Are you no longer going to leave/go?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"response\": \"It's a problem. I'm not sure what to do. I'm being self-explanatory.\",\n  \"prompt\": \"The problem is...\",\n  \"response\": \"I'm not sure what to do. I'm being self-explanatory.\",\n  \"prompt\": \"The problem is...\",\n  \"response\": \"I'm not sure what to do. I'm being self",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+  "promptTokenCount" : 345,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-ga",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Ga question variant",
+  "tokensPerSecond" : 133.0054498275468,
+  "unknownMeasurements" : [
+
+  ]
+}

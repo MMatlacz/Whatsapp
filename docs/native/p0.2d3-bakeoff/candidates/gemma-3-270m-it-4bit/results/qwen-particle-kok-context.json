@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.4670631249900907,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.27943503856658936,
+  "fixtureID" : "qwen-particle-kok-context",
+  "focus" : "kok as surprise or mild reproach",
+  "generatedTokenCount" : 37,
+  "generationSeconds" : 0.4893009662628174,
+  "input" : "Kok kamu belum tidur?",
+  "intendedMeaning" : "Why are you still not asleep?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"The morning is demanding.\",\"speaker\":\"P1\",\n  \"The task requires focus.\",\"speaker\":\"P2\"}\n]\n```\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+  "promptTokenCount" : 377,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-kok",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Besok kamu harus bangun pagi untuk kerja.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Aku masih belum ngantuk.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kok surprised question",
+  "tokensPerSecond" : 75.61808079513632,
+  "unknownMeasurements" : [
+
+  ]
+}

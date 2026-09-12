@@ -1,0 +1,17 @@
+{
+  "sourceRevision": "532f6090b10cb40f96935e7134bbd82b16eea717",
+  "completedCases": 36,
+  "userReportedWebKitState": {
+    "loadState": "finished",
+    "sessionUI": "unknown-ui"
+  },
+  "stateEvidence": "User confirmed after the measured restart; exact navigation timestamp not instrumented.",
+  "sampledAppPeakPhysicalFootprintBytes": 3456535440,
+  "sampleCount": 118,
+  "medianCaseSeconds": 2.0466822083108127,
+  "modelLoadSeconds": 4.079308416694403,
+  "maximumObservedThermalState": "serious",
+  "scope": "Activity Monitor attached to main app only; excludes separate WebContent/GPU/network process footprints.",
+  "conclusion": "Short concurrent loaded-page run completed. Not a logged-in chat workload or sustained stability acceptance.",
+  "safeMemoryBudgetEstablished": false
+}

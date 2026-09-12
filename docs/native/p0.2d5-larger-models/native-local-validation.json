@@ -1,0 +1,36 @@
+{
+  "sourceRevision": "520ae7fa79423178a1122a799fae62f36b85699a",
+  "validationMode": "local-Xcode-no-CI",
+  "macExecutableBuild": "passed",
+  "macTokenReplay": {
+    "status": "completed",
+    "rows": 2,
+    "report": "swift-token-smoke-macos.json",
+    "scope": "exact archived-token replay; not tokenizer parity or full native corpus"
+  },
+  "adapterTests": {
+    "passed": 31,
+    "failed": 0,
+    "newProbeTests": 3,
+    "sourceNote": "Tests validated the source contents subsequently committed as this revision."
+  },
+  "swiftlint": "passed-no-cache",
+  "preCommit": "passed",
+  "simulatorAppBuild": "passed",
+  "normalSimulatorAppLaunch": "passed; diagnostics screen visually inspected",
+  "simulatorModelInference": {
+    "status": "runtime-initialization-crash",
+    "rows": 0,
+    "signal": "SIGABRT",
+    "report": "simulator-runtime-failure.json"
+  },
+  "genericUnsignedIOSAppBuild": "passed; does not establish signing, install or device execution",
+  "physicalDevice": {
+    "status": "unavailable",
+    "model": "iPhone 15 Pro Max",
+    "memoryBudget": "unmeasured",
+    "latency": "unmeasured",
+    "thermalAndStability": "unmeasured"
+  },
+  "issue": 122
+}

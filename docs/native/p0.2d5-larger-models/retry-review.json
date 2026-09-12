@@ -1,0 +1,35 @@
+{
+  "status": "provisional-agent-review",
+  "runs": {
+    "qwen3-source-on-retry8192": {
+      "runSHA256": "25c7d2631e0a9e08dc909fd2b70c477e7b1adff947bfb22d8a18c0c918ba116e",
+      "results": [
+        {
+          "fixtureID": "qwen-slang-baper-no-context",
+          "assessment": "major",
+          "reason": "Do not take personally becomes do not distort, only laughing."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-no-context",
+          "assessment": "major",
+          "reason": "Aunt untranslated and later becomes tomorrow."
+        },
+        {
+          "fixtureID": "heldout-slang-reluctance",
+          "assessment": "major",
+          "reason": "Mager treated as a name, reluctance omitted."
+        }
+      ]
+    },
+    "qwen3-context-on-retry8192": {
+      "runSHA256": "9d0d89675551a07858d18899579b3243aa560246716e6818c945ac4a9aef46ad",
+      "results": [
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "major",
+          "reason": "Aunt becomes father."
+        }
+      ]
+    }
+  }
+}

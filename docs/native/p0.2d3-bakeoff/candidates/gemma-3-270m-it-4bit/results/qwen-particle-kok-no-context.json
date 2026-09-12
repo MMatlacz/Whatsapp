@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.2188557916670106,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.2626349925994873,
+  "fixtureID" : "qwen-particle-kok-no-context",
+  "focus" : "kok as surprise or mild reproach",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2536109685897827,
+  "input" : "Kok kamu belum tidur?",
+  "intendedMeaning" : "Why are you still not asleep?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"response\": {\n    \"prompt\": \"Solve the code error. Please solve it with a focus on a code error. Please explain the error.\",\nwat_id: 1\",\n  \"instruction\": \"Code error. Please solve it with a focus on a code error. Please explain the error.\",\n  \"error\": \"Code error. Please solve it with a focus on a code error. Please explain the error.\",\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+  "promptTokenCount" : 345,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-kok",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kok surprised question",
+  "tokensPerSecond" : 76.57878114132387,
+  "unknownMeasurements" : [
+
+  ]
+}

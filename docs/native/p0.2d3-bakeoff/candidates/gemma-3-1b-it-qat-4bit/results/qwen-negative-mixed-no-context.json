@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.671182083315216,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5498939752578735,
+  "fixtureID" : "qwen-negative-mixed-no-context",
+  "focus" : "ga, mager, and contrastive clarification",
+  "generatedTokenCount" : 19,
+  "generationSeconds" : 0.41550207138061523,
+  "input" : "Aku ga mager, cuma lagi capek aja.",
+  "intendedMeaning" : "I am not being lazy; I am just tired.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"Ja, nie jestem biednym, tylko się czuję przytłumaczony.\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the contrast and defensive clarification in casual speech.",
+  "promptTokenCount" : 351,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-mixed",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Mixed negative and slang",
+  "tokensPerSecond" : 45.727810542237464,
+  "unknownMeasurements" : [
+
+  ]
+}

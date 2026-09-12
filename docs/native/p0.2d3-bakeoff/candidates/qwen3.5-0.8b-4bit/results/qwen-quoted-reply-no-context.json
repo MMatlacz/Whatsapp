@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.0117269166803453,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7888530492782593,
+  "fixtureID" : "qwen-quoted-reply-no-context",
+  "focus" : "reply meaning supported by quoted message",
+  "generatedTokenCount" : 12,
+  "generationSeconds" : 0.20491397380828857,
+  "input" : "Aku nggak marah kok.",
+  "intendedMeaning" : "I am not angry, really.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Koch nie czuję się marah, czyli nie mam.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+  "promptTokenCount" : 353,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "quoted-reply",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Quoted reply reference",
+  "tokensPerSecond" : 58.561159968655154,
+  "unknownMeasurements" : [
+
+  ]
+}

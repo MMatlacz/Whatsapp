@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.049563250009669,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7806860208511353,
+  "fixtureID" : "qwen-slang-baper-no-context",
+  "focus" : "baper meaning taking something too personally",
+  "generatedTokenCount" : 15,
+  "generationSeconds" : 0.24839293956756592,
+  "input" : "Jangan baper, aku cuma bercanda.",
+  "intendedMeaning" : "Do not take it personally; I was only joking.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Zap, że nie jest baper, tylko się chwalę.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the reassuring but teasing register.",
+  "promptTokenCount" : 357,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "slang-baper",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Baper slang",
+  "tokensPerSecond" : 60.388189882183894,
+  "unknownMeasurements" : [
+
+  ]
+}

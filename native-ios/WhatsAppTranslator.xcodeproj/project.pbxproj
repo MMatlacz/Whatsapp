@@ -21,6 +21,7 @@
 		A1000000000000000000000C /* SQLitePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* SQLitePersistence.swift */; };
 		A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* SQLiteContextPersistence.swift */; };
 		A1000000000000000000000E /* TranslationEngineCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* TranslationEngineCore.swift */; };
+		B20000000000000000000070 /* QwenMLXDiagnosticAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000071; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B20000000000000000000070 /* QwenMLXDiagnosticAdapter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,6 +106,7 @@
 			);
 			dependencies = (
 			);
+			packageProductDependencies = (B20000000000000000000071);
 			name = WhatsAppTranslator;
 			productName = WhatsAppTranslator;
 			productReference = A10000000000000000000010 /* WhatsAppTranslator.app */;
@@ -134,6 +137,7 @@
 			);
 			mainGroup = A10000000000000000000030;
 			productRefGroup = A10000000000000000000032 /* Products */;
+			packageReferences = (B20000000000000000000072);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -141,6 +145,14 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B20000000000000000000072 = {isa = XCLocalSwiftPackageReference; relativePath = QwenMLXDiagnosticAdapter; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B20000000000000000000071 = {isa = XCSwiftPackageProductDependency; package = B20000000000000000000072; productName = QwenMLXDiagnosticAdapter; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000022 /* Resources */ = {

@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 2.2614331250078976,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.28851497173309326,
+  "fixtureID" : "qwen-negative-ga-context",
+  "focus" : "ga spelling variant and change of plan",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2651809453964233,
+  "input" : "Kamu ga jadi berangkat?",
+  "intendedMeaning" : "Are you no longer going to leave/go?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n\"I am a private chat translation component. The separate user input is...\",\n\"The code is...\",\n\"The value is...\",\n\"The goal is...\",\n\"The purpose is...\",\n\"The question is...\",\n\"The possible answers are...\",\n\"The potential problems are...\",\n\"The potential for error is...\",\n\"The potential for misinterpretation is...\",\n\"The potential for a lack of accuracy is...\",\n\"The potential",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+  "promptTokenCount" : 377,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-ga",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Bukannya kamu mau berangkat jam tujuh?",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Iya, tapi hujan deras sekali.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Ga question variant",
+  "tokensPerSecond" : 75.87847441847143,
+  "unknownMeasurements" : [
+
+  ]
+}

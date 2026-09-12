@@ -1,0 +1,165 @@
+{
+  "status": "regression-context",
+  "results": [
+    {
+      "fixtureID": "qwen-dia-late-context",
+      "semanticCaseID": "dia-late",
+      "input": "Dia bilang akan datang nanti.",
+      "intendedMeaning": "Rina said that she will come later.",
+      "preservationNotes": "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina masih di kantor, tapi sebentar lagi selesai.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Oke, kita tunggu dia di kafe.",
+            "speaker": "P2"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-context",
+      "semanticCaseID": "omitted-subject-finished",
+      "input": "Udah selesai, tinggal dikirim.",
+      "intendedMeaning": "The file/task is finished; it only needs to be sent.",
+      "preservationNotes": "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Kamu sudah periksa file laporan itu?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, semua angka sudah benar.",
+            "speaker": "SELF"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-particle-kok-context",
+      "semanticCaseID": "particle-kok",
+      "input": "Kok kamu belum tidur?",
+      "intendedMeaning": "Why are you still not asleep?",
+      "preservationNotes": "Keep the concerned, mildly surprised chat tone.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Besok kamu harus bangun pagi untuk kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku masih belum ngantuk.",
+            "speaker": "P2"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-context",
+      "semanticCaseID": "negative-nggak",
+      "input": "Nggak usah dijemput.",
+      "intendedMeaning": "There is no need to pick me up.",
+      "preservationNotes": "Preserve the polite, practical refusal and first-person implication.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Aku bisa menjemputmu setelah kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku sudah pesan ojek online.",
+            "speaker": "SELF"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-negative-ga-context",
+      "semanticCaseID": "negative-ga",
+      "input": "Kamu ga jadi berangkat?",
+      "intendedMeaning": "Are you no longer going to leave/go?",
+      "preservationNotes": "Preserve the question about a changed plan, not a generic travel question.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bukannya kamu mau berangkat jam tujuh?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, tapi hujan deras sekali.",
+            "speaker": "P2"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Kalau Tante datang, kita makan bersama.",
+            "speaker": "P2"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-context",
+      "semanticCaseID": "quoted-reply",
+      "input": "Aku nggak marah kok.",
+      "intendedMeaning": "I am not angry, really.",
+      "preservationNotes": "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "quotedTurn": {
+          "body": "Kamu marah sama aku?",
+          "speaker": "P1"
+        },
+        "recentTurns": [
+          {
+            "body": "Tadi kamu diam saja setelah aku bercanda.",
+            "speaker": "P1"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-context",
+      "semanticCaseID": "omitted-dia-station",
+      "input": "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning": "I will pick Rina up at the station later.",
+      "preservationNotes": "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina tiba di stasiun sekitar jam delapan.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Dia membawa koper besar.",
+            "speaker": "P2"
+          }
+        ]
+      }
+    }
+  ]
+}

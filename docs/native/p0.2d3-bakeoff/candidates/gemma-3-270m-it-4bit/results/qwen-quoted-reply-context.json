@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 1,
+  "durationSeconds" : 2.2737278749991674,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.2866770029067993,
+  "fixtureID" : "qwen-quoted-reply-context",
+  "focus" : "reply meaning supported by quoted message",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2612919807434082,
+  "input" : "Aku nggak marah kok.",
+  "intendedMeaning" : "I am not angry, really.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"You are angry with me?\",\n  \"I am angry with you. Please tell me what is wrong.\",\n  \"I am angry with you. What is the problem?\",\n  \"I am angry with you. What is the reason?\",\n  \"I am angry with you. What is the consequence?\",\n  \"I am angry with you. What is the significance?\",\n  \"I am angry with you. What",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+  "promptTokenCount" : 380,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "quoted-reply",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "quotedTurn" : {
+      "body" : "Kamu marah sama aku?",
+      "speaker" : "P1"
+    },
+    "recentTurns" : [
+      {
+        "body" : "Tadi kamu diam saja setelah aku bercanda.",
+        "speaker" : "P1"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Quoted reply reference",
+  "tokensPerSecond" : 76.11243190765187,
+  "unknownMeasurements" : [
+
+  ]
+}

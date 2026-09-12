@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.4581632500048727,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5461269617080688,
+  "fixtureID" : "qwen-particle-sih-no-context",
+  "focus" : "sih as conversational emphasis and teasing blame",
+  "generatedTokenCount" : 9,
+  "generationSeconds" : 0.19647693634033203,
+  "input" : "Kamu sih bikin aku kaget.",
+  "intendedMeaning" : "You startled me; the speaker playfully blames the other person.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"Ty się mnie wkurzyłeś.\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the informal, teasing tone rather than translating sih literally.",
+  "promptTokenCount" : 347,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-sih",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Sih playful blame",
+  "tokensPerSecond" : 45.80690317977294,
+  "unknownMeasurements" : [
+
+  ]
+}

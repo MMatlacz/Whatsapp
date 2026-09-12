@@ -174,6 +174,14 @@ outputs. Issue #114 owns physical-iPhone performance, offline, cancellation,
 memory, thermal/battery, and final candidate-decision evidence. The candidate
 remains diagnostic-only and is not enabled in the production router.
 
+P0.2d3 adds a command-line bake-off for the next research candidates—Gemma 3
+1B IT QAT 4-bit, Qwen3.5 0.8B 4-bit, and an optional Gemma 3 270M lower-bound
+baseline. It reuses the functional 32-record corpus and exports one report per
+candidate plus a side-by-side review matrix. See
+[`docs/native/p0.2d3-multilingual-candidate-bakeoff.md`](../docs/native/p0.2d3-multilingual-candidate-bakeoff.md).
+These candidates remain unpinned research inputs until their exact snapshots
+and integrity manifests are recorded.
+
 ## Issue #2 acceptance check
 
 Before closing issue #2, verify on a physical device that:

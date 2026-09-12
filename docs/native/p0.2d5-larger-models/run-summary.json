@@ -1,0 +1,112 @@
+[
+  {
+    "run": "qwen3-4b-source-on",
+    "rows": 36,
+    "capped": 3,
+    "missingFinalTranslation": 2,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "6a3724230e46908e1811ac2e9afa0d81bd8f38ba",
+    "peakRSSGiB": 2.721,
+    "medianSeconds": 22.784
+  },
+  {
+    "run": "translategemma-source",
+    "rows": 36,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.291,
+    "medianSeconds": 1.055
+  },
+  {
+    "run": "gemma3-source",
+    "rows": 36,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.647,
+    "medianSeconds": 0.81
+  },
+  {
+    "run": "translategemma-context",
+    "rows": 8,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.29,
+    "medianSeconds": 1.059
+  },
+  {
+    "run": "gemma3-context",
+    "rows": 8,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.647,
+    "medianSeconds": 0.904
+  },
+  {
+    "run": "qwen3-context-off",
+    "rows": 8,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 2.719,
+    "medianSeconds": 1.11
+  },
+  {
+    "run": "qwen3-context-on",
+    "rows": 8,
+    "capped": 1,
+    "missingFinalTranslation": 1,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 2.706,
+    "medianSeconds": 30.57
+  },
+  {
+    "run": "qwen3-source-on-retry8192",
+    "rows": 3,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 2.722,
+    "medianSeconds": 99.947
+  },
+  {
+    "run": "qwen3-context-on-retry8192",
+    "rows": 1,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 2.721,
+    "medianSeconds": 111.632
+  },
+  {
+    "run": "translategemma-source-greedy",
+    "rows": 36,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.246,
+    "medianSeconds": 0.84
+  },
+  {
+    "run": "translategemma-context-greedy",
+    "rows": 8,
+    "capped": 0,
+    "missingFinalTranslation": 0,
+    "qualityAcceptance": "not_assessed",
+    "sourceRevision": "ed0d8e43e661c680403c628852ab47f4f77dce6c",
+    "peakRSSGiB": 3.291,
+    "medianSeconds": 1.014
+  }
+]

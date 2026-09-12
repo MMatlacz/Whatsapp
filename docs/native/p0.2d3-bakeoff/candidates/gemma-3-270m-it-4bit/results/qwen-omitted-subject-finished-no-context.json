@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.3839224166586064,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.26336896419525146,
+  "fixtureID" : "qwen-omitted-subject-finished-no-context",
+  "focus" : "omitted subject and passive-like chat shorthand",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.4163299798965454,
+  "input" : "Udah selesai, tinggal dikirim.",
+  "intendedMeaning" : "The file/task is finished; it only needs to be sent.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n    \"Instruction\",\n    \"Please provide a JSON string containing the instructions for the code. The code should be a code snippet (e.g., a Python function, a C++ function) with only the code as the value. If the code is not complete, please make it a statement of what the code is supposed to do.\",\n    \"Use a string of instructions to solve a problem. The problem should be a problem that can be",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "omitted-subject-finished",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Omitted subject after a file check",
+  "tokensPerSecond" : 67.78081475547968,
+  "unknownMeasurements" : [
+
+  ]
+}

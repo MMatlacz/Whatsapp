@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.557444125006441,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5613939762115479,
+  "fixtureID" : "qwen-particle-nih-no-context",
+  "focus" : "nih as emphatic pointing or presenting",
+  "generatedTokenCount" : 13,
+  "generationSeconds" : 0.28490304946899414,
+  "input" : "Ini nih yang aku maksud.",
+  "intendedMeaning" : "This is exactly what I meant.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"To jest to, co chcę powiedzieć. \"\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve emphasis and conversational immediacy.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-nih",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Nih pointing particle",
+  "tokensPerSecond" : 45.62955722737809,
+  "unknownMeasurements" : [
+
+  ]
+}

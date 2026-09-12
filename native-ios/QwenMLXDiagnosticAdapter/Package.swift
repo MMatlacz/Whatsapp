@@ -16,6 +16,7 @@ let package = Package(
             name: "qwen-mlx-benchmark",
             targets: ["QwenMLXBenchmark"]
         ),
+        .executable(name: "translation-token-probe", targets: ["TranslationTokenProbe"]),
     ],
     dependencies: [
         .package(name: "WhatsAppTranslatorCore", path: ".."),
@@ -51,6 +52,10 @@ let package = Package(
                     package: "WhatsAppTranslatorCore"
                 ),
             ]
+        ),
+        .executableTarget(
+            name: "TranslationTokenProbe",
+            dependencies: ["QwenMLXDiagnosticAdapter"]
         ),
         .testTarget(
             name: "QwenMLXDiagnosticAdapterTests",

@@ -1,0 +1,32 @@
+{
+  "inputTokenParity": 36,
+  "exactOutputMatches": 31,
+  "differences": [
+    {
+      "fixtureID": "qwen-omitted-dia-station-no-context",
+      "macOutput": "Potem ją odbiore na stacji.",
+      "phoneOutput": "Potem ją odbiorę na stacji."
+    },
+    {
+      "fixtureID": "heldout-not-yet",
+      "macOutput": "Jeszcze nie zapłaciłem/zapłaciłam, to nie dlatego, że nie chcę.",
+      "phoneOutput": " Jeszcze nie zapłaciłem/zapłaciłam, to nie dlatego, że nie chcę."
+    },
+    {
+      "fixtureID": "heldout-pickup-conditional",
+      "macOutput": "Jeśli jeszcze pada, nie umawiaj mnie przed czasem.",
+      "phoneOutput": "Jeśli jeszcze nie pada, nie umawiaj mnie przed czasem."
+    },
+    {
+      "fixtureID": "heldout-slang-personal",
+      "macOutput": "Proszę, nie pozwól, że to jest o osobach, mówię o filmie, a nie o Tobie.",
+      "phoneOutput": "Proszę, nie pozwól, że to będzie o osobach. Mówię o filmie, a nie o Tobie."
+    },
+    {
+      "fixtureID": "heldout-quantity-time",
+      "macOutput": "Proszę wysłać dwa, jeden bez sambal. Chcę, żeby dotarł przed szóstej.",
+      "phoneOutput": "Proszę wysłać dwie rzeczy, jedną bez sambal. Chcę, żeby dotarły przed szóstej."
+    }
+  ],
+  "note": "Numerical/runtime output variation; not an independent quality score."
+}

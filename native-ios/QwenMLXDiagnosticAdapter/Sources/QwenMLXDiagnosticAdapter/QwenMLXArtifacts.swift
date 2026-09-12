@@ -111,13 +111,13 @@ extension QwenMLXArtifactVerificationError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .directoryMissing(let path):
-            "Qwen MLX artifact directory is missing: \(path)"
+            "MLX artifact directory is missing: \(path)"
         case .missingFile(let path):
-            "Qwen MLX artifact is missing: \(path)"
+            "MLX artifact is missing: \(path)"
         case .unexpectedFileSize(let path, let expected, let actual):
-            "Qwen MLX artifact \(path) has \(actual) bytes; expected \(expected)."
+            "MLX artifact \(path) has \(actual) bytes; expected \(expected)."
         case .checksumMismatch(let path, let expected, let actual):
-            "Qwen MLX artifact \(path) has SHA-256 \(actual); expected \(expected)."
+            "MLX artifact \(path) has SHA-256 \(actual); expected \(expected)."
         }
     }
 }
@@ -126,7 +126,7 @@ public struct QwenMLXVerifiedArtifacts: Sendable {
     public let directory: URL
     public let manifest: QwenMLXArtifactManifest
 
-    fileprivate init(
+    init(
         directory: URL,
         manifest: QwenMLXArtifactManifest
     ) {
@@ -221,6 +221,104 @@ public enum QwenMLXArtifactVerifier {
             directory: directory,
             manifest: manifest
         )
+    }
+
+    /// Verify a research candidate from a local MLX folder. Unlike the
+    /// committed Qwen manifest above, the Gemma and Qwen3.5 snapshots are not
+    /// pinned yet, so this path verifies the folder shape and records the
+    /// discovered file list without pretending that an operator-supplied
+    /// snapshot has a repository-level checksum.
+    public static func verify(
+        directory: URL,
+        candidate: TranslationBenchmarkCandidate,
+        fileManager: FileManager = .default
+    ) throws -> QwenMLXVerifiedArtifacts {
+        let directory = directory.standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(
+            atPath: directory.path,
+            isDirectory: &isDirectory
+        ), isDirectory.boolValue else {
+            throw QwenMLXArtifactVerificationError.directoryMissing(
+                directory.path
+            )
+        }
+
+        let artifacts = try discoverCandidateArtifacts(
+            in: directory,
+            fileManager: fileManager
+        )
+        let snapshotRevision = candidate.revision ?? "unresolved-local-snapshot"
+        let manifest = QwenMLXArtifactManifest(
+            repositoryID: candidate.repositoryID,
+            revision: snapshotRevision,
+            tokenizerRevision: candidate.tokenizerRevision ?? snapshotRevision,
+            chatTemplateRevision: candidate.chatTemplateRevision ?? snapshotRevision,
+            quantization: candidate.quantization,
+            artifacts: artifacts.map { QwenMLXArtifactManifest.Artifact(path: $0) }
+        )
+
+        // The generated manifest intentionally contains no size/checksum
+        // claims. The strict verifier still checks every discovered file is a
+        // regular file before returning a verified local directory.
+        return try verify(
+            directory: directory,
+            manifest: manifest,
+            fileManager: fileManager
+        )
+    }
+
+    private static func discoverCandidateArtifacts(
+        in directory: URL,
+        fileManager: FileManager
+    ) throws -> [String] {
+        let entries = try fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        )
+        let regularFiles = entries
+            .filter { url in
+                (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true
+            }
+            .map(\.lastPathComponent)
+            .sorted()
+
+        guard regularFiles.contains("config.json") else {
+            throw QwenMLXArtifactVerificationError.missingFile("config.json")
+        }
+        guard regularFiles.contains(where: { $0.hasSuffix(".safetensors") }) else {
+            throw QwenMLXArtifactVerificationError.missingFile("*.safetensors")
+        }
+
+        let tokenizerNames = [
+            "tokenizer.json",
+            "tokenizer.model",
+            "spiece.model",
+            "sentencepiece.bpe.model",
+        ]
+        guard let tokenizer = tokenizerNames.first(where: regularFiles.contains) else {
+            throw QwenMLXArtifactVerificationError.missingFile(
+                "tokenizer.json (or tokenizer.model/spiece.model)"
+            )
+        }
+
+        // Keep all weight shards and the index, plus the common tokenizer and
+        // generation files. Extra files remain in the folder for MLX to read,
+        // but are not silently treated as part of the integrity manifest.
+        let names = regularFiles.filter { name in
+            name == "config.json"
+                || name == tokenizer
+                || name == "tokenizer_config.json"
+                || name == "special_tokens_map.json"
+                || name == "added_tokens.json"
+                || name == "merges.txt"
+                || name == "vocab.json"
+                || name == "generation_config.json"
+                || name == "model.safetensors.index.json"
+                || name.hasSuffix(".safetensors")
+        }
+        return names
     }
 
     private static func sha256(

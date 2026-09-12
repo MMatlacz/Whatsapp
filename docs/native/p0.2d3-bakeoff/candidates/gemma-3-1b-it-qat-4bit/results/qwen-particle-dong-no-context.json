@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.4533710416581016,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5394079685211182,
+  "fixtureID" : "qwen-particle-dong-no-context",
+  "focus" : "dong as a soft, mildly pleading request",
+  "generatedTokenCount" : 8,
+  "generationSeconds" : 0.17311310768127441,
+  "input" : "Tunggu sebentar dong.",
+  "intendedMeaning" : "Please wait a moment.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"Czekam chwilę.\"\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the soft insistence; do not make it hostile or overly formal.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-dong",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dong request particle",
+  "tokensPerSecond" : 46.21256071914049,
+  "unknownMeasurements" : [
+
+  ]
+}

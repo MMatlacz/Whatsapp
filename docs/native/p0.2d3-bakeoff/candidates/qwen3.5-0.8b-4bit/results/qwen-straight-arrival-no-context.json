@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.0707326249976177,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7982199192047119,
+  "fixtureID" : "qwen-straight-arrival-no-context",
+  "focus" : "basic informal statement",
+  "generatedTokenCount" : 7,
+  "generationSeconds" : 0.11669504642486572,
+  "input" : "Aku sudah sampai di rumah.",
+  "intendedMeaning" : "The speaker has already arrived home.",
+  "modelLoadSeconds" : 1.1258516249945387,
+  "modelLoadWasCold" : true,
+  "output" : "Widzę już w domu.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the first-person voice and informal but neutral register.",
+  "promptTokenCount" : 354,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-arrival",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward arrival",
+  "tokensPerSecond" : 59.985408245301656,
+  "unknownMeasurements" : [
+
+  ]
+}

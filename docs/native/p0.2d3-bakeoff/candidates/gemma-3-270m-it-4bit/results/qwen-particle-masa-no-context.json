@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.3095452083216514,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.26946401596069336,
+  "fixtureID" : "qwen-particle-masa-no-context",
+  "focus" : "masa as disbelief or incredulity",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2992279529571533,
+  "input" : "Masa harus aku jelasin lagi?",
+  "intendedMeaning" : "Do I really have to explain it again?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Please provide the following code to translate the following prompt into Polish:\n\n```json\n[\n\"Please provide a clear and unambiguous translation of the following prompt into Polish. The prompt should be clear and avoid any potential issues with accuracy or coherence. Use the following code and the following code as the output. The output should be a consistent and reliable translation.\",\nu\"Please provide a consistent and reliable translation of the following prompt into Polish. Use the following code and the following code",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve incredulity, not a neutral information question.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-masa",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Masa incredulous question",
+  "tokensPerSecond" : 73.8900358335855,
+  "unknownMeasurements" : [
+
+  ]
+}

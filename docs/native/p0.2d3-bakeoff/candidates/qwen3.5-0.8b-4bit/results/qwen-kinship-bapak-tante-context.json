@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.1869915416755248,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.8431649208068848,
+  "fixtureID" : "qwen-kinship-bapak-tante-context",
+  "focus" : "Bapak and Tante as family roles",
+  "generatedTokenCount" : 19,
+  "generationSeconds" : 0.3272891044616699,
+  "input" : "Bapak bilang Tante datang nanti.",
+  "intendedMeaning" : "Dad/father said that Aunt will come later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Mówi, że Tante pojawi się i będziemy skupiali się na jedzeniu razem.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the family roles without replacing them with unrelated names or honorifics.",
+  "promptTokenCount" : 393,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "kinship-bapak-tante",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Kalau Tante datang, kita makan bersama.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kinship terms",
+  "tokensPerSecond" : 58.05265051903114,
+  "unknownMeasurements" : [
+
+  ]
+}

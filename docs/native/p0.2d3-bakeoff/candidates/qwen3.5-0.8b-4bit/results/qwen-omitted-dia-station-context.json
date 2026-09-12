@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.265295833349228,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.8469271659851074,
+  "fixtureID" : "qwen-omitted-dia-station-context",
+  "focus" : "omitted subject context and later pickup",
+  "generatedTokenCount" : 23,
+  "generationSeconds" : 0.39693403244018555,
+  "input" : "Nanti aku jemput dia di stasiun.",
+  "intendedMeaning" : "I will pick Rina up at the station later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Wczorz, mnie w stacji – w godzinę ochrzczę w korepce.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+  "promptTokenCount" : 385,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "omitted-dia-station",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Rina tiba di stasiun sekitar jam delapan.",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Dia membawa koper besar.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dia with omitted gender",
+  "tokensPerSecond" : 57.94413711166451,
+  "unknownMeasurements" : [
+
+  ]
+}

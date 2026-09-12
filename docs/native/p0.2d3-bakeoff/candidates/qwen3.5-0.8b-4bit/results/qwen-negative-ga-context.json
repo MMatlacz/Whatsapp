@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 2.127636125020217,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.8477901220321655,
+  "fixtureID" : "qwen-negative-ga-context",
+  "focus" : "ga spelling variant and change of plan",
+  "generatedTokenCount" : 74,
+  "generationSeconds" : 1.2632830142974854,
+  "input" : "Kamu ga jadi berangkat?",
+  "intendedMeaning" : "Are you no longer going to leave/go?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Piszaż, nie masz się wstawić na podróżną (Piszaż, nie masz się wstawić na podróżną). Z kolei, jeśli chodzi o deszcz, to to może być nieprzyjemcze (Piszaż, jeśli chodzi o deszcz, to to może być nieprzyjemcze).",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+  "promptTokenCount" : 387,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-ga",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Bukannya kamu mau berangkat jam tujuh?",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Iya, tapi hujan deras sekali.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Ga question variant",
+  "tokensPerSecond" : 58.577531053998676,
+  "unknownMeasurements" : [
+
+  ]
+}

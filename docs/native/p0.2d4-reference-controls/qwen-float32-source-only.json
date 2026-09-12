@@ -1,0 +1,1100 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "5ecb111dadc48d16868ff6bb9db6c85f9edfee4d",
+  "sourceDirty": false,
+  "scriptSHA256": "7261e68a5c2eaf1ecda734e1a91deb191258c7ae47b05f44b80ecd2aa64b2694",
+  "corpusSHA256": "2b170be021b0444346c844636b4e8f479fe18a4680f69531d8b54b30f89b11b6",
+  "model": {
+    "repository": "Qwen/Qwen3.5-0.8B",
+    "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+    "license": "Apache-2.0",
+    "artifacts": [
+      {
+        "path": "LICENSE",
+        "bytes": 11544,
+        "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+      },
+      {
+        "path": "README.md",
+        "bytes": 61705,
+        "sha256": "87a163af54f32fa608a0f8d3ac67945c53dd2b4a7c96740b3d7fdc28e8458864"
+      },
+      {
+        "path": "chat_template.jinja",
+        "bytes": 7755,
+        "sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80"
+      },
+      {
+        "path": "config.json",
+        "bytes": 2907,
+        "sha256": "b90b86f35c8e6925ef74ee04d0e758f0a845c83a42089ad82bbaa948de9b4204"
+      },
+      {
+        "path": "merges.txt",
+        "bytes": 3353259,
+        "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d"
+      },
+      {
+        "path": "model.safetensors-00001-of-00001.safetensors",
+        "bytes": 1746942600,
+        "sha256": "04b1c301231dd422b8860db31311ab2721511346a32cb1e079c4c4e5f1fe4696"
+      },
+      {
+        "path": "model.safetensors.index.json",
+        "bytes": 50900,
+        "sha256": "d8a08838a613b025eb7952ed9db11696213e57e76a375661ef5c12f9dd5dcf4e"
+      },
+      {
+        "path": "preprocessor_config.json",
+        "bytes": 390,
+        "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+      },
+      {
+        "path": "tokenizer.json",
+        "bytes": 12807982,
+        "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+      },
+      {
+        "path": "tokenizer_config.json",
+        "bytes": 16709,
+        "sha256": "49e2b6e395f959f077f1e992b338919c0d4a9732fc6e613995e06557f843500c"
+      },
+      {
+        "path": "video_preprocessor_config.json",
+        "bytes": 385,
+        "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+      },
+      {
+        "path": "vocab.json",
+        "bytes": 6722759,
+        "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+      }
+    ]
+  },
+  "profile": "source-only",
+  "runtime": {
+    "torch": "2.10.0",
+    "transformers": "5.3.0",
+    "mlx": "0.32.2",
+    "mlx-lm": "0.31.1",
+    "tokenizers": "0.22.2",
+    "sentencepiece": "0.2.2",
+    "huggingface-hub": "1.31.0"
+  },
+  "platform": "Darwin-arm64",
+  "device": "cpu",
+  "physicalDeviceEvidence": "notRun",
+  "offlineLocalFilesOnly": true,
+  "generation": {
+    "maxNewTokens": 128,
+    "doSample": false,
+    "numBeams": 1
+  },
+  "qualityReview": "unreviewed",
+  "status": "completed",
+  "results": [
+    {
+      "fixtureID": "qwen-straight-arrival-no-context",
+      "semanticCaseID": "straight-arrival",
+      "input": "Aku sudah sampai di rumah.",
+      "intendedMeaning": "The speaker has already arrived home.",
+      "preservationNotes": "Keep the first-person voice and informal but neutral register.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku sudah sampai di rumah.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jesteś tam w domu.\n",
+      "durationSeconds": 28.770088999997824,
+      "outputTokenIDs": [
+        41,
+        17221,
+        7158,
+        24666,
+        288,
+        178446,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-straight-plan-no-context",
+      "semanticCaseID": "straight-plan",
+      "input": "Besok kita makan siang jam satu ya.",
+      "intendedMeaning": "The speaker proposes lunch together tomorrow at one o'clock.",
+      "preservationNotes": "Preserve the friendly confirmation-seeking tone of ya.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nBesok kita makan siang jam satu ya.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Wczoraj zjedzimy obiad w godzinach 19.\n",
+      "durationSeconds": 61.648448833992006,
+      "outputTokenIDs": [
+        54,
+        13373,
+        269,
+        1573,
+        1110,
+        155361,
+        89,
+        177285,
+        1454,
+        60823,
+        288,
+        193326,
+        595,
+        220,
+        16,
+        24,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-straight-thanks-no-context",
+      "semanticCaseID": "straight-thanks",
+      "input": "Makasih sudah bantu aku hari ini.",
+      "intendedMeaning": "The speaker thanks the other person for helping today.",
+      "preservationNotes": "Keep it warm and conversational rather than formal.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nMakasih sudah bantu aku hari ini.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Dziękuję za pomoc dzisiaj.\n",
+      "durationSeconds": 55.075322874996345,
+      "outputTokenIDs": [
+        35,
+        8086,
+        77132,
+        196398,
+        14270,
+        91440,
+        235916,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-dia-late-no-context",
+      "semanticCaseID": "dia-late",
+      "input": "Dia bilang akan datang nanti.",
+      "intendedMeaning": "Rina said that she will come later.",
+      "preservationNotes": "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nDia bilang akan datang nanti.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Ona mówi, że się pojawi.\n",
+      "durationSeconds": 33.65049141700729,
+      "outputTokenIDs": [
+        1860,
+        64,
+        182302,
+        11,
+        22620,
+        12299,
+        211164,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-dia-late-context",
+      "semanticCaseID": "dia-late",
+      "input": "Dia bilang akan datang nanti.",
+      "intendedMeaning": "Rina said that she will come later.",
+      "preservationNotes": "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina masih di kantor, tapi sebentar lagi selesai.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Oke, kita tunggu dia di kafe.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nDia bilang akan datang nanti.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Ona mówi, że się pojawi.\n",
+      "durationSeconds": 48.639087207993725,
+      "outputTokenIDs": [
+        1860,
+        64,
+        182302,
+        11,
+        22620,
+        12299,
+        211164,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-no-context",
+      "semanticCaseID": "omitted-subject-finished",
+      "input": "Udah selesai, tinggal dikirim.",
+      "intendedMeaning": "The file/task is finished; it only needs to be sent.",
+      "preservationNotes": "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nUdah selesai, tinggal dikirim.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jeszcze nie, tylko wysyłaj.\n",
+      "durationSeconds": 38.426222792011686,
+      "outputTokenIDs": [
+        41,
+        174733,
+        10989,
+        11,
+        50295,
+        52715,
+        196517,
+        1573,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-context",
+      "semanticCaseID": "omitted-subject-finished",
+      "input": "Udah selesai, tinggal dikirim.",
+      "intendedMeaning": "The file/task is finished; it only needs to be sent.",
+      "preservationNotes": "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Kamu sudah periksa file laporan itu?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, semua angka sudah benar.",
+            "speaker": "SELF"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nUdah selesai, tinggal dikirim.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jeszcze nie, tylko wysyłaj.\n",
+      "durationSeconds": 42.51872791699134,
+      "outputTokenIDs": [
+        41,
+        174733,
+        10989,
+        11,
+        50295,
+        52715,
+        196517,
+        1573,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-dong-no-context",
+      "semanticCaseID": "particle-dong",
+      "input": "Tunggu sebentar dong.",
+      "intendedMeaning": "Please wait a moment.",
+      "preservationNotes": "Preserve the soft insistence; do not make it hostile or overly formal.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nTunggu sebentar dong.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czekajmy się chwilę.\n",
+      "durationSeconds": 34.92890654102666,
+      "outputTokenIDs": [
+        34,
+        60898,
+        1573,
+        2329,
+        12299,
+        204380,
+        4991,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-sih-no-context",
+      "semanticCaseID": "particle-sih",
+      "input": "Kamu sih bikin aku kaget.",
+      "intendedMeaning": "You startled me; the speaker playfully blames the other person.",
+      "preservationNotes": "Keep the informal, teasing tone rather than translating sih literally.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKamu sih bikin aku kaget.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jestebyś to zaskoczenie.\n",
+      "durationSeconds": 36.00834320799913,
+      "outputTokenIDs": [
+        41,
+        17221,
+        1634,
+        7158,
+        310,
+        1110,
+        1038,
+        499,
+        37143,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-nih-no-context",
+      "semanticCaseID": "particle-nih",
+      "input": "Ini nih yang aku maksud.",
+      "intendedMeaning": "This is exactly what I meant.",
+      "preservationNotes": "Preserve emphasis and conversational immediacy.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nIni nih yang aku maksud.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "To me, this is it.\n",
+      "durationSeconds": 37.25621991700609,
+      "outputTokenIDs": [
+        1206,
+        728,
+        11,
+        411,
+        369,
+        424,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-lah-no-context",
+      "semanticCaseID": "particle-lah",
+      "input": "Ya sudah lah, besok saja.",
+      "intendedMeaning": "All right then, tomorrow will do.",
+      "preservationNotes": "Keep the resigned, de-escalating tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nYa sudah lah, besok saja.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jako już, jutro.\n",
+      "durationSeconds": 39.736272125010146,
+      "outputTokenIDs": [
+        41,
+        27844,
+        52114,
+        11,
+        186530,
+        298,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-kok-no-context",
+      "semanticCaseID": "particle-kok",
+      "input": "Kok kamu belum tidur?",
+      "intendedMeaning": "Why are you still not asleep?",
+      "preservationNotes": "Keep the concerned, mildly surprised chat tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKok kamu belum tidur?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czy nie masz spalen?\n",
+      "durationSeconds": 25.96282691700617,
+      "outputTokenIDs": [
+        34,
+        4107,
+        10989,
+        189189,
+        947,
+        34470,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-kok-context",
+      "semanticCaseID": "particle-kok",
+      "input": "Kok kamu belum tidur?",
+      "intendedMeaning": "Why are you still not asleep?",
+      "preservationNotes": "Keep the concerned, mildly surprised chat tone.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Besok kamu harus bangun pagi untuk kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku masih belum ngantuk.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKok kamu belum tidur?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czy nie masz spalen?\n",
+      "durationSeconds": 46.796102708001854,
+      "outputTokenIDs": [
+        34,
+        4107,
+        10989,
+        189189,
+        947,
+        34470,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-masa-no-context",
+      "semanticCaseID": "particle-masa",
+      "input": "Masa harus aku jelasin lagi?",
+      "intendedMeaning": "Do I really have to explain it again?",
+      "preservationNotes": "Preserve incredulity, not a neutral information question.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nMasa harus aku jelasin lagi?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czas musiałem jeszcze raz wyjaśnić?\n",
+      "durationSeconds": 57.354707708989736,
+      "outputTokenIDs": [
+        34,
+        48663,
+        2991,
+        33150,
+        334,
+        77487,
+        23102,
+        225394,
+        7158,
+        182973,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-slang-wkwk-no-context",
+      "semanticCaseID": "slang-wkwk",
+      "input": "Aku salah masuk grup wkwk.",
+      "intendedMeaning": "I joined the wrong group, haha.",
+      "preservationNotes": "Render wkwk as natural laughter in Polish or preserve its light humorous effect.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku salah masuk grup wkwk.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Użyłem grupu wkwk.\n",
+      "durationSeconds": 37.06065608400968,
+      "outputTokenIDs": [
+        52,
+        26330,
+        71804,
+        32458,
+        84,
+        288,
+        27666,
+        74,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-slang-mager-no-context",
+      "semanticCaseID": "slang-mager",
+      "input": "Hari ini aku mager banget.",
+      "intendedMeaning": "I am extremely unmotivated/lazy today and do not feel like doing anything.",
+      "preservationNotes": "Keep the casual self-description; do not turn it into a medical or moral judgment.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nHari ini aku mager banget.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Oczekuję się bardzo.\n",
+      "durationSeconds": 26.715783417021157,
+      "outputTokenIDs": [
+        46,
+        13373,
+        1183,
+        196398,
+        12299,
+        54956,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-slang-baper-no-context",
+      "semanticCaseID": "slang-baper",
+      "input": "Jangan baper, aku cuma bercanda.",
+      "intendedMeaning": "Do not take it personally; I was only joking.",
+      "preservationNotes": "Preserve the reassuring but teasing register.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nJangan baper, aku cuma bercanda.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie baper, tylko bawiłem się.\n",
+      "durationSeconds": 33.73860358298407,
+      "outputTokenIDs": [
+        73769,
+        292,
+        3089,
+        11,
+        50295,
+        292,
+        39529,
+        71804,
+        12299,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-gak-no-context",
+      "semanticCaseID": "negative-gak",
+      "input": "Aku gak bisa ikut malam ini.",
+      "intendedMeaning": "I cannot join tonight.",
+      "preservationNotes": "Use informal Polish chat language without adding a reason.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku gak bisa ikut malam ini.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie mogę uczestniczyć w tym wieczorze.\n",
+      "durationSeconds": 38.04022879101103,
+      "outputTokenIDs": [
+        73769,
+        236408,
+        190741,
+        11257,
+        67241,
+        288,
+        37105,
+        211187,
+        269,
+        2891,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-no-context",
+      "semanticCaseID": "negative-nggak",
+      "input": "Nggak usah dijemput.",
+      "intendedMeaning": "There is no need to pick me up.",
+      "preservationNotes": "Preserve the polite, practical refusal and first-person implication.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nNggak usah dijemput.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie musisz być wjeżdżany.\n",
+      "durationSeconds": 36.011430124985054,
+      "outputTokenIDs": [
+        73769,
+        233598,
+        57495,
+        288,
+        3628,
+        222823,
+        5766,
+        3639,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-context",
+      "semanticCaseID": "negative-nggak",
+      "input": "Nggak usah dijemput.",
+      "intendedMeaning": "There is no need to pick me up.",
+      "preservationNotes": "Preserve the polite, practical refusal and first-person implication.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Aku bisa menjemputmu setelah kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku sudah pesan ojek online.",
+            "speaker": "SELF"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nNggak usah dijemput.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie musisz być wjeżdżany.\n",
+      "durationSeconds": 31.133940332976636,
+      "outputTokenIDs": [
+        73769,
+        233598,
+        57495,
+        288,
+        3628,
+        222823,
+        5766,
+        3639,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-ga-no-context",
+      "semanticCaseID": "negative-ga",
+      "input": "Kamu ga jadi berangkat?",
+      "intendedMeaning": "Are you no longer going to leave/go?",
+      "preservationNotes": "Preserve the question about a changed plan, not a generic travel question.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKamu ga jadi berangkat?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czy chcesz ruszyć?\n",
+      "durationSeconds": 24.829045042017242,
+      "outputTokenIDs": [
+        34,
+        4107,
+        216261,
+        50689,
+        67241,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-ga-context",
+      "semanticCaseID": "negative-ga",
+      "input": "Kamu ga jadi berangkat?",
+      "intendedMeaning": "Are you no longer going to leave/go?",
+      "preservationNotes": "Preserve the question about a changed plan, not a generic travel question.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bukannya kamu mau berangkat jam tujuh?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, tapi hujan deras sekali.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKamu ga jadi berangkat?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Czy chcesz ruszyć?\n",
+      "durationSeconds": 24.683332665998023,
+      "outputTokenIDs": [
+        34,
+        4107,
+        216261,
+        50689,
+        67241,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-no-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nBapak bilang Tante datang nanti.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Mamie powiedział, że Tante przyjdzie.\n",
+      "durationSeconds": 42.45221895899158,
+      "outputTokenIDs": [
+        44,
+        308,
+        627,
+        212651,
+        11,
+        22620,
+        345,
+        4783,
+        29837,
+        41956,
+        13144,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Kalau Tante datang, kita makan bersama.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nBapak bilang Tante datang nanti.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Mamie powiedział, że Tante przyjdzie.\n",
+      "durationSeconds": 39.56141087500146,
+      "outputTokenIDs": [
+        44,
+        308,
+        627,
+        212651,
+        11,
+        22620,
+        345,
+        4783,
+        29837,
+        41956,
+        13144,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-code-switch-meeting-no-context",
+      "semanticCaseID": "code-switch-meeting",
+      "input": "Meeting-nya diundur, jadi kita bisa santai dulu.",
+      "intendedMeaning": "The meeting has been postponed, so we can relax for now.",
+      "preservationNotes": "Translate the mixed-language message naturally and keep the relaxed tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nMeeting-nya diundur, jadi kita bisa santai dulu.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jedgingu, więc możemy się odparzyć.\n",
+      "durationSeconds": 39.78887183300685,
+      "outputTokenIDs": [
+        41,
+        290,
+        3072,
+        84,
+        11,
+        95289,
+        188304,
+        12299,
+        10468,
+        1671,
+        67241,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-joke-treat-no-context",
+      "semanticCaseID": "joke-treat",
+      "input": "Kalau telat lagi, kamu traktir ya 😄",
+      "intendedMeaning": "If you are late again, you have to treat us/pay for the meal, okay?",
+      "preservationNotes": "Keep the playful joke and emoji; do not turn it into a serious threat.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nKalau telat lagi, kamu traktir ya 😄<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jeśli ponownie, to już nie jest tak 😄\n",
+      "durationSeconds": 41.106964417005656,
+      "outputTokenIDs": [
+        28783,
+        53588,
+        32801,
+        225206,
+        11,
+        310,
+        52114,
+        10989,
+        12911,
+        17577,
+        25677,
+        226,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-no-context",
+      "semanticCaseID": "quoted-reply",
+      "input": "Aku nggak marah kok.",
+      "intendedMeaning": "I am not angry, really.",
+      "preservationNotes": "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku nggak marah kok.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie, nie jestem zadowolony.\n",
+      "durationSeconds": 31.214758082991466,
+      "outputTokenIDs": [
+        73769,
+        11,
+        10989,
+        209100,
+        1110,
+        239229,
+        3432,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-context",
+      "semanticCaseID": "quoted-reply",
+      "input": "Aku nggak marah kok.",
+      "intendedMeaning": "I am not angry, really.",
+      "preservationNotes": "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "quotedTurn": {
+          "body": "Kamu marah sama aku?",
+          "speaker": "P1"
+        },
+        "recentTurns": [
+          {
+            "body": "Tadi kamu diam saja setelah aku bercanda.",
+            "speaker": "P1"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku nggak marah kok.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Nie, nie jestem zadowolony.\n",
+      "durationSeconds": 31.53203425000538,
+      "outputTokenIDs": [
+        73769,
+        11,
+        10989,
+        209100,
+        1110,
+        239229,
+        3432,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-no-context",
+      "semanticCaseID": "omitted-dia-station",
+      "input": "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning": "I will pick Rina up at the station later.",
+      "preservationNotes": "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nNanti aku jemput dia di stasiun.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Napiszę go na stacji.\n",
+      "durationSeconds": 32.56603862499469,
+      "outputTokenIDs": [
+        45,
+        13331,
+        89,
+        4991,
+        708,
+        4176,
+        352,
+        32273,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-context",
+      "semanticCaseID": "omitted-dia-station",
+      "input": "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning": "I will pick Rina up at the station later.",
+      "preservationNotes": "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina tiba di stasiun sekitar jam delapan.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Dia membawa koper besar.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nNanti aku jemput dia di stasiun.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Napiszę go na stacji.\n",
+      "durationSeconds": 32.73436566602322,
+      "outputTokenIDs": [
+        45,
+        13331,
+        89,
+        4991,
+        708,
+        4176,
+        352,
+        32273,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-combo-no-context",
+      "semanticCaseID": "particle-combo",
+      "input": "Serius nih? Kok bisa sih?",
+      "intendedMeaning": "Seriously? How is that even possible?",
+      "preservationNotes": "Preserve surprise and disbelief, not the literal particle words.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nSerius nih? Kok bisa sih?<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Serius? Nie, może?\n",
+      "durationSeconds": 27.432307332986966,
+      "outputTokenIDs": [
+        30703,
+        8883,
+        30,
+        50528,
+        11,
+        51725,
+        30,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-mixed-no-context",
+      "semanticCaseID": "negative-mixed",
+      "input": "Aku ga mager, cuma lagi capek aja.",
+      "intendedMeaning": "I am not being lazy; I am just tired.",
+      "preservationNotes": "Keep the contrast and defensive clarification in casual speech.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "actualInput": "<|im_start|>user\nTranslate from Indonesian to Polish. Return only the translation.\nAku ga mager, cuma lagi capek aja.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+      "output": "Jaki, wciąż tylko ciężko.\n",
+      "durationSeconds": 31.479288832983002,
+      "outputTokenIDs": [
+        41,
+        14203,
+        11,
+        225605,
+        50295,
+        197872,
+        9048,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "hitTokenLimit": false
+    }
+  ],
+  "dtype": "torch.float32",
+  "modelLoadSeconds": 5.067445916996803,
+  "peakRSSBytes": 5304451072,
+  "memoryScope": "isolated macOS process high-water RSS; not iPhone acceptance"
+}

@@ -206,6 +206,38 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         }
     }
 
+    func testBenchmarkRejectsCancelledOutputAtAndBelowTokenCap() async throws {
+        let fixture = try makeArtifactFixture()
+        defer { fixture.cleanup() }
+        let verified = try QwenMLXArtifactVerifier.verify(
+            directory: fixture.directory, manifest: fixture.manifest
+        )
+        for count in [12, 96] {
+            let model = QwenMLXDiagnosticModel(
+                verifiedArtifacts: verified,
+                limits: .functionalCI,
+                generator: RecordingGenerator(
+                    output: "Urwany tekst",
+                    metrics: QwenMLXGenerationMetrics(
+                        generatedTokenCount: count,
+                        finishReason: "cancelled",
+                        reachedGenerationLimit: false
+                    )
+                )
+            )
+            let executor = QwenMLXBenchmarkExecutor(model: model, limits: .functionalCI)
+            let benchmarkFixture = QwenFunctionalTranslationBenchmarkFixtures.fixtures[0]
+            let runner = try XCTUnwrap(TranslationBenchmarkRunner(executor: executor, timeoutSeconds: 5))
+            let records = await runner.run(fixtures: [benchmarkFixture])
+            let record = try XCTUnwrap(records.first)
+            XCTAssertEqual(record.output, "Urwany tekst")
+            XCTAssertEqual(record.finishReason, "cancelled")
+            XCTAssertEqual(record.generatedTokenCount, count)
+            XCTAssertEqual(record.termination, count == 96 ? .returned : .cancelled)
+            XCTAssertEqual(record.outputValidity, count == 96 ? .truncated : .interrupted)
+        }
+    }
+
     func testDiagnosticModelRejectsMissingSourceBeforeGeneration() async throws {
         let fixture = try makeArtifactFixture()
         defer { fixture.cleanup() }
