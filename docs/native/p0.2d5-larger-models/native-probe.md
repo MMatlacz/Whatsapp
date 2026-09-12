@@ -49,3 +49,13 @@ physical iPhone, including app/WebKit workload, thermal state, memory pressure a
 lifecycle stability. The probe's RSS high-water and chunk-level thermal observations
 alone do not cover all those requirements. Source/template differences between
 Python and Swift must remain explicit in any final recommendation.
+
+## Recorded local results
+
+The clean source `520ae7fa79423178a1122a799fae62f36b85699a` builds for macOS,
+the iOS simulator and generic unsigned iOS. The clean Mac replay completed two
+rows; see `swift-token-smoke-macos.json`. In the actual app on the simulator, MLX
+aborted with SIGABRT in Metal device initialization before producing any row.
+The normal app was relaunched successfully and its diagnostics screen inspected.
+See `native-local-validation.json` and the sanitized runtime-failure report.
+Physical iPhone measurements remain outstanding under issue #122.
