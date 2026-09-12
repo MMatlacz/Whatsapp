@@ -91,7 +91,9 @@ exact message construction, generated-token counts, stop reasons and final-outpu
 extraction. The audit does not certify meaning. Synthetic corruption probes
 confirmed detection of missing rows, changed prompts, false cap flags and changed
 final output. Local pre-commit checks include secret checks and JSON validation.
-Full Xcode/device validation of these larger models remains outstanding.
+Local Xcode validation and physical TranslateGemma execution are now recorded in
+`native-probe.md` and `physical-device-summary.json`; whole-app WebKit and
+sustained stability acceptance remain outstanding.
 
 ## Quality by corpus split
 
@@ -104,3 +106,22 @@ Each cell is acceptable / minor / major / incomplete.
 | translategemma-source-review | 11 / 6 / 7 / 0 | 2 / 3 / 7 / 0 |
 | translategemma-source-greedy-review | 10 / 8 / 6 / 0 | 3 / 5 / 4 / 0 |
 | gemma3-source-review | 7 / 8 / 9 / 0 | 1 / 4 / 7 / 0 |
+
+## Physical-device update after buffer fix
+
+TranslateGemma 4B greedy completed two source-only runs (36 each) and all eight
+contextual cases on iPhone 15 Pro Max, iOS 26.6.1. These are execution counts,
+not quality passes. The artifact-verification autorelease-pool fix removed a
+confirmed memory-resource failure during loading without changing model weights,
+input tokens, quantization, or generation settings.
+
+Observed model-load times: 3.87–4.86 s; median per-case times: 1.99–2.28 s.
+The second run reached a sampled physical footprint of 3.218 GiB and both runs
+observed thermal state serious. RSS alone substantially understates the relevant
+footprint here. The prior failure reported a process high-water limit of 3376 MB;
+that observed limit is not a safe budget or a universal iOS constant.
+
+Recommendation remains research-only: TranslateGemma greedy is the strongest
+observed candidate, but known semantic errors, thermal behavior and small
+footprint margin prevent production acceptance. Do not substitute a fixed 1.5,
+3 or 4 GiB budget for a whole-app measurement including WebKit.
