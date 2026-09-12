@@ -1,8 +1,21 @@
 import SwiftUI
+import CoreImage.CIFilterBuiltins
+import WebKit
 
 @MainActor
 struct WhatsAppRootView: View {
-    @State private var model = NativeChatModel(translations: .applicationStore())
+    @State private var runtime: WhatsAppWebKitBridgeRuntime
+    @State private var model: NativeChatModel
+    @State private var showingSamples = false
+    @State private var showingPairing = false
+    @State private var connectionDiagnostic: String?
+
+    init() {
+        let runtime = WhatsAppWebKitBridgeRuntime()
+        _runtime = State(initialValue: runtime)
+        _model = State(initialValue: NativeChatModel.applicationModel(
+            transport: WhatsAppWebTransport(runtime: runtime)))
+    }
 
     var body: some View {
         TabView {
@@ -13,7 +26,15 @@ struct WhatsAppRootView: View {
                 NavigationStack {
                     Form {
                         Section("Connection") {
-                            Text("Native transport not connected")
+                            Text("Connection: \(model.connectionState.rawValue)")
+                            Button("Link WhatsApp") { showingPairing = true }
+                            Button("Reconnect saved session") { Task { await model.reconnect() } }
+                                .disabled(model.isConnecting)
+                            if let notice = model.connectionNotice { Text(notice).font(.footnote) }
+                            Button("Check connection details") {
+                                Task { connectionDiagnostic = await runtime.connectionDiagnostic() }
+                            }
+                            if let connectionDiagnostic { Text(connectionDiagnostic).font(.caption) }
                             Text("Your saved linking profile is preserved. This interface does not load an embedded web page.")
                                 .foregroundStyle(.secondary)
                         }
@@ -22,7 +43,7 @@ struct WhatsAppRootView: View {
                             Text("Model quality must pass validation before real messages can be translated.")
                         }
                         Section("Interface testing") {
-                            Button("Open local sample chats") { model.openSamples() }
+                            Button("Open local sample chats") { showingSamples = true }
                             Text("Sample messages stay in memory and are never sent to WhatsApp.")
                                 .font(.footnote)
                         }
@@ -32,6 +53,120 @@ struct WhatsAppRootView: View {
             }
         }
         .tint(.green)
+        .background {
+            HiddenTransportHost(runtime: runtime)
+                .frame(width: 1, height: 1).opacity(0)
+                .allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .safeAreaInset(edge: .top) {
+            if model.connectionState == .authenticating {
+                Button("Link WhatsApp to load your chats") { showingPairing = true }
+                    .buttonStyle(.borderedProminent).padding()
+            }
+            if let notice = model.storageNotice {
+                Text(notice).font(.footnote).padding().background(.yellow.opacity(0.2))
+            }
+        }
+        .task { await model.reconnect() }
+        .sheet(isPresented: $showingSamples) { NativeSampleBrowser() }
+        .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
+    }
+}
+
+#if canImport(UIKit)
+private struct HiddenTransportHost: UIViewRepresentable {
+    let runtime: WhatsAppWebKitBridgeRuntime
+    func makeUIView(context: Context) -> UIView {
+        (try? runtime.ensureWebView()) ?? UIView()
+    }
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+#else
+private struct HiddenTransportHost: NSViewRepresentable {
+    let runtime: WhatsAppWebKitBridgeRuntime
+    func makeNSView(context: Context) -> NSView {
+        (try? runtime.ensureWebView()) ?? NSView()
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+#endif
+
+private struct NativePairingView: View {
+    let runtime: WhatsAppWebKitBridgeRuntime
+    let model: NativeChatModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var qrImage: CGImage?
+    @State private var notice = "Preparing a linking code…"
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Text("On your primary phone, open WhatsApp → Settings → Linked Devices → Link a Device, then scan this code.")
+                    if let qrImage {
+                        Image(decorative: qrImage, scale: 1)
+                            .interpolation(.none).resizable().scaledToFit()
+                            .frame(maxWidth: 300).padding(24).background(.white)
+                            .accessibilityLabel("WhatsApp linking QR code")
+                            .privacySensitive()
+                    } else {
+                        ProgressView().accessibilityLabel("Waiting for linking code")
+                    }
+                    Text(notice).font(.footnote)
+                    Text("Keep this code private. Linking must be approved on your primary phone.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }.padding()
+            }
+            .navigationTitle("Link WhatsApp")
+            .toolbar { Button("Close") { dismiss() } }
+            .task(id: scenePhase) {
+                guard scenePhase == .active else { qrImage = nil; return }
+                await refreshUntilLinked()
+            }
+            .onDisappear { qrImage = nil }
+        }
+    }
+
+    private func refreshUntilLinked() async {
+        while !Task.isCancelled {
+            do {
+                if model.connectionState == .ready { qrImage = nil; dismiss(); return }
+                let code = try await runtime.pairingCode()
+                try Task.checkCancellation()
+                if let code {
+                    let filter = CIFilter.qrCodeGenerator()
+                    filter.message = Data(code.utf8)
+                    filter.correctionLevel = "M"
+                    if let output = filter.outputImage {
+                        qrImage = CIContext().createCGImage(output, from: output.extent)
+                    }
+                    notice = "Scan with your primary phone. The code updates automatically."
+                } else {
+                    qrImage = nil
+                    notice = "Waiting for WhatsApp to provide a code or finish linking…"
+                }
+                try await Task.sleep(for: .seconds(3))
+            } catch is CancellationError { return }
+            catch {
+                qrImage = nil
+                notice = "Could not load the linking code. Close this screen and reconnect to retry."
+                return
+            }
+        }
+    }
+}
+
+private struct NativeSampleBrowser: View {
+    @State private var model = NativeChatModel()
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack {
+            Button("Close sample chats") { dismiss() }.padding()
+            NativeChatList(model: model)
+        }
+        .task { model.openSamples() }
     }
 }
 
@@ -69,10 +204,12 @@ private struct NativeChatList: View {
                     ContentUnavailableView {
                         Label("Native chats", systemImage: "bubble.left.and.bubble.right")
                     } description: {
-                        Text("The native interface is ready for a transport connection. Your linked profile is kept safely on this device.")
+                        Text(model.connectionNotice ?? "Connection: \(model.connectionState.rawValue)")
                     } actions: {
-                        Button("Explore local sample chats") { model.openSamples() }
+                        Button("Connect saved WhatsApp session") { Task { await model.reconnect() } }
                             .buttonStyle(.borderedProminent)
+                            .disabled(model.isConnecting)
+                        if model.isConnecting { ProgressView("Connecting privately…") }
                     }
                 } else if model.visibleChats.isEmpty {
                     ContentUnavailableView.search(text: model.search)
@@ -146,6 +283,10 @@ private struct NativeConversation: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 10) {
+                    if model.historyCursors[chatID] != nil {
+                        Button("Load older messages") { Task { await model.load(chatID: chatID, older: true) } }
+                            .disabled(model.loadingHistory.contains(chatID))
+                    }
                     Text(model.isSample ? "LOCAL SAMPLE · NO NETWORK" : "Translation disabled")
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in

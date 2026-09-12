@@ -54,7 +54,7 @@ let package = Package(
         ),
         .target(
             name: "WhatsAppBridgeCore",
-            dependencies: ["WhatsAppDomainCore"],
+            dependencies: ["WhatsAppDomainCore", "PersistenceCore"],
             path: "WhatsAppTranslator",
             exclude: [
                 "NativeTranslationView.swift",
@@ -146,7 +146,7 @@ let package = Package(
         ),
         .testTarget(
             name: "WhatsAppBridgeCoreTests",
-            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore"],
+            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore", "PersistenceCore"],
             path: "WhatsAppTranslatorTests"
         ),
         .testTarget(

@@ -11,6 +11,7 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
     private var webView: WKWebView?
     private var bridgeReady = false
     private var navigationInProgress = false
+    private var navigationGeneration = UUID()
     private var connectWaiters: [CheckedContinuation<Void, Error>] = []
     private var pendingRequests: [String: CheckedContinuation<Data, Error>] = [:]
 
@@ -29,7 +30,15 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
             connectWaiters.append(continuation)
             guard !navigationInProgress else { return }
             navigationInProgress = true
+            let generation = UUID()
+            navigationGeneration = generation
             webView.load(URLRequest(url: WhatsAppWebProfile.webURL))
+            Task { @MainActor [weak self, weak webView] in
+                try? await Task.sleep(for: .seconds(45))
+                guard let self, self.webView === webView,
+                      self.navigationGeneration == generation, !self.bridgeReady else { return }
+                self.handleNavigationFailure()
+            }
         }
     }
 
@@ -88,6 +97,47 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
         events
     }
 
+    /// Pairing material is deliberately separate from bridge events and storage.
+    func connectionDiagnostic() async -> String {
+        guard let webView, bridgeReady else { return "Page bridge is not ready." }
+        let script = """
+            (() => {
+                const w = globalThis.WPP;
+                return [Boolean(w?.isReady), Boolean(w?.conn?.isRegistered()),
+                    Boolean(w?.conn?.isAuthenticated()), Boolean(w?.conn?.isMainReady()),
+                    Boolean(w?.conn?.isOnline()), navigator.onLine];
+            })()
+            """
+        guard let values = try? await webView.evaluateJavaScript(script) as? [Bool], values.count == 6 else {
+            return "Runtime status could not be read."
+        }
+        let labels = ["Runtime", "Registered", "Authenticated", "Main ready", "Online", "Network"]
+        return zip(labels, values).map { "\($0): \($1 ? "yes" : "no")" }.joined(separator: " · ")
+    }
+
+    func pairingCode() async throws -> String? {
+        try await connect()
+        guard let webView, webView.url?.host == "web.whatsapp.com" else {
+            throw WhatsAppWebTransportError.bridgeUnavailable("pairing-unavailable")
+        }
+        let value = try await webView.callAsyncJavaScript("""
+            if (!globalThis.WPP?.isReady || WPP.conn.isAuthenticated()) return null;
+            const code = await WPP.conn.getAuthCode();
+            return typeof code?.fullCode === 'string' ? code.fullCode : null;
+            """, arguments: [:], in: nil, contentWorld: .page)
+        guard let code = value as? String, !code.isEmpty, code.utf8.count < 8192 else { return nil }
+        return code
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction
+    ) async -> WKNavigationActionPolicy {
+        guard let url = navigationAction.request.url,
+              url.scheme == "https", url.host == "web.whatsapp.com" else { return .cancel }
+        return .allow
+    }
+
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         bridgeReady = false
         navigationInProgress = true
@@ -102,6 +152,10 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
         handleNavigationFailure()
     }
 
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        handleNavigationFailure()
+    }
+
     func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,
@@ -113,6 +167,9 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard
             message.name == Self.messageHandlerName,
+            message.frameInfo.isMainFrame,
+            message.frameInfo.securityOrigin.protocol == "https",
+            message.frameInfo.securityOrigin.host == "web.whatsapp.com",
             let string = message.body as? String,
             let data = string.data(using: .utf8)
         else {
@@ -135,18 +192,24 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
         }
     }
 
-    private func ensureWebView() throws -> WKWebView {
+    func ensureWebView() throws -> WKWebView {
         if let webView { return webView }
 
         guard
             let scriptURL = Bundle.main.url(forResource: "WhatsAppBridge", withExtension: "js"),
-            let bridgeSource = try? String(contentsOf: scriptURL, encoding: .utf8)
+            let bridgeSource = try? String(contentsOf: scriptURL, encoding: .utf8),
+            let runtimeURL = Bundle.main.url(forResource: "WhatsAppRuntime", withExtension: "js", subdirectory: "generated"),
+            let runtimeSource = try? String(contentsOf: runtimeURL, encoding: .utf8)
         else {
             throw WhatsAppWebTransportError.bridgeUnavailable("bridge-resource-missing")
         }
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = WhatsAppWebProfile.makeDataStore()
+        configuration.defaultWebpagePreferences.preferredContentMode = .desktop
+        configuration.userContentController.addUserScript(
+            WKUserScript(source: runtimeSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        )
         configuration.userContentController.addUserScript(
             WKUserScript(
                 source: bridgeSource,
@@ -188,6 +251,7 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
     }
 
     private func handleNavigationFailure() {
+        navigationGeneration = UUID()
         navigationInProgress = false
         bridgeReady = false
         let error = WhatsAppWebTransportError.bridgeUnavailable("navigation-failed")

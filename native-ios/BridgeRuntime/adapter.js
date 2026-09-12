@@ -28,7 +28,9 @@
         });
         const state = () => {
             if (!wpp?.isReady) return 'connecting';
-            if (!wpp.conn.isAuthenticated()) return 'authenticating';
+            if (!wpp.conn.isAuthenticated()) {
+                return wpp.conn.isRegistered() ? 'connecting' : 'authenticating';
+            }
             if (!wpp.conn.isMainReady()) return 'syncing';
             return wpp.conn.isOnline() ? 'ready' : 'disconnected';
         };

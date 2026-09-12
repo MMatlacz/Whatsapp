@@ -8,7 +8,8 @@ function fixture() {
         t: 100, body: 'Test', from: { _serialized: 'self@c.us' } };
     const wpp = {
         isReady: true,
-        conn: { isAuthenticated: () => true, isMainReady: () => true, isOnline: () => true },
+        conn: { isRegistered: () => true, isAuthenticated: () => true,
+            isMainReady: () => true, isOnline: () => true },
         chat: {
             list: async () => [{ id: { _serialized: 'test@c.us' }, name: 'Test', unreadCount: 2, t: 100 }],
             getMessages: async (...args) => { calls.push(args); return [raw]; },
@@ -26,6 +27,13 @@ test('maps chat and message values without leaking raw runtime objects', async (
     assert.equal(page.messages[0].timestampMilliseconds, 100000);
     assert.equal(page.nextCursor.beforeMessageID, 'message-1');
     assert.equal(page.messages[0].media, null);
+});
+test('registered reconnect is not mistaken for missing pairing', async () => {
+    const { adapter, wpp } = fixture();
+    wpp.conn.isAuthenticated = () => false;
+    assert.equal(await adapter.connectionState(), 'connecting');
+    wpp.conn.isRegistered = () => false;
+    assert.equal(await adapter.connectionState(), 'authenticating');
 });
 test('send disables implicit read, mentions and contact creation; reply uses quote', async () => {
     const { adapter, calls } = fixture();

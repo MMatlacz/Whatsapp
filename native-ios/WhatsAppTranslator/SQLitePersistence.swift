@@ -21,7 +21,7 @@ public enum SQLitePersistenceError: Error, Equatable, Sendable {
 }
 
 public final class SQLiteWhatsAppStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 1
+    public static let schemaVersion: Int32 = 2
 
     private let lock = NSLock()
     private var db: OpaquePointer?
@@ -61,6 +61,39 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         try locked { try pragmaUserVersion() }
     }
 
+    /// Drafts deliberately do not require a cached chat row: offline composition
+    /// must survive even when the chat list has not finished synchronizing.
+    public func saveDraft(_ body: String, chatID: WhatsAppChatID) throws {
+        try locked {
+            let statement = try prepare("""
+                INSERT INTO chat_drafts(chat_id, body) VALUES (?, ?)
+                ON CONFLICT(chat_id) DO UPDATE SET body = excluded.body
+                """)
+            defer { sqlite3_finalize(statement) }
+            try bindText(chatID.rawValue, at: 1, to: statement)
+            try bindText(body, at: 2, to: statement)
+            try stepDone(statement)
+        }
+    }
+
+    public func drafts() throws -> [String: String] {
+        try locked {
+            let statement = try prepare("SELECT chat_id, body FROM chat_drafts")
+            defer { sqlite3_finalize(statement) }
+            var values: [String: String] = [:]
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                guard let chatID = columnText(statement, at: 0),
+                      let body = columnText(statement, at: 1) else {
+                    throw SQLitePersistenceError.invalidStoredValue("chat_drafts")
+                }
+                values[chatID] = body
+            }
+        }
+    }
+
     public func upsert(chat: WhatsAppChat) throws {
         try locked {
             let sql = """
@@ -81,6 +114,23 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             try bindInt64(Int64(chat.unreadCount), at: 4, to: statement)
             try bindOptionalInt64(chat.lastMessageAt?.millisecondsSince1970, at: 5, to: statement)
             try stepDone(statement)
+        }
+    }
+
+    public func chats() throws -> [WhatsAppChat] {
+        try locked {
+            let statement = try prepare("""
+                SELECT id, title, kind, unread_count, last_message_at_ms FROM chats
+                ORDER BY last_message_at_ms DESC, id
+                """)
+            defer { sqlite3_finalize(statement) }
+            var values: [WhatsAppChat] = []
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                values.append(try decodeChat(statement))
+            }
         }
     }
 
@@ -317,6 +367,14 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             do {
                 if version < 1 {
                     try applyMigration1()
+                }
+                if version < 2 {
+                    try executeUnlocked("""
+                        CREATE TABLE IF NOT EXISTS chat_drafts(
+                            chat_id TEXT PRIMARY KEY NOT NULL,
+                            body TEXT NOT NULL
+                        );
+                        """)
                 }
                 try executeUnlocked("PRAGMA user_version = \(Self.schemaVersion)")
                 try executeUnlocked("COMMIT")

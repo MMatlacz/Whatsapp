@@ -10,10 +10,14 @@ raw runtime stores, authentication state, keys or media URLs to Swift. It does n
 mark chats read or create new contacts as a side effect of sending. An uncertain
 send must never be automatically retried by the native client.
 
-Current status: adapter contract tests and local bundle generation pass. Xcode
-resource integration, hidden runtime readiness, native state wiring, live account
-verification, quote/media metadata and delivery-event mapping remain unfinished.
-Do not claim live support from the fixture tests.
+Current status: adapter contract tests, local bundle generation and an iPhone
+15 Pro Max simulator build/run pass. The runtime is bundled and wired to native
+chat state. The invisible WebKit host must remain attached to the native view
+lifecycle: a detached instance stalled before authentication. The preserved account
+now reaches ready and displays real chats in the native list on iPhone 15 Pro Max.
+Native QR sheet presentation is verified, but fresh QR linking, live sends/replies,
+quote/media metadata and delivery-event mapping remain unfinished. Draft recovery
+after stopping/relaunching the app passed without sending a message.
 
 References consulted:
 

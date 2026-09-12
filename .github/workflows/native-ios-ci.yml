@@ -38,6 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check native-ios/WhatsAppTranslator/WhatsAppBridge.js
+          npm --prefix native-ios/BridgeRuntime test
 
       - name: Run SwiftLint on Ubuntu
         run: |
@@ -89,6 +90,12 @@ jobs:
           sw_vers
           xcodebuild -version
           xcodebuild -showsdks
+
+      - name: Bundle pinned hidden transport runtime
+        run: |
+          set -euo pipefail
+          npm --prefix native-ios/BridgeRuntime ci --ignore-scripts --no-audit --no-fund
+          npm --prefix native-ios/BridgeRuntime run bundle
 
       - name: Inspect project
         run: |

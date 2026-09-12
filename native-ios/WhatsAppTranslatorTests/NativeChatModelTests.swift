@@ -1,9 +1,42 @@
 import XCTest
+import PersistenceCore
 @testable import WhatsAppBridgeCore
 
 @available(macOS 14, iOS 17, *)
 @MainActor
 final class NativeChatModelTests: XCTestCase {
+    func testCachedChatAndHistoryAreReadableWithoutConnectionButCannotSend() async throws {
+        let store = try SQLiteWhatsAppStore(path: ":memory:")
+        let chat = WhatsAppTransportChat(id: "cache@c.us", title: "Cached chat", isGroup: false,
+            unreadCount: 0, lastMessageTimestampMilliseconds: 1000)
+        let message = WhatsAppTransportMessage(id: "cached-message", chatID: chat.id, senderID: nil,
+            timestampMilliseconds: 1000, body: "Cached text", fromMe: false, quote: nil, media: nil)
+        try store.upsert(chat: WhatsAppTransportDomainMapper.chat(chat))
+        try store.upsert(message: WhatsAppTransportDomainMapper.message(message))
+        let model = NativeChatModel(store: store)
+        XCTAssertEqual(model.visibleChats, [chat])
+        await model.load(chatID: chat.id)
+        XCTAssertEqual(model.messages[chat.id], [message])
+        model[draft: chat.id] = "Do not send offline"
+        XCTAssertFalse(model.canSend(chatID: chat.id))
+        XCTAssertNil(model.storageNotice)
+    }
+
+    func testComposerDraftRestoresAcrossModelRecreation() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        do {
+            let model = NativeChatModel(store: try SQLiteWhatsAppStore(path: url.path))
+            model[draft: "test@c.us"] = "Unfinished 👋"
+            XCTAssertNil(model.storageNotice)
+        }
+        let restored = NativeChatModel(store: try SQLiteWhatsAppStore(path: url.path))
+        XCTAssertEqual(restored[draft: "test@c.us"], "Unfinished 👋")
+        restored[draft: "test@c.us"] = ""
+        let cleared = NativeChatModel(store: try SQLiteWhatsAppStore(path: url.path))
+        XCTAssertEqual(cleared[draft: "test@c.us"], "")
+    }
+
     func testStartsWithoutFakeAccountOrChats() async {
         let model = NativeChatModel()
         XCTAssertFalse(model.isSample)

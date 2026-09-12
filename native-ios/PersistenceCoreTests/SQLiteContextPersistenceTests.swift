@@ -13,7 +13,7 @@ final class SQLiteContextPersistenceTests: XCTestCase {
         let contextStore = try SQLiteContextStore(path: url.path)
 
         XCTAssertEqual(try contextStore.currentSchemaVersion(), 1)
-        XCTAssertEqual(try contextStore.core.currentSchemaVersion(), 1)
+        XCTAssertEqual(try contextStore.core.currentSchemaVersion(), 2)
         XCTAssertEqual(
             try contextStore.core.message(chatID: ids.chatID, messageID: ids.messageID)?.body,
             "dia lagi di jalan"
@@ -326,7 +326,7 @@ final class SQLiteContextPersistenceTests: XCTestCase {
 
     private func seedCoreDatabase(at url: URL) throws -> (chatID: WhatsAppChatID, messageID: WhatsAppMessageID) {
         let core = try SQLiteWhatsAppStore(path: url.path)
-        XCTAssertEqual(try core.currentSchemaVersion(), 1)
+        XCTAssertEqual(try core.currentSchemaVersion(), 2)
         return try seedMessage(in: core)
     }
 

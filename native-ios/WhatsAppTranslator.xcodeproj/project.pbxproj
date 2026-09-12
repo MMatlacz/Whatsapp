@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C30000000000000000000009 /* generated runtime in Resources */ = {isa = PBXBuildFile; fileRef = C3000000000000000000000A; };
 		C30000000000000000000005 /* NativeTranslationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000006; };
 		C30000000000000000000007 /* NativeTranslationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000008; };
 		C30000000000000000000003 /* NativeChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000004 /* NativeChatModel.swift */; };
@@ -29,6 +30,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C3000000000000000000000A /* generated runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../BridgeRuntime/generated; sourceTree = "<group>"; };
 		C30000000000000000000006 /* NativeTranslationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationModel.swift; sourceTree = "<group>"; };
 		C30000000000000000000008 /* NativeTranslationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationView.swift; sourceTree = "<group>"; };
 		C30000000000000000000004 /* NativeChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeChatModel.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 				C30000000000000000000004 /* NativeChatModel.swift */,
 				C30000000000000000000006 /* NativeTranslationModel.swift */,
 				C30000000000000000000008 /* NativeTranslationView.swift */,
+				C3000000000000000000000A /* generated runtime */,
 				A10000000000000000000012 /* DiagnosticsView.swift */,
 				A10000000000000000000013 /* WhatsAppWebProbeView.swift */,
 				A10000000000000000000014 /* WhatsAppBridgeSupport.swift */,
@@ -172,6 +175,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000B /* WhatsAppBridge.js in Resources */,
+				C30000000000000000000009 /* generated runtime in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
