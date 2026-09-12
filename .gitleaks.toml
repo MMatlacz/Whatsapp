@@ -3,7 +3,11 @@ title = "WhatsApp Translator gitleaks configuration"
 [extend]
 useDefault = true
 
-[[allowlists]]
+[[rules]]
+id = "generic-api-key"
+
+# Rule scope avoids global path prefiltering and works with CI's Gitleaks 8.24.3.
+[[rules.allowlists]]
 condition = "AND"
 description = "Public Hugging Face snapshot revisions in P0.2d3 bake-off evidence"
 regexTarget = "secret"
@@ -16,9 +20,10 @@ regexes = [
   '''^ff1143e3a10547c9f2129e94ca37059b096b23f4$''',
 ]
 
-[[allowlists]]
+[[rules.allowlists]]
 description = "Public Qwen snapshot revision in the derived context corpus"
 condition = "AND"
+regexTarget = "secret"
 paths = [
   '''^docs/native/p0\.2d4-reference-controls/context-corpus\.json$''',
 ]
