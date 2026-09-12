@@ -73,3 +73,12 @@ hash-checked before loading and Hub/Transformers offline modes are enabled.
 stop semantics were checked against the installed version's source/docstrings.
 Initial smoke runs from a dirty tree are diagnostic only. Full acceptance evidence
 must identify a clean source commit.
+
+## TranslateGemma stop-token correction
+
+The initial two-row smoke run exhausted 512 tokens by repeating `<end_of_turn>`.
+The snapshot tokenizer EOS was `<eos>` (1), while the native chat template and
+actual model output use `<end_of_turn>` (106). The harness now validates token 106
+and adds it to the runtime stop set before generation. It records that set.
+The original smoke is configuration-failure evidence, excluded from quality scores;
+corrected runs use separate filenames. This is not post-hoc output trimming.

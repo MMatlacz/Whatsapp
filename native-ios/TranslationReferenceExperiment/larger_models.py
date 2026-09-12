@@ -67,6 +67,15 @@ def main(args):
     from mlx_lm.sample_utils import make_sampler
     started = time.monotonic()
     model, tokenizer = load(str(args.model))
+    if args.family == "translategemma":
+        # The pinned snapshot names <eos> as tokenizer EOS but its native chat
+        # template and observed output end turns with token 106. Stop at that
+        # boundary during generation, never by trimming a completed output.
+        turn_end = tokenizer.convert_tokens_to_ids("<end_of_turn>")
+        if turn_end != 106:
+            raise ValueError("Unexpected TranslateGemma end-of-turn token")
+        tokenizer.add_eos_token("<end_of_turn>")
+    report["stopTokenIDs"] = sorted(tokenizer.eos_token_ids)
     report["modelLoadSeconds"] = time.monotonic() - started
     report["status"] = "running"
     write_json(args.output, report)
