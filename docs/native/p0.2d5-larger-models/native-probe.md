@@ -105,3 +105,15 @@ physical footprint, despite lower RSS. This supersedes any inference that
 The buffer fix enables loading but does not establish safe operation alongside
 representative WhatsApp/WebKit activity, lifecycle events or sustained pressure.
 No production acceptance or fixed safe memory budget is claimed.
+
+## Loaded WebKit page concurrency
+
+A further 36-case run completed while the user reported WebKit load state
+`finished`, session UI `unknown-ui`, after the measured restart. Model load
+was 4.079 s and median case duration 2.047 s. The main-app physical footprint
+peaked at 3,456,535,440 bytes (3.219 GiB) across 118 samples; thermal state
+reached serious. This is close to the preceding main-app-only measurement,
+but the trace excludes separate WebContent/GPU/network-process footprints.
+The user confirmation does not establish authenticated chat activity or exact
+navigation timing. No whole-app safe budget or sustained stability acceptance
+is inferred. See `physical-device-webkit-summary.json` and its raw output.
