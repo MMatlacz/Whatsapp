@@ -74,7 +74,7 @@ def run(args):
         "runtime": {p: importlib.metadata.version(p) for p in ["torch", "transformers", "mlx", "mlx-lm", "tokenizers", "sentencepiece", "huggingface-hub"]},
         "platform": platform.system() + "-" + platform.machine(), "device": args.device,
         "physicalDeviceEvidence": "notRun", "offlineLocalFilesOnly": True,
-        "generation": {"maxNewTokens": 128, "doSample": False, "numBeams": 1},
+        "generation": {"maxNewTokens": 128, "doSample": False, "numBeams": args.beams},
         "qualityReview": "unreviewed", "status": "running", "results": [],
     }
     write_json(args.output, report)
@@ -94,9 +94,18 @@ def run(args):
                             sampler=make_sampler(temp=0), verbose=False), prompt, None
     else:
         import torch
-        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, Qwen3_5ForConditionalGeneration
+        from transformers import (
+            AutoTokenizer,
+            AutoModelForSeq2SeqLM,
+            NllbTokenizer,
+            Qwen3_5ForConditionalGeneration,
+        )
         torch.set_num_threads(4)
-        tokenizer = AutoTokenizer.from_pretrained(directory, local_files_only=True)
+        tokenizer = (
+            NllbTokenizer.from_pretrained(directory, src_lang="ind_Latn", local_files_only=True)
+            if args.model == "nllb"
+            else AutoTokenizer.from_pretrained(directory, local_files_only=True)
+        )
         dtype = torch.float32 if args.device == "cpu" else torch.bfloat16
         cls = Qwen3_5ForConditionalGeneration if args.model == "qwen" else AutoModelForSeq2SeqLM
         model = cls.from_pretrained(directory, local_files_only=True, dtype=dtype).to(args.device).eval()
@@ -107,6 +116,16 @@ def run(args):
         elif args.model == "nllb":
             tokenizer.src_lang = "ind_Latn"
             target_token = tokenizer.convert_tokens_to_ids("pol_Latn")
+        if args.model in ["nllb", "m2m100"]:
+            source_token = (tokenizer.convert_tokens_to_ids("ind_Latn")
+                            if args.model == "nllb" else tokenizer.get_lang_id("id"))
+            probe = tokenizer("Aku sudah sampai di rumah.")["input_ids"]
+            if probe[0] != source_token or source_token == tokenizer.unk_token_id or target_token == tokenizer.unk_token_id:
+                raise ValueError("Invalid source/target language token configuration")
+            report["languageTokenCheck"] = {
+                "tokenizerClass": type(tokenizer).__name__, "sourceToken": source_token,
+                "targetToken": target_token, "probeTokens": tokenizer.convert_ids_to_tokens(probe),
+            }
 
         def translate(text):
             if args.model == "qwen":
@@ -117,7 +136,7 @@ def run(args):
             inputs = tokenizer(text, return_tensors="pt").to(args.device)
             kwargs = {} if args.model == "qwen" else {"forced_bos_token_id": target_token}
             with torch.inference_mode():
-                ids = model.generate(**inputs, max_new_tokens=128, do_sample=False, num_beams=1, **kwargs)[0]
+                ids = model.generate(**inputs, max_new_tokens=128, do_sample=False, num_beams=args.beams, **kwargs)[0]
             output_ids = ids[inputs.input_ids.shape[1]:] if args.model == "qwen" else ids[1:]
             return tokenizer.decode(output_ids, skip_special_tokens=True), text, output_ids.tolist()
     report["modelLoadSeconds"] = time.monotonic() - started
@@ -160,7 +179,10 @@ if __name__ == "__main__":
     parser.add_argument("--profile", choices=["source-only", "context"], default="source-only")
     parser.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--beams", type=int, choices=[1, 5], default=1)
     args = parser.parse_args()
     if args.command == "run" and (args.corpus is None or args.output is None):
         parser.error("run requires --corpus and --output")
+    if args.model.startswith("qwen") and args.beams != 1:
+        parser.error("the Qwen controls use greedy decoding (--beams 1)")
     provision(args) if args.command == "provision" else run(args)

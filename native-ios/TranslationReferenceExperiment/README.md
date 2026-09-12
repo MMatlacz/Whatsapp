@@ -45,6 +45,18 @@ recorded; macOS RSS is not an iPhone footprint or acceptance measurement.
    than inventing a speaker's gender. Candidate approval requires all hard gates;
    benchmark execution alone does not approve a model.
 
+After the greedy baseline, `--beams 5` is a separate encoder-decoder decoding
+control. Report its results separately rather than replacing the greedy exports.
+All reference timings may include concurrent host workloads and are diagnostic,
+not a performance ranking.
+
+Transformers 5.3.0's `AutoTokenizer` resolved this pinned NLLB snapshot to a generic
+`TokenizersBackend`, whose source-language suffix was `<unk>`. The harness uses
+`NllbTokenizer` explicitly and fails unless the encoded input begins with the
+correct source-language token. Both language IDs and a tokenized probe are saved.
+The initial NLLB run from `5ecb111` is invalid and must be excluded from quality
+comparisons; its raw export is retained only as tokenizer-failure evidence.
+
 NLLB weights are CC-BY-NC-4.0 and described as research-only by their model card.
 They are a noncommercial research reference, not an approved commercial app
 dependency or distillation teacher. M2M100 is MIT and Qwen Apache-2.0. No model
