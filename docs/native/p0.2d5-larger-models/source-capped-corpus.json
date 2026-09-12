@@ -1,0 +1,42 @@
+{
+  "status": "frozen-before-first-4b-output",
+  "review": "agent-authored synthetic, not independently bilingual-validated",
+  "results": [
+    {
+      "fixtureID": "qwen-slang-baper-no-context",
+      "semanticCaseID": "slang-baper",
+      "input": "Jangan baper, aku cuma bercanda.",
+      "intendedMeaning": "Do not take it personally; I was only joking.",
+      "preservationNotes": "Preserve the reassuring but teasing register.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-no-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "heldout-slang-reluctance",
+      "semanticCaseID": "slang-reluctance",
+      "input": "Mager keluar, tapi kalau kamu butuh bantuan aku datang.",
+      "intendedMeaning": "I do not feel like going out, but I will come if you need help.",
+      "preservationNotes": "Preserve reluctance and conditional willingness.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "status": "provisional-agent-review",
+  "contextStrategy": "Compare whole target-only output; no extraction from translated context",
+  "runs": {
+    "translategemma-context": {
+      "runSHA256": "fcc4d356edd5c5b1e6d951930262054b1e88c26b3bcfce854302107150f18924",
+      "results": [
+        {
+          "fixtureID": "qwen-dia-late-context",
+          "assessment": "acceptable",
+          "reason": "Female reference and later retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-subject-finished-context",
+          "assessment": "acceptable",
+          "reason": "Finished and needs sending retained."
+        },
+        {
+          "fixtureID": "qwen-particle-kok-context",
+          "assessment": "acceptable",
+          "reason": "Still awake retained."
+        },
+        {
+          "fixtureID": "qwen-negative-nggak-context",
+          "assessment": "major",
+          "reason": "Pickup participants changed."
+        },
+        {
+          "fixtureID": "qwen-negative-ga-context",
+          "assessment": "minor",
+          "reason": "Departure intent retained, change-of-plan nuance weaker."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "major",
+          "reason": "Invents Wojteś and changes later to tomorrow."
+        },
+        {
+          "fixtureID": "qwen-quoted-reply-context",
+          "assessment": "acceptable",
+          "reason": "Not angry retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-dia-station-context",
+          "assessment": "minor",
+          "reason": "Female pickup retained but later becomes nonetheless."
+        }
+      ]
+    },
+    "translategemma-context-greedy": {
+      "runSHA256": "e954a6579f1e70a724979456d480b88740353cb3204bc1e083c1e45e9ae8729a",
+      "results": [
+        {
+          "fixtureID": "qwen-dia-late-context",
+          "assessment": "acceptable",
+          "reason": "Female reference and later retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-subject-finished-context",
+          "assessment": "acceptable",
+          "reason": "Finished and needs sending retained."
+        },
+        {
+          "fixtureID": "qwen-particle-kok-context",
+          "assessment": "acceptable",
+          "reason": "Still awake retained."
+        },
+        {
+          "fixtureID": "qwen-negative-nggak-context",
+          "assessment": "minor",
+          "reason": "No need for pickup of speaker retained, but third-person picker is unsupported by the dialogue."
+        },
+        {
+          "fixtureID": "qwen-negative-ga-context",
+          "assessment": "minor",
+          "reason": "Changes cancelled plan into past intention."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "major",
+          "reason": "Explicit father becomes generic man; later becomes tomorrow."
+        },
+        {
+          "fixtureID": "qwen-quoted-reply-context",
+          "assessment": "acceptable",
+          "reason": "Not angry retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-dia-station-context",
+          "assessment": "acceptable",
+          "reason": "Female reference and later pickup retained."
+        }
+      ]
+    },
+    "gemma3-context": {
+      "runSHA256": "1ee3eefe4e001f96bb5d2ab2de047f7a514f3b9f60f40325341b731211f882a1",
+      "results": [
+        {
+          "fixtureID": "qwen-dia-late-context",
+          "assessment": "acceptable",
+          "reason": "Female reference and later retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-subject-finished-context",
+          "assessment": "acceptable",
+          "reason": "Finished and needs sending retained."
+        },
+        {
+          "fixtureID": "qwen-particle-kok-context",
+          "assessment": "major",
+          "reason": "Present wakefulness becomes past non-sleep."
+        },
+        {
+          "fixtureID": "qwen-negative-nggak-context",
+          "assessment": "major",
+          "reason": "No need becomes prohibition; pickup target lost."
+        },
+        {
+          "fixtureID": "qwen-negative-ga-context",
+          "assessment": "major",
+          "reason": "Departure becomes eating."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "major",
+          "reason": "Later becomes tomorrow despite explicit context."
+        },
+        {
+          "fixtureID": "qwen-quoted-reply-context",
+          "assessment": "acceptable",
+          "reason": "Not angry retained."
+        },
+        {
+          "fixtureID": "qwen-omitted-dia-station-context",
+          "assessment": "minor",
+          "reason": "Female pickup and later/soon retained with spelling error."
+        }
+      ]
+    },
+    "qwen3-context-off": {
+      "runSHA256": "068ebc6359796833824782d761600fda977f40edf8e1beaca38e7b26d2025e4e",
+      "results": [
+        {
+          "fixtureID": "qwen-dia-late-context",
+          "assessment": "major",
+          "reason": "Later becomes besides."
+        },
+        {
+          "fixtureID": "qwen-omitted-subject-finished-context",
+          "assessment": "acceptable",
+          "reason": "Finished and needs sending retained."
+        },
+        {
+          "fixtureID": "qwen-particle-kok-context",
+          "assessment": "major",
+          "reason": "Why still awake becomes when did not sleep."
+        },
+        {
+          "fixtureID": "qwen-negative-nggak-context",
+          "assessment": "major",
+          "reason": "Pickup becomes getting lost."
+        },
+        {
+          "fixtureID": "qwen-negative-ga-context",
+          "assessment": "minor",
+          "reason": "Departure question retained, changed-plan premise weaker."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "major",
+          "reason": "Father grammar wrong, aunt untranslated and later becomes tomorrow."
+        },
+        {
+          "fixtureID": "qwen-quoted-reply-context",
+          "assessment": "acceptable",
+          "reason": "Not angry retained; target gender not specified."
+        },
+        {
+          "fixtureID": "qwen-omitted-dia-station-context",
+          "assessment": "major",
+          "reason": "Adds forget and loses pickup event."
+        }
+      ]
+    },
+    "qwen3-context-on": {
+      "runSHA256": "27149f73bacce1a0cfa92c7bfbafb27e9172e755df2549bcdec4fe2cdc8dc6be",
+      "results": [
+        {
+          "fixtureID": "qwen-dia-late-context",
+          "assessment": "major",
+          "reason": "Malformed declared; female reference lost."
+        },
+        {
+          "fixtureID": "qwen-omitted-subject-finished-context",
+          "assessment": "acceptable",
+          "reason": "Finished and needs sending retained."
+        },
+        {
+          "fixtureID": "qwen-particle-kok-context",
+          "assessment": "major",
+          "reason": "Present still awake becomes past sleep."
+        },
+        {
+          "fixtureID": "qwen-negative-nggak-context",
+          "assessment": "major",
+          "reason": "Pickup becomes bringing, intended participants omitted."
+        },
+        {
+          "fixtureID": "qwen-negative-ga-context",
+          "assessment": "minor",
+          "reason": "Changed plan becomes desire to go."
+        },
+        {
+          "fixtureID": "qwen-kinship-bapak-tante-context",
+          "assessment": "incomplete",
+          "reason": "Initial 2048-token run has no final output; retry separately retained."
+        },
+        {
+          "fixtureID": "qwen-quoted-reply-context",
+          "assessment": "major",
+          "reason": "Indonesian residue and malformed reassurance."
+        },
+        {
+          "fixtureID": "qwen-omitted-dia-station-context",
+          "assessment": "major",
+          "reason": "Pickup at station becomes take to station."
+        }
+      ]
+    }
+  }
+}
