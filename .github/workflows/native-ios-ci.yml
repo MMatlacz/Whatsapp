@@ -108,11 +108,13 @@ jobs:
           set -euo pipefail
           xcodebuild \
             -project native-ios/WhatsAppTranslator.xcodeproj \
-            -target WhatsAppTranslator \
+            -scheme WhatsAppTranslator \
             -configuration Debug \
-            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/whatsapp-derived-data" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
+            INDEX_STORE_PATH="$RUNNER_TEMP/whatsapp-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build
 

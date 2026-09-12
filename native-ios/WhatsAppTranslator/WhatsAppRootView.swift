@@ -34,7 +34,7 @@ private struct WhatsAppChatsView: View {
         NavigationStack {
             Group {
                 if let webView = session.webView {
-                    WhatsAppWebPage(webView: webView)
+                    WhatsAppWebPage(webView: webView, pageZoom: session.pageZoom)
                         .accessibilityIdentifier("whatsapp-chat-page")
                 } else {
                     VStack(spacing: 20) {

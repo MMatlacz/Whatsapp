@@ -24,6 +24,10 @@ Date: 2026-09-12. Simulator: iPhone 15 Pro Max, iOS 26.5.
 
 ## Required account-dependent tests
 
-The simulator has not been linked to an account by the agent. The user must complete linking in the WhatsApp app, keeping codes and credentials out of chat and repository artifacts. After linking, verify chat browsing, history scrolling, composing, sending an explicitly authorized test message, receiving it, relaunch restoration, and offline reconnect. Disconnect and error recovery still require runtime acceptance testing beyond their compiled implementation.
+The user completed account linking on 2026-09-12. Subsequent simulator checks verified a populated chat list, opening an existing conversation with history and composer, switching through Session back to that conversation, and an authenticated-ui-heuristic result after refreshing diagnostics. Rebuilding and relaunching the app restored the authenticated chat list without requiring another login.
 
-No successful send, delivery acknowledgement, authenticated restoration, or offline sync is claimed. No real-message native bridge, custom SwiftUI conversation UI, or translation engine was enabled. Physical-device requirements in #5, #6, and #122 remain separate. This handoff does not close the broader native transport/UI roadmap.
+Authenticated testing exposed clipped desktop controls. The iOS host now gives the page a real desktop-width viewport and scales that view to fit, with an outer scroll container for enlarged page sizes. The full chat layout was then visible and interactive. No private chat screenshots, message bodies, contacts, credentials, or pairing material are included in this evidence.
+
+Sending an explicitly authorized test message, verifying its receipt, and offline reconnect remain pending. Disconnect and error recovery still require runtime acceptance testing beyond their compiled implementation.
+
+No successful send, delivery acknowledgement, or offline sync is claimed. No real-message native bridge, custom SwiftUI conversation UI, or translation engine was enabled. Physical-device requirements in #5, #6, and #122 remain separate. This handoff does not close the broader native transport/UI roadmap.

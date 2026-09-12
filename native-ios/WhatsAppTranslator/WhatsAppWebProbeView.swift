@@ -128,16 +128,61 @@ struct WhatsAppWebProbeView: View {
 #if os(iOS)
 struct WhatsAppWebPage: UIViewRepresentable {
     let webView: WKWebView
+    let pageZoom: Double
 
-    func makeUIView(context: Context) -> WKWebView { webView }
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func makeUIView(context: Context) -> WhatsAppDesktopViewport {
+        WhatsAppDesktopViewport(webView: webView)
+    }
+    func updateUIView(_ uiView: WhatsAppDesktopViewport, context: Context) {
+        uiView.pageZoom = pageZoom
+    }
+}
+
+final class WhatsAppDesktopViewport: UIView {
+    private let webView: WKWebView
+    private let scrollView = UIScrollView()
+    var pageZoom = 1.0 { didSet { setNeedsLayout() } }
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+        clipsToBounds = true
+        addSubview(scrollView)
+        scrollView.addSubview(webView)
+        scrollView.contentInsetAdjustmentBehavior = .never
+        webView.pageZoom = 1
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0, bounds.height > 0 else { return }
+        scrollView.frame = bounds
+        // Give WhatsApp a real desktop layout viewport. WKWebView.pageZoom
+        // alone can shrink its fixed-width app canvas while leaving controls clipped.
+        let desktopWidth = max(1024, bounds.width)
+        let fitScale = bounds.width / desktopWidth
+        let scale = fitScale * pageZoom
+        let desktopSize = CGSize(width: desktopWidth, height: bounds.height / fitScale)
+        webView.bounds = CGRect(origin: .zero, size: desktopSize)
+        webView.transform = CGAffineTransform(scaleX: scale, y: scale)
+        let scaledSize = CGSize(width: desktopSize.width * scale, height: desktopSize.height * scale)
+        webView.center = CGPoint(x: scaledSize.width / 2, y: scaledSize.height / 2)
+        scrollView.contentSize = scaledSize
+        scrollView.contentOffset = CGPoint(
+            x: min(scrollView.contentOffset.x, max(0, scaledSize.width - bounds.width)),
+            y: min(scrollView.contentOffset.y, max(0, scaledSize.height - bounds.height))
+        )
+    }
 }
 #else
 struct WhatsAppWebPage: NSViewRepresentable {
     let webView: WKWebView
+    let pageZoom: Double
 
     func makeNSView(context: Context) -> WKWebView { webView }
-    func updateNSView(_ nsView: WKWebView, context: Context) {}
+    func updateNSView(_ nsView: WKWebView, context: Context) { nsView.pageZoom = pageZoom }
 }
 #endif
 
@@ -213,7 +258,6 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     func setPageZoom(_ zoom: Double) {
         guard zoom.isFinite, (0.5...1.5).contains(zoom) else { return }
         pageZoom = zoom
-        webView?.pageZoom = zoom
     }
 
     func startPhoneNumberLinking() {
@@ -424,7 +468,6 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
         let webView = WhatsAppWebProfile.makeWebView()
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.pageZoom = pageZoom
         self.webView = webView
         return webView
     }
