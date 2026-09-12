@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.9485424583253916,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7781000137329102,
+  "fixtureID" : "qwen-omitted-dia-station-no-context",
+  "focus" : "omitted subject context and later pickup",
+  "generatedTokenCount" : 9,
+  "generationSeconds" : 0.15105104446411133,
+  "input" : "Nanti aku jemput dia di stasiun.",
+  "intendedMeaning" : "I will pick Rina up at the station later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Napiszę go na stacji.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+  "promptTokenCount" : 357,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "omitted-dia-station",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dia with omitted gender",
+  "tokensPerSecond" : 59.582507568415636,
+  "unknownMeasurements" : [
+
+  ]
+}

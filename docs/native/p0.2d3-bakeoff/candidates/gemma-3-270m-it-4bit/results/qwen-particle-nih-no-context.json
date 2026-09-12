@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.2815191249828786,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.27491092681884766,
+  "fixtureID" : "qwen-particle-nih-no-context",
+  "focus" : "nih as emphatic pointing or presenting",
+  "generatedTokenCount" : 90,
+  "generationSeconds" : 1.282019019126892,
+  "input" : "Ini nih yang aku maksud.",
+  "intendedMeaning" : "This is exactly what I meant.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"Instruction\": \"Translate the following into Polish. Please use the provided Polish translation.\",\n  \"prompt\": \"Polish translation: Please use the provided Polish translation.\",\nopdracht: \"Translate the following into Indonesian. Please use the provided Indonesian translation.\",\n\"instructions\": \"Please use the provided Indonesian translation.\",\n\"data\": \"Please use the provided data.\",\n\"state\": \"en\"\n```\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve emphasis and conversational immediacy.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-nih",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Nih pointing particle",
+  "tokensPerSecond" : 70.20176663314537,
+  "unknownMeasurements" : [
+
+  ]
+}

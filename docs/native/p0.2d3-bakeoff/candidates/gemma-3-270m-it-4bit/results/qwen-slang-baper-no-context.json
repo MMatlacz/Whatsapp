@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.225910750014009,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.26380491256713867,
+  "fixtureID" : "qwen-slang-baper-no-context",
+  "focus" : "baper meaning taking something too personally",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2599880695343018,
+  "input" : "Jangan baper, aku cuma bercanda.",
+  "intendedMeaning" : "Do not take it personally; I was only joking.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"instruction\": \"Translate the following into Polish.\",\n  \"prompt\": \"Translate the following into Polish.\",\n  \"input\": \"The following is a story. The story is about a young woman who discovers a hidden talent.\",\n  \"output\": \"The following is a story. The story is about a young woman who discovers a hidden talent.\"\n  \"response\": \"The following is a story. The story is about a young",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the reassuring but teasing register.",
+  "promptTokenCount" : 349,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "slang-baper",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Baper slang",
+  "tokensPerSecond" : 76.19119761624577,
+  "unknownMeasurements" : [
+
+  ]
+}

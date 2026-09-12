@@ -1,6 +1,10 @@
 import Foundation
 import TranslationCore
 
+#if canImport(Darwin)
+import Darwin
+#endif
+
 public enum TranslationBenchmarkTermination: String, Codable, Equatable, Sendable {
     case returned
     case failed
@@ -185,6 +189,12 @@ public struct TranslationBenchmarkModelProvenance: Codable, Equatable, Sendable 
     public let runtime: QwenMLXRuntimeProvenance
     public let generation: QwenMLXGenerationSettings
     public let executionEnvironment: String
+    public let candidateID: String?
+    public let candidateDisplayName: String?
+    public let candidateLicense: String?
+    public let candidateProvenance: TranslationBenchmarkCandidateProvenance?
+    public let publishedWeightBytes: Int64?
+    public let memoryBudgetBytes: Int64?
 
     public init(
         manifest: QwenMLXArtifactManifest,
@@ -192,7 +202,8 @@ public struct TranslationBenchmarkModelProvenance: Codable, Equatable, Sendable 
         generation: QwenMLXGenerationSettings = QwenMLXGenerationSettings(
             limits: QwenMLXDiagnosticLimits.benchmark
         ),
-        executionEnvironment: String = "unknown"
+        executionEnvironment: String = "unknown",
+        candidate: TranslationBenchmarkCandidate? = nil
     ) {
         self.repositoryID = manifest.repositoryID
         self.revision = manifest.revision
@@ -202,7 +213,64 @@ public struct TranslationBenchmarkModelProvenance: Codable, Equatable, Sendable 
         self.runtime = runtime
         self.generation = generation
         self.executionEnvironment = executionEnvironment
+        self.candidateID = candidate?.id.rawValue
+        self.candidateDisplayName = candidate?.displayName
+        self.candidateLicense = candidate?.license
+        self.candidateProvenance = candidate?.provenance
+        self.publishedWeightBytes = candidate?.publishedWeightBytes
+        self.memoryBudgetBytes = candidate?.memoryBudgetBytes
     }
+}
+
+/// Run-level resource measurements. `ru_maxrss` is a process high-water mark,
+/// so a multi-candidate process should be treated as a screening signal only;
+/// isolate candidates in separate processes when memory attribution is a gate.
+public struct TranslationBenchmarkResourceMetrics: Codable, Equatable, Sendable {
+    public let peakResidentMemoryBytes: UInt64?
+    public let measurementSource: String?
+    public let measurementScope: String?
+    public let unknownMeasurements: [String]
+
+    public init(
+        peakResidentMemoryBytes: UInt64? = nil,
+        measurementSource: String? = nil,
+        measurementScope: String? = nil,
+        unknownMeasurements: [String] = []
+    ) {
+        self.peakResidentMemoryBytes = peakResidentMemoryBytes
+        self.measurementSource = measurementSource
+        self.measurementScope = measurementScope
+        self.unknownMeasurements = unknownMeasurements
+    }
+
+    public static let notMeasured = TranslationBenchmarkResourceMetrics(
+        unknownMeasurements: [
+            "measurementScope",
+            "measurementSource",
+            "peakResidentMemoryBytes",
+        ]
+    )
+
+    #if canImport(Darwin)
+    /// Capture the Darwin process high-water resident set size. This is
+    /// available on macOS and iOS, but it is not a per-model attribution when
+    /// multiple candidates run in one process.
+    public static func captureProcessHighWater() -> TranslationBenchmarkResourceMetrics {
+        var usage = rusage()
+        guard getrusage(RUSAGE_SELF, &usage) == 0 else {
+            return .notMeasured
+        }
+        return TranslationBenchmarkResourceMetrics(
+            peakResidentMemoryBytes: UInt64(usage.ru_maxrss),
+            measurementSource: "getrusage(RUSAGE_SELF).ru_maxrss",
+            measurementScope: "process-high-water"
+        )
+    }
+    #else
+    public static func captureProcessHighWater() -> TranslationBenchmarkResourceMetrics {
+        .notMeasured
+    }
+    #endif
 }
 
 public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
@@ -353,6 +421,7 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
     public let results: [TranslationBenchmarkResultRecord]
     public let corpus: String
     public let timeoutSeconds: Int?
+    public let resourceMetrics: TranslationBenchmarkResourceMetrics?
 
     public init(
         timestamp: String,
@@ -363,7 +432,8 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
         physicalDeviceEvidence: PhysicalDeviceEnvironmentEvidence = .notRun,
         results: [TranslationBenchmarkResultRecord],
         corpus: String = "shared-p01",
-        timeoutSeconds: Int? = nil
+        timeoutSeconds: Int? = nil,
+        resourceMetrics: TranslationBenchmarkResourceMetrics? = nil
     ) {
         self.schemaVersion = 3
         self.timestamp = timestamp
@@ -375,6 +445,7 @@ public struct TranslationBenchmarkReport: Codable, Equatable, Sendable {
         self.results = results
         self.corpus = corpus
         self.timeoutSeconds = timeoutSeconds
+        self.resourceMetrics = resourceMetrics
     }
 }
 
@@ -513,10 +584,33 @@ public enum TranslationBenchmarkExporter {
             "- Per-case timeout seconds: \(report.timeoutSeconds.map(String.init) ?? "unknown")",
             "- Evaluation contract: \(report.evaluationContract.version)",
             "- Physical-device evidence: \(evidenceState)",
+        ]
+
+        if let candidateID = report.model.candidateID {
+            lines.append(contentsOf: [
+                "- Candidate: \(sanitize(report.model.candidateDisplayName ?? candidateID))",
+                "- Candidate ID: \(sanitize(candidateID))",
+                "- Candidate provenance: \(report.model.candidateProvenance?.rawValue ?? "unknown")",
+                "- Candidate license: \(sanitize(report.model.candidateLicense ?? "unknown"))",
+                "- Published weight estimate bytes: \(report.model.publishedWeightBytes.map(String.init) ?? "unknown")",
+                "- Candidate memory budget bytes: \(report.model.memoryBudgetBytes.map(String.init) ?? "unknown")",
+            ])
+        }
+
+        if let resources = report.resourceMetrics {
+            lines.append(
+                "- Peak resident memory bytes: \(resources.peakResidentMemoryBytes.map(String.init) ?? "unknown")"
+            )
+            lines.append(
+                "- Memory measurement: \(sanitize(resources.measurementSource ?? "unknown")) (\(sanitize(resources.measurementScope ?? "unknown")))"
+            )
+        }
+
+        lines.append(contentsOf: [
             "",
             "| Fixture | Mode | Context | Execution | Output | Duration s | Cold load | Load s | First token s | Generation s | Tokens | tok/s | Finish |",
             "| --- | --- | ---: | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
-        ]
+        ])
 
         for result in report.results {
             let cold = result.modelLoadWasCold.map(String.init) ?? "unknown"

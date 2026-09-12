@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 1.6935952083440498,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5909310579299927,
+  "fixtureID" : "qwen-negative-ga-context",
+  "focus" : "ga spelling variant and change of plan",
+  "generatedTokenCount" : 18,
+  "generationSeconds" : 0.39848601818084717,
+  "input" : "Kamu ga jadi berangkat?",
+  "intendedMeaning" : "Are you no longer going to leave/go?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Ještě nie, nie chcę się wyjeżdżać w siedem.\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+  "promptTokenCount" : 377,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-ga",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Bukannya kamu mau berangkat jam tujuh?",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Iya, tapi hujan deras sekali.",
+        "speaker" : "P2"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Ga question variant",
+  "tokensPerSecond" : 45.17097006859337,
+  "unknownMeasurements" : [
+
+  ]
+}

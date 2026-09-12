@@ -8,8 +8,16 @@ struct QwenMLXBenchmarkCommand {
     static func main() async {
         do {
             let options = try Options(arguments: Array(CommandLine.arguments.dropFirst()))
+            if !options.candidates.isEmpty {
+                try await runBakeoff(options)
+                return
+            }
+
+            guard let modelDirectory = options.modelDirectory else {
+                throw CommandError.missingArgument("--model-dir or --candidate")
+            }
             let verified = try QwenMLXArtifactVerifier.verify(
-                directory: options.modelDirectory
+                directory: modelDirectory
             )
             // The CI command is the functional path. Keep its generation
             // settings aligned with the Simulator harness so the fallback
@@ -49,6 +57,9 @@ struct QwenMLXBenchmarkCommand {
             print("Smoke status: \(smokeStatus(smoke))")
             guard isSuccessful(smoke) else {
                 throw CommandError.smokeFailed
+            }
+            if options.smokeOnly {
+                return
             }
 
             let fixtures: [TranslationBenchmarkFixture]
@@ -107,6 +118,48 @@ struct QwenMLXBenchmarkCommand {
     ) -> String {
         isSuccessful(result) ? "passed" : "failed"
     }
+
+    private static func runBakeoff(_ options: Options) async throws {
+        let fixtures: [TranslationBenchmarkFixture]
+        switch options.corpus {
+        case .functional:
+            fixtures = options.smokeOnly
+                ? [QwenFunctionalTranslationBenchmarkFixtures.smoke]
+                : QwenFunctionalTranslationBenchmarkFixtures.fixtures
+        case .sharedP01:
+            fixtures = options.smokeOnly
+                ? [P01SharedTranslationBenchmarkFixtures.unencoded[0]]
+                : P01SharedTranslationBenchmarkFixtures.unencoded
+        }
+
+        let report = await TranslationBenchmarkBakeoffRunner(
+            limits: .functionalCI,
+            timeoutSeconds: options.timeoutSeconds
+        ).run(
+            inputs: options.candidates,
+            fixtures: fixtures,
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            sourceRevision: options.sourceRevision,
+            executionEnvironment: options.executionEnvironment,
+            corpus: options.corpus.rawValue
+        )
+        try TranslationBenchmarkBakeoffExporter.write(
+            report: report,
+            to: options.outputDirectory
+        )
+
+        print(TranslationBenchmarkBakeoffExporter.markdownSummary(report))
+        print("Wrote candidate bake-off artifacts to \(options.outputDirectory.path)")
+
+        let failedRuns = report.candidates.filter { run in
+            guard let candidateReport = run.report else { return true }
+            return run.status != .completed
+                || candidateReport.results.contains { !isSuccessful($0) }
+        }
+        if !failedRuns.isEmpty {
+            throw CommandError.bakeoffFailed(failedRuns.count)
+        }
+    }
 }
 
 private struct Options {
@@ -115,31 +168,45 @@ private struct Options {
         case sharedP01 = "shared-p01"
     }
 
-    let modelDirectory: URL
+    let modelDirectory: URL?
+    let candidates: [TranslationBenchmarkCandidateInput]
     let outputDirectory: URL
     let sourceRevision: String?
     let timeoutSeconds: Int
     let corpus: Corpus
     let executionEnvironment: String
+    let smokeOnly: Bool
 
     static let usage = """
     Usage:
       qwen-mlx-benchmark --model-dir PATH --output-dir PATH [--corpus functional|shared-p01]
-        [--execution-environment NAME] [--source-revision SHA] [--timeout-seconds N]
+        [--execution-environment NAME] [--source-revision SHA] [--timeout-seconds N] [--smoke-only]
 
-    The command always runs a one-case real-inference smoke test before the selected
-    corpus. It never downloads model artifacts and does not make a translation-quality
-    or physical-device acceptance decision. The functional corpus is synthetic and
-    includes context-free and bounded-context Indonesian -> Polish comparisons.
+      qwen-mlx-benchmark --candidate ID[@REVISION]=PATH --candidate ID[@REVISION]=PATH ... --output-dir PATH
+        [--corpus functional|shared-p01] [--execution-environment NAME]
+        [--source-revision SHA] [--timeout-seconds N] [--smoke-only]
+
+    The single-model --model-dir command runs a one-case real-inference smoke test
+    before its selected corpus. The multi-candidate command runs the full selected
+    corpus for every candidate. Neither path downloads model artifacts or makes a
+    translation-quality or physical-device acceptance decision. The functional
+    corpus is synthetic and includes context-free and bounded-context Indonesian ->
+    Polish comparisons.
+    Candidate folders are verified locally and are never downloaded by this command.
+    Candidate metadata is research-level until an exact snapshot revision and
+    integrity record are captured by the operator.
     """
 
     init(arguments: [String]) throws {
         var modelDirectory: URL?
+        var candidates: [TranslationBenchmarkCandidateInput] = []
         var outputDirectory: URL?
         var sourceRevision: String?
         var timeoutSeconds = 120
         var corpus = Corpus.sharedP01
+        var corpusWasSpecified = false
         var executionEnvironment = "not-specified"
+        var smokeOnly = false
         var index = 0
 
         while index < arguments.count {
@@ -151,6 +218,49 @@ private struct Options {
                     throw CommandError.missingValue(argument)
                 }
                 modelDirectory = URL(fileURLWithPath: arguments[index])
+            case "--candidate":
+                index += 1
+                guard index < arguments.count else {
+                    throw CommandError.missingValue(argument)
+                }
+                let value = arguments[index]
+                guard
+                    let separator = value.firstIndex(of: "="),
+                    separator != value.startIndex
+                else {
+                    throw CommandError.invalidCandidate(value)
+                }
+                let candidateSpec = String(value[..<separator])
+                let pathStart = value.index(after: separator)
+                let path = String(value[pathStart...])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let candidateParts = candidateSpec.split(separator: "@", maxSplits: 1)
+                guard let candidateName = candidateParts.first else {
+                    throw CommandError.invalidCandidate(value)
+                }
+                guard var candidate = TranslationBenchmarkCandidate.resolve(String(candidateName)) else {
+                    throw CommandError.invalidCandidate(value)
+                }
+                if candidateParts.count == 2 {
+                    guard let withRevision = candidate.withSnapshotRevision(
+                        String(candidateParts[1])
+                    ) else {
+                        throw CommandError.invalidCandidate(value)
+                    }
+                    candidate = withRevision
+                }
+                guard
+                    !path.isEmpty,
+                    !candidates.contains(where: { $0.candidate.id == candidate.id })
+                else {
+                    throw CommandError.invalidCandidate(value)
+                }
+                candidates.append(
+                    TranslationBenchmarkCandidateInput(
+                        candidate: candidate,
+                        directory: URL(fileURLWithPath: path)
+                    )
+                )
             case "--output-dir":
                 index += 1
                 guard index < arguments.count else {
@@ -175,6 +285,7 @@ private struct Options {
                     throw CommandError.invalidCorpus
                 }
                 corpus = value
+                corpusWasSpecified = true
             case "--execution-environment":
                 index += 1
                 guard index < arguments.count else {
@@ -197,6 +308,8 @@ private struct Options {
                     throw CommandError.invalidTimeout
                 }
                 timeoutSeconds = value
+            case "--smoke-only":
+                smokeOnly = true
             case "--help", "-h":
                 print(Self.usage)
                 Darwin.exit(EXIT_SUCCESS)
@@ -206,19 +319,27 @@ private struct Options {
             index += 1
         }
 
-        guard let modelDirectory else {
-            throw CommandError.missingArgument("--model-dir")
+        guard modelDirectory != nil || !candidates.isEmpty else {
+            throw CommandError.missingArgument("--model-dir or --candidate")
+        }
+        guard modelDirectory == nil || candidates.isEmpty else {
+            throw CommandError.mixedModelArguments
+        }
+        if !candidates.isEmpty && !corpusWasSpecified {
+            corpus = .functional
         }
         guard let outputDirectory else {
             throw CommandError.missingArgument("--output-dir")
         }
 
-        self.modelDirectory = modelDirectory.standardizedFileURL
+        self.modelDirectory = modelDirectory?.standardizedFileURL
+        self.candidates = candidates
         self.outputDirectory = outputDirectory.standardizedFileURL
         self.sourceRevision = sourceRevision
         self.timeoutSeconds = timeoutSeconds
         self.corpus = corpus
         self.executionEnvironment = executionEnvironment
+        self.smokeOnly = smokeOnly
     }
 }
 
@@ -226,12 +347,15 @@ private enum CommandError: Error, CustomStringConvertible {
     case missingArgument(String)
     case missingValue(String)
     case unknownArgument(String)
+    case invalidCandidate(String)
+    case mixedModelArguments
     case invalidTimeout
     case invalidCorpus
     case invalidExecutionEnvironment
     case smokeDidNotProduceARecord
     case smokeFailed
     case benchmarkFailed(Int)
+    case bakeoffFailed(Int)
 
     var description: String {
         switch self {
@@ -241,6 +365,10 @@ private enum CommandError: Error, CustomStringConvertible {
             "missing value for \(argument)"
         case .unknownArgument(let argument):
             "unknown argument \(argument)"
+        case .invalidCandidate(let value):
+            "candidate must be a known ID[@REVISION]=PATH pair without duplicates: \(value)"
+        case .mixedModelArguments:
+            "use --model-dir or one or more --candidate arguments, not both"
         case .invalidTimeout:
             "timeout must be a positive integer number of seconds"
         case .invalidCorpus:
@@ -253,6 +381,8 @@ private enum CommandError: Error, CustomStringConvertible {
             "real-inference smoke test failed"
         case .benchmarkFailed(let count):
             "benchmark produced \(count) failed, empty, truncated, or otherwise invalid result(s)"
+        case .bakeoffFailed(let count):
+            "candidate bake-off produced \(count) failed, empty, truncated, or otherwise invalid candidate run(s)"
         }
     }
 }

@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.9341283750254661,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7806088924407959,
+  "fixtureID" : "qwen-slang-wkwk-no-context",
+  "focus" : "Indonesian chat laughter",
+  "generatedTokenCount" : 8,
+  "generationSeconds" : 0.1365680694580078,
+  "input" : "Aku salah masuk grup wkwk.",
+  "intendedMeaning" : "I joined the wrong group, haha.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Kryłem grup wkwk.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Render wkwk as natural laughter in Polish or preserve its light humorous effect.",
+  "promptTokenCount" : 356,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "slang-wkwk",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Wkwk laughter slang",
+  "tokensPerSecond" : 58.578846664152735,
+  "unknownMeasurements" : [
+
+  ]
+}

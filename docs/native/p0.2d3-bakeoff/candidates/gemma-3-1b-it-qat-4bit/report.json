@@ -1,0 +1,1309 @@
+{
+  "corpus" : "functional",
+  "evaluationContract" : {
+    "batteryPolicy" : "Record battery level/charging state before and after the full synthetic pass; treat it as an observation, not a hard gate, because one short run is too coarse for a reliable percentage budget.",
+    "performance" : {
+      "disallowedThermalStates" : [
+        "serious",
+        "critical"
+      ],
+      "maximumColdModelLoadSeconds" : 8,
+      "maximumPeakMemoryBytes" : 1610612736,
+      "maximumWarmFirstTokenSeconds" : 1.5,
+      "maximumWarmGenerationSeconds" : 4,
+      "minimumWarmTokensPerSecond" : 10,
+      "requireCancellation" : true,
+      "requireOfflineAfterProvisioning" : true
+    },
+    "quality" : {
+      "criteria" : [
+        {
+          "description" : "Preserves the intended meaning without material omission or inversion.",
+          "hardGate" : true,
+          "identifier" : "meaning",
+          "minimumScore" : 2
+        },
+        {
+          "description" : "Resolves Indonesian pronouns and omitted subjects consistently with context.",
+          "hardGate" : false,
+          "identifier" : "pronouns-and-omitted-subjects",
+          "minimumScore" : 1
+        },
+        {
+          "description" : "Preserves kinship roles and family relationships without invention.",
+          "hardGate" : false,
+          "identifier" : "family-relationships",
+          "minimumScore" : 1
+        },
+        {
+          "description" : "Preserves particles, slang, humor, register, and conversational tone naturally.",
+          "hardGate" : false,
+          "identifier" : "slang-and-tone",
+          "minimumScore" : 1
+        },
+        {
+          "description" : "Produces understandable, natural Polish with acceptable grammar.",
+          "hardGate" : false,
+          "identifier" : "polish-grammar",
+          "minimumScore" : 1
+        },
+        {
+          "description" : "Adds no unsupported facts, speakers, relationships, or events.",
+          "hardGate" : true,
+          "identifier" : "hallucinations",
+          "minimumScore" : 2
+        },
+        {
+          "description" : "Uses quoted replies and reference context without confusing them with the target message.",
+          "hardGate" : false,
+          "identifier" : "quoted-reference-handling",
+          "minimumScore" : 1
+        }
+      ],
+      "scoreScale" : "0=incorrect, 1=partially acceptable, 2=acceptable"
+    },
+    "version" : "p0.2d1-v1"
+  },
+  "maxGeneratedTokens" : 96,
+  "model" : {
+    "candidateDisplayName" : "Gemma 3 1B IT QAT 4-bit",
+    "candidateID" : "gemma-3-1b-it-qat-4bit",
+    "candidateLicense" : "Gemma Terms of Use",
+    "candidateProvenance" : "researchUnpinned",
+    "chatTemplateRevision" : "15fed4eafb456c6fcb2a1165f19ac609670ed14b",
+    "executionEnvironment" : "macos-arm64-local",
+    "generation" : {
+      "maxGeneratedTokens" : 96,
+      "temperature" : 0.7,
+      "thinkingEnabled" : false,
+      "topK" : 20,
+      "topP" : 0.8
+    },
+    "memoryBudgetBytes" : 1610612736,
+    "publishedWeightBytes" : 733000000,
+    "quantization" : "4-bit QAT",
+    "repositoryID" : "mlx-community/gemma-3-1b-it-qat-4bit",
+    "revision" : "15fed4eafb456c6fcb2a1165f19ac609670ed14b",
+    "runtime" : {
+      "mlxSwiftRevision" : "0bb916c67f4b9e5c682cbe02a42c701c93ab5021",
+      "mlxSwiftVersion" : "0.31.6",
+      "runtime" : "mlx-swift-lm",
+      "runtimeRevision" : "1c05248bb0899e2a7a4962b84d319cf12f4e12aa",
+      "runtimeVersion" : "3.31.3",
+      "swiftHuggingFaceRevision" : "b5403ed09403f674601fd1123e07c5b32914d16f",
+      "swiftHuggingFaceVersion" : "0.10.1",
+      "swiftTransformersRevision" : "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+      "swiftTransformersVersion" : "1.3.4"
+    },
+    "tokenizerRevision" : "15fed4eafb456c6fcb2a1165f19ac609670ed14b"
+  },
+  "physicalDeviceEvidence" : {
+    "cancellationBehavior" : "notRun",
+    "offlineAfterProvisioning" : "notRun",
+    "state" : "notRun",
+    "unknownMeasurements" : [
+      "batteryObservation",
+      "deviceModel",
+      "offlineAfterProvisioning",
+      "osBuild",
+      "osVersion",
+      "peakMemoryBytes",
+      "peakMemoryMeasurementSource",
+      "provisioningState",
+      "sdkVersion",
+      "thermalObservation",
+      "xcodeBuild",
+      "xcodeVersion"
+    ]
+  },
+  "resourceMetrics" : {
+    "measurementScope" : "process-high-water",
+    "measurementSource" : "getrusage(RUSAGE_SELF).ru_maxrss",
+    "peakResidentMemoryBytes" : 1124089856,
+    "unknownMeasurements" : [
+
+    ]
+  },
+  "results" : [
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 3.6097186666738708,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.40183496475219727,
+      "fixtureID" : "qwen-straight-arrival-no-context",
+      "focus" : "basic informal statement",
+      "generatedTokenCount" : 8,
+      "generationSeconds" : 0.11434900760650635,
+      "input" : "Aku sudah sampai di rumah.",
+      "intendedMeaning" : "The speaker has already arrived home.",
+      "modelLoadSeconds" : 2.354330458329059,
+      "modelLoadWasCold" : true,
+      "output" : "\"Ja już jestem w domu.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the first-person voice and informal but neutral register.",
+      "promptTokenCount" : 346,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "straight-arrival",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Straightforward arrival",
+      "tokensPerSecond" : 69.96125429902557,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.3419275416817982,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.35996806621551514,
+      "fixtureID" : "qwen-straight-plan-no-context",
+      "focus" : "future plan and casual question particle",
+      "generatedTokenCount" : 19,
+      "generationSeconds" : 0.27470695972442627,
+      "input" : "Besok kita makan siang jam satu ya.",
+      "intendedMeaning" : "The speaker proposes lunch together tomorrow at one o'clock.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Później będziemy posiłkować się obiadem o godzinie jednej.",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the friendly confirmation-seeking tone of ya.",
+      "promptTokenCount" : 349,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "straight-plan",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Straightforward plan",
+      "tokensPerSecond" : 69.16461096966728,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.2516998333157972,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.3545011281967163,
+      "fixtureID" : "qwen-straight-thanks-no-context",
+      "focus" : "natural conversational gratitude",
+      "generatedTokenCount" : 9,
+      "generationSeconds" : 0.16799497604370117,
+      "input" : "Makasih sudah bantu aku hari ini.",
+      "intendedMeaning" : "The speaker thanks the other person for helping today.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Dzięki za pomoc w dzisiaj.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep it warm and conversational rather than formal.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "straight-thanks",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Straightforward thanks",
+      "tokensPerSecond" : 53.573030646218825,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.558755291684065,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5475149154663086,
+      "fixtureID" : "qwen-dia-late-no-context",
+      "focus" : "gender-neutral dia resolved from bounded context",
+      "generatedTokenCount" : 13,
+      "generationSeconds" : 0.28392493724823,
+      "input" : "Dia bilang akan datang nanti.",
+      "intendedMeaning" : "Rina said that she will come later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Oni powiedział, że przyjdzie jutro.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "promptTokenCount" : 346,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "dia-late",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Dia with contextual feminine referent",
+      "tokensPerSecond" : 45.78674957541456,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 2.024576541647548,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.6020820140838623,
+      "fixtureID" : "qwen-dia-late-context",
+      "focus" : "gender-neutral dia resolved from bounded context",
+      "generatedTokenCount" : 32,
+      "generationSeconds" : 0.6990289688110352,
+      "input" : "Dia bilang akan datang nanti.",
+      "intendedMeaning" : "Rina said that she will come later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Rina nadal pracuje w biurze, ale tylko chwilę przed zakończeniem.\nOkej, czekamy na nią w kawi.\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "promptTokenCount" : 383,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "dia-late",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Rina masih di kantor, tapi sebentar lagi selesai.",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Oke, kita tunggu dia di kafe.",
+            "speaker" : "P2"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Dia with contextual feminine referent",
+      "tokensPerSecond" : 45.777788085704344,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.5345596249972004,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5430339574813843,
+      "fixtureID" : "qwen-omitted-subject-finished-no-context",
+      "focus" : "omitted subject and passive-like chat shorthand",
+      "generatedTokenCount" : 13,
+      "generationSeconds" : 0.28430402278900146,
+      "input" : "Udah selesai, tinggal dikirim.",
+      "intendedMeaning" : "The file/task is finished; it only needs to be sent.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Użyliśmy się już, więc już nie potrzebujemy.",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "omitted-subject-finished",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Omitted subject after a file check",
+      "tokensPerSecond" : 45.72569840015262,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.6874634166597389,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.6048259735107422,
+      "fixtureID" : "qwen-omitted-subject-finished-context",
+      "focus" : "omitted subject and passive-like chat shorthand",
+      "generatedTokenCount" : 13,
+      "generationSeconds" : 0.37251198291778564,
+      "input" : "Udah selesai, tinggal dikirim.",
+      "intendedMeaning" : "The file/task is finished; it only needs to be sent.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Użyliśmy \"Udah selesai, tinggal dikirim.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "promptTokenCount" : 379,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "omitted-subject-finished",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Kamu sudah periksa file laporan itu?",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Iya, semua angka sudah benar.",
+            "speaker" : "SELF"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Omitted subject after a file check",
+      "tokensPerSecond" : 34.898206221916716,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4533710416581016,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5394079685211182,
+      "fixtureID" : "qwen-particle-dong-no-context",
+      "focus" : "dong as a soft, mildly pleading request",
+      "generatedTokenCount" : 8,
+      "generationSeconds" : 0.17311310768127441,
+      "input" : "Tunggu sebentar dong.",
+      "intendedMeaning" : "Please wait a moment.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Czekam chwilę.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the soft insistence; do not make it hostile or overly formal.",
+      "promptTokenCount" : 346,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-dong",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Dong request particle",
+      "tokensPerSecond" : 46.21256071914049,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4581632500048727,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5461269617080688,
+      "fixtureID" : "qwen-particle-sih-no-context",
+      "focus" : "sih as conversational emphasis and teasing blame",
+      "generatedTokenCount" : 9,
+      "generationSeconds" : 0.19647693634033203,
+      "input" : "Kamu sih bikin aku kaget.",
+      "intendedMeaning" : "You startled me; the speaker playfully blames the other person.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Ty się mnie wkurzyłeś.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the informal, teasing tone rather than translating sih literally.",
+      "promptTokenCount" : 347,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-sih",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Sih playful blame",
+      "tokensPerSecond" : 45.80690317977294,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.557444125006441,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5613939762115479,
+      "fixtureID" : "qwen-particle-nih-no-context",
+      "focus" : "nih as emphatic pointing or presenting",
+      "generatedTokenCount" : 13,
+      "generationSeconds" : 0.28490304946899414,
+      "input" : "Ini nih yang aku maksud.",
+      "intendedMeaning" : "This is exactly what I meant.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"To jest to, co chcę powiedzieć. \"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve emphasis and conversational immediacy.",
+      "promptTokenCount" : 346,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-nih",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Nih pointing particle",
+      "tokensPerSecond" : 45.62955722737809,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4674166666518431,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5454849004745483,
+      "fixtureID" : "qwen-particle-lah-no-context",
+      "focus" : "lah softening resignation",
+      "generatedTokenCount" : 10,
+      "generationSeconds" : 0.2176269292831421,
+      "input" : "Ya sudah lah, besok saja.",
+      "intendedMeaning" : "All right then, tomorrow will do.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Prawie, już! Jutro będzie.",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the resigned, de-escalating tone.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-lah",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Lah acceptance particle",
+      "tokensPerSecond" : 45.950195745258924,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4073264166945592,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5436890125274658,
+      "fixtureID" : "qwen-particle-kok-no-context",
+      "focus" : "kok as surprise or mild reproach",
+      "generatedTokenCount" : 7,
+      "generationSeconds" : 0.15073895454406738,
+      "input" : "Kok kamu belum tidur?",
+      "intendedMeaning" : "Why are you still not asleep?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Coś się dzieje?\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+      "promptTokenCount" : 345,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-kok",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Kok surprised question",
+      "tokensPerSecond" : 46.43789670143694,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.7357968333235476,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5887449979782104,
+      "fixtureID" : "qwen-particle-kok-context",
+      "focus" : "kok as surprise or mild reproach",
+      "generatedTokenCount" : 20,
+      "generationSeconds" : 0.4396829605102539,
+      "input" : "Kok kamu belum tidur?",
+      "intendedMeaning" : "Why are you still not asleep?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "P1: Bliżnie, musisz się przebudzić do pracy jutro.\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+      "promptTokenCount" : 377,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-kok",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Besok kamu harus bangun pagi untuk kerja.",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Aku masih belum ngantuk.",
+            "speaker" : "P2"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Kok surprised question",
+      "tokensPerSecond" : 45.48732108424196,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4484653333493043,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5426850318908691,
+      "fixtureID" : "qwen-particle-masa-no-context",
+      "focus" : "masa as disbelief or incredulity",
+      "generatedTokenCount" : 9,
+      "generationSeconds" : 0.19816994667053223,
+      "input" : "Masa harus aku jelasin lagi?",
+      "intendedMeaning" : "Do I really have to explain it again?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Masa harus aku jelasin lagi?\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve incredulity, not a neutral information question.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-masa",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Masa incredulous question",
+      "tokensPerSecond" : 45.41556452534634,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.549531583325006,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5394071340560913,
+      "fixtureID" : "qwen-slang-wkwk-no-context",
+      "focus" : "Indonesian chat laughter",
+      "generatedTokenCount" : 14,
+      "generationSeconds" : 0.30740392208099365,
+      "input" : "Aku salah masuk grup wkwk.",
+      "intendedMeaning" : "I joined the wrong group, haha.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Przepraszam, wpadłam do złego klubu.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Render wkwk as natural laughter in Polish or preserve its light humorous effect.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "slang-wkwk",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Wkwk laughter slang",
+      "tokensPerSecond" : 45.542685028954615,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.451983749982901,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5440469980239868,
+      "fixtureID" : "qwen-slang-mager-no-context",
+      "focus" : "mager meaning too lazy or unmotivated",
+      "generatedTokenCount" : 9,
+      "generationSeconds" : 0.19823002815246582,
+      "input" : "Hari ini aku mager banget.",
+      "intendedMeaning" : "I am extremely unmotivated/lazy today and do not feel like doing anything.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Dzisiaj naprawdę mnie drażnię.",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the casual self-description; do not turn it into a medical or moral judgment.",
+      "promptTokenCount" : 347,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "slang-mager",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Mager slang",
+      "tokensPerSecond" : 45.401799535021894,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.6311247916601133,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5515761375427246,
+      "fixtureID" : "qwen-slang-baper-no-context",
+      "focus" : "baper meaning taking something too personally",
+      "generatedTokenCount" : 16,
+      "generationSeconds" : 0.364886999130249,
+      "input" : "Jangan baper, aku cuma bercanda.",
+      "intendedMeaning" : "Do not take it personally; I was only joking.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nie bierz mnie za poważnie, tylko się śmieję.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the reassuring but teasing register.",
+      "promptTokenCount" : 349,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "slang-baper",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Baper slang",
+      "tokensPerSecond" : 43.84919177207705,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.583733375009615,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5425570011138916,
+      "fixtureID" : "qwen-negative-gak-no-context",
+      "focus" : "gak variant and future participation",
+      "generatedTokenCount" : 15,
+      "generationSeconds" : 0.3252509832382202,
+      "input" : "Aku gak bisa ikut malam ini.",
+      "intendedMeaning" : "I cannot join tonight.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Paknięję, nie mogę wziąć udział w wieczorze.",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Use informal Polish chat language without adding a reason.",
+      "promptTokenCount" : 347,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-gak",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Gak informal negation",
+      "tokensPerSecond" : 46.11823106777115,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.383417749981163,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.540208101272583,
+      "fixtureID" : "qwen-negative-nggak-no-context",
+      "focus" : "nggak and polite refusal",
+      "generatedTokenCount" : 6,
+      "generationSeconds" : 0.13088595867156982,
+      "input" : "Nggak usah dijemput.",
+      "intendedMeaning" : "There is no need to pick me up.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nie przejmujemy.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the polite, practical refusal and first-person implication.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-nggak",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Nggak informal negation",
+      "tokensPerSecond" : 45.84143372518446,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.6076968749985099,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5904279947280884,
+      "fixtureID" : "qwen-negative-nggak-context",
+      "focus" : "nggak and polite refusal",
+      "generatedTokenCount" : 14,
+      "generationSeconds" : 0.3055340051651001,
+      "input" : "Nggak usah dijemput.",
+      "intendedMeaning" : "There is no need to pick me up.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nie musisz się wesoło.\",\"speaker\":\"UNKNOWN\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the polite, practical refusal and first-person implication.",
+      "promptTokenCount" : 379,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-nggak",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Aku bisa menjemputmu setelah kerja.",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Aku sudah pesan ojek online.",
+            "speaker" : "SELF"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Nggak informal negation",
+      "tokensPerSecond" : 45.821413536064114,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4935690833372064,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5480018854141235,
+      "fixtureID" : "qwen-negative-ga-no-context",
+      "focus" : "ga spelling variant and change of plan",
+      "generatedTokenCount" : 11,
+      "generationSeconds" : 0.2399280071258545,
+      "input" : "Kamu ga jadi berangkat?",
+      "intendedMeaning" : "Are you no longer going to leave/go?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nie wiem, gdzie się wyjedziesz?\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+      "promptTokenCount" : 345,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-ga",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Ga question variant",
+      "tokensPerSecond" : 45.84708609791411,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.6935952083440498,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5909310579299927,
+      "fixtureID" : "qwen-negative-ga-context",
+      "focus" : "ga spelling variant and change of plan",
+      "generatedTokenCount" : 18,
+      "generationSeconds" : 0.39848601818084717,
+      "input" : "Kamu ga jadi berangkat?",
+      "intendedMeaning" : "Are you no longer going to leave/go?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Ještě nie, nie chcę się wyjeżdżać w siedem.\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+      "promptTokenCount" : 377,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-ga",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Bukannya kamu mau berangkat jam tujuh?",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Iya, tapi hujan deras sekali.",
+            "speaker" : "P2"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Ga question variant",
+      "tokensPerSecond" : 45.17097006859337,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.8586896666674875,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5490039587020874,
+      "fixtureID" : "qwen-kinship-bapak-tante-no-context",
+      "focus" : "Bapak and Tante as family roles",
+      "generatedTokenCount" : 28,
+      "generationSeconds" : 0.6079150438308716,
+      "input" : "Bapak bilang Tante datang nanti.",
+      "intendedMeaning" : "Dad/father said that Aunt will come later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Bóję się, ale mogę to zrobić.\n\n**Polish:** \"Tata powiedział, że cioci przyjdą następny dzień.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "kinship-bapak-tante",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Kinship terms",
+      "tokensPerSecond" : 46.05906743737353,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.8461815000046045,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.6400350332260132,
+      "fixtureID" : "qwen-kinship-bapak-tante-context",
+      "focus" : "Bapak and Tante as family roles",
+      "generatedTokenCount" : 21,
+      "generationSeconds" : 0.4632899761199951,
+      "input" : "Bapak bilang Tante datang nanti.",
+      "intendedMeaning" : "Dad/father said that Aunt will come later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Bórek jest ojcem, a ciężać jest siostra rodzica mnie.\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "promptTokenCount" : 387,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "kinship-bapak-tante",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Kalau Tante datang, kita makan bersama.",
+            "speaker" : "P2"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Kinship terms",
+      "tokensPerSecond" : 45.327982651109345,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.6573690416407771,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5851579904556274,
+      "fixtureID" : "qwen-code-switch-meeting-no-context",
+      "focus" : "Indonesian-English code-switching",
+      "generatedTokenCount" : 17,
+      "generationSeconds" : 0.3709890842437744,
+      "input" : "Meeting-nya diundur, jadi kita bisa santai dulu.",
+      "intendedMeaning" : "The meeting has been postponed, so we can relax for now.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Spotkanie było fajne, więc możemy trochę odpocząć wcześniej.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Translate the mixed-language message naturally and keep the relaxed tone.",
+      "promptTokenCount" : 353,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "code-switch-meeting",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Code-switched meeting message",
+      "tokensPerSecond" : 45.823450667431,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4430352083290927,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5420451164245605,
+      "fixtureID" : "qwen-joke-treat-no-context",
+      "focus" : "conditional teasing and emoji",
+      "generatedTokenCount" : 9,
+      "generationSeconds" : 0.19621896743774414,
+      "input" : "Kalau telat lagi, kamu traktir ya 😄",
+      "intendedMeaning" : "If you are late again, you have to treat us/pay for the meal, okay?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "Jeśli lagi telat, traktir ya!",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the playful joke and emoji; do not turn it into a serious threat.",
+      "promptTokenCount" : 350,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "joke-treat",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Playful joke",
+      "tokensPerSecond" : 45.86712547478621,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.4992144583375193,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5453970432281494,
+      "fixtureID" : "qwen-quoted-reply-no-context",
+      "focus" : "reply meaning supported by quoted message",
+      "generatedTokenCount" : 11,
+      "generationSeconds" : 0.2352830171585083,
+      "input" : "Aku nggak marah kok.",
+      "intendedMeaning" : "I am not angry, really.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nieumiem się z tego przejąć.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "promptTokenCount" : 345,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "quoted-reply",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Quoted reply reference",
+      "tokensPerSecond" : 46.75220563237417,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 1,
+      "durationSeconds" : 1.4661572500190232,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5909320116043091,
+      "fixtureID" : "qwen-quoted-reply-context",
+      "focus" : "reply meaning supported by quoted message",
+      "generatedTokenCount" : 7,
+      "generationSeconds" : 0.16482007503509521,
+      "input" : "Aku nggak marah kok.",
+      "intendedMeaning" : "I am not angry, really.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Nie mnie, proszę?\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "promptTokenCount" : 380,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "quoted-reply",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "quotedTurn" : {
+          "body" : "Kamu marah sama aku?",
+          "speaker" : "P1"
+        },
+        "recentTurns" : [
+          {
+            "body" : "Tadi kamu diam saja setelah aku bercanda.",
+            "speaker" : "P1"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Quoted reply reference",
+      "tokensPerSecond" : 42.470554624547326,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.5331619166827295,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5451250076293945,
+      "fixtureID" : "qwen-omitted-dia-station-no-context",
+      "focus" : "omitted subject context and later pickup",
+      "generatedTokenCount" : 13,
+      "generationSeconds" : 0.2835279703140259,
+      "input" : "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning" : "I will pick Rina up at the station later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Będzie mi przyjedzie on w przydział.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "promptTokenCount" : 350,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "omitted-dia-station",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Dia with omitted gender",
+      "tokensPerSecond" : 45.85085551031048,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "bounded",
+      "contextWindow" : 2,
+      "durationSeconds" : 1.4680865416594315,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.589102029800415,
+      "fixtureID" : "qwen-omitted-dia-station-context",
+      "focus" : "omitted subject context and later pickup",
+      "generatedTokenCount" : 8,
+      "generationSeconds" : 0.17110204696655273,
+      "input" : "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning" : "I will pick Rina up at the station later.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Będzie mi jeść.\"\n",
+      "outputValidity" : "validText",
+      "preservationNotes" : "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "promptTokenCount" : 383,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "omitted-dia-station",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+          {
+            "body" : "Rina tiba di stasiun sekitar jam delapan.",
+            "speaker" : "P1"
+          },
+          {
+            "body" : "Dia membawa koper besar.",
+            "speaker" : "P2"
+          }
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Dia with omitted gender",
+      "tokensPerSecond" : 46.755723510215226,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.6040699583245441,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5450010299682617,
+      "fixtureID" : "qwen-particle-combo-no-context",
+      "focus" : "nih, kok, and sih in one reaction",
+      "generatedTokenCount" : 16,
+      "generationSeconds" : 0.3485560417175293,
+      "input" : "Serius nih? Kok bisa sih?",
+      "intendedMeaning" : "Seriously? How is that even possible?",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Jasne, rozumiem. Co chcesz, żebym zrobił?\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Preserve surprise and disbelief, not the literal particle words.",
+      "promptTokenCount" : 348,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "particle-combo",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Combined particles",
+      "tokensPerSecond" : 45.90366565204008,
+      "unknownMeasurements" : [
+
+      ]
+    },
+    {
+      "contextMode" : "none",
+      "contextWindow" : 0,
+      "durationSeconds" : 1.671182083315216,
+      "finishReason" : "stop",
+      "firstTokenSecondsAfterModelReady" : 0.5498939752578735,
+      "fixtureID" : "qwen-negative-mixed-no-context",
+      "focus" : "ga, mager, and contrastive clarification",
+      "generatedTokenCount" : 19,
+      "generationSeconds" : 0.41550207138061523,
+      "input" : "Aku ga mager, cuma lagi capek aja.",
+      "intendedMeaning" : "I am not being lazy; I am just tired.",
+      "modelLoadSeconds" : 0,
+      "modelLoadWasCold" : false,
+      "output" : "\"Ja, nie jestem biednym, tylko się czuję przytłumaczony.\"",
+      "outputValidity" : "validText",
+      "preservationNotes" : "Keep the contrast and defensive clarification in casual speech.",
+      "promptTokenCount" : 351,
+      "promptVersion" : "contextual-translation-v3",
+      "route" : "Indonesian -> Polish",
+      "semanticCaseID" : "negative-mixed",
+      "sourceLanguage" : "id",
+      "suppliedContext" : {
+        "recentTurns" : [
+
+        ]
+      },
+      "targetLanguage" : "pl",
+      "termination" : "returned",
+      "title" : "Mixed negative and slang",
+      "tokensPerSecond" : 45.727810542237464,
+      "unknownMeasurements" : [
+
+      ]
+    }
+  ],
+  "schemaVersion" : 3,
+  "sourceRevision" : "7f24e65f2d21b9a07aed78d41d93e0ef39782556",
+  "timeoutSeconds" : 120,
+  "timestamp" : "2026-09-12T09:18:33Z"
+}

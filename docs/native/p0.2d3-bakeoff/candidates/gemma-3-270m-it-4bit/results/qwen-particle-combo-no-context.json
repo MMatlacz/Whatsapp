@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.2250677083502524,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.25460612773895264,
+  "fixtureID" : "qwen-particle-combo-no-context",
+  "focus" : "nih, kok, and sih in one reaction",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2560759782791138,
+  "input" : "Serius nih? Kok bisa sih?",
+  "intendedMeaning" : "Seriously? How is that even possible?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"{\"\n  \"response\": \"I'm sorry if I can help you with this.\"},\n  \"instruction\": \"Please provide the data as JSON, and please be mindful of the following\":\n  \"prompt\": \"Please provide the data as a JSON string, and please make sure that the data is not error-prone and that the data is free from any error.\"\n  \"instructions\": \"Please provide the data as a",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve surprise and disbelief, not the literal particle words.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-combo",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Combined particles",
+  "tokensPerSecond" : 76.42849768652113,
+  "unknownMeasurements" : [
+
+  ]
+}

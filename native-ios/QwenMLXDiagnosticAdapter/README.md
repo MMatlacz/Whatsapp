@@ -75,6 +75,30 @@ The output directory contains:
 - `summary.md` — a compact human-review table;
 - `results/<fixture-id>.json` — one deterministic record per fixture.
 
+### P0.2d3 candidate bake-off
+
+The same executable can compare the research catalog without changing the
+single-model Qwen path:
+
+```bash
+swift run --configuration release qwen-mlx-benchmark \
+  --candidate gemma-3-1b-it-qat-4bit=/absolute/path/gemma-3-1b \
+  --candidate qwen3.5-0.8b-4bit=/absolute/path/qwen3.5-0.8b \
+  --candidate gemma-3-270m-it-4bit=/absolute/path/gemma-3-270m \
+  --output-dir /absolute/path/p0.2d3-bakeoff \
+  --corpus functional
+```
+
+Candidate folders are checked locally for a config, tokenizer, and one or more
+SafeTensors weight files. Their catalog entries are intentionally
+`researchUnpinned` until an operator captures immutable revisions and complete
+checksums. The export contains `bakeoff.json`, a side-by-side `summary.md`, and
+per-candidate reports under `candidates/`; failed candidates stay visible and
+make the command fail. Peak RSS is recorded as a process high-water signal when
+available, not physical-device evidence or an attributed per-model memory
+measurement. An operator-recorded snapshot revision can be supplied as
+`--candidate ID@REVISION=PATH` and is carried into the report.
+
 Each result records fixture identity, input, supplied context, intended meaning, preservation notes, language pair, context mode/size, prompt version, execution termination, output-validity classification, raw output, duration, model/runtime/dependency provenance, generation settings, available runtime metrics, explicit unknown measurements, and errors. Runtime execution, output validity, translation quality, and physical-device acceptance remain separate outcomes. A non-empty answer is never automatically treated as a quality pass.
 
 The `Qwen functional CI` workflow provisions the pinned snapshot without committing weights, tries the iOS Simulator inference path first, and falls back to native macOS arm64 only when Simulator cannot complete. The fallback is explicitly labelled in the exported report. It runs a one-case smoke test before the full corpus and uploads reports/logs for failed runs as well as successful runs.

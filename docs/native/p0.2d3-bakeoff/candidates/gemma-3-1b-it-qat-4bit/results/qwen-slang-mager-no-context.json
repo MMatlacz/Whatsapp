@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.451983749982901,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5440469980239868,
+  "fixtureID" : "qwen-slang-mager-no-context",
+  "focus" : "mager meaning too lazy or unmotivated",
+  "generatedTokenCount" : 9,
+  "generationSeconds" : 0.19823002815246582,
+  "input" : "Hari ini aku mager banget.",
+  "intendedMeaning" : "I am extremely unmotivated/lazy today and do not feel like doing anything.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Dzisiaj naprawdę mnie drażnię.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the casual self-description; do not turn it into a medical or moral judgment.",
+  "promptTokenCount" : 347,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "slang-mager",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Mager slang",
+  "tokensPerSecond" : 45.401799535021894,
+  "unknownMeasurements" : [
+
+  ]
+}

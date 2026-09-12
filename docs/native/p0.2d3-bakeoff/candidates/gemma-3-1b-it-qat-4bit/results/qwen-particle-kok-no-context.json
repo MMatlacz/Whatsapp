@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.4073264166945592,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5436890125274658,
+  "fixtureID" : "qwen-particle-kok-no-context",
+  "focus" : "kok as surprise or mild reproach",
+  "generatedTokenCount" : 7,
+  "generationSeconds" : 0.15073895454406738,
+  "input" : "Kok kamu belum tidur?",
+  "intendedMeaning" : "Why are you still not asleep?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"Coś się dzieje?\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+  "promptTokenCount" : 345,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-kok",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kok surprised question",
+  "tokensPerSecond" : 46.43789670143694,
+  "unknownMeasurements" : [
+
+  ]
+}

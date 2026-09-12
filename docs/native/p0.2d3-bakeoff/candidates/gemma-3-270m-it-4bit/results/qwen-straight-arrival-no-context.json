@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 4.03258016667678,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.2803161144256592,
+  "fixtureID" : "qwen-straight-arrival-no-context",
+  "focus" : "basic informal statement",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2407870292663574,
+  "input" : "Aku sudah sampai di rumah.",
+  "intendedMeaning" : "The speaker has already arrived home.",
+  "modelLoadSeconds" : 1.8124994999961928,
+  "modelLoadWasCold" : true,
+  "output" : "```json\n[\n  \"instruction\": \"Translate the following into Polish.\",\n  \"prompt\": \"Translate the following into Polish.\",\nolleh: \"Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem. Solve the problem",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the first-person voice and informal but neutral register.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-arrival",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward arrival",
+  "tokensPerSecond" : 77.37024786337597,
+  "unknownMeasurements" : [
+
+  ]
+}

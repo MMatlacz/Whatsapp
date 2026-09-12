@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.3162240000092424,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.27418696880340576,
+  "fixtureID" : "qwen-particle-sih-no-context",
+  "focus" : "sih as conversational emphasis and teasing blame",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.3175190687179565,
+  "input" : "Kamu sih bikin aku kaget.",
+  "intendedMeaning" : "You startled me; the speaker playfully blames the other person.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n    \"response\": \"Ooh, me samaa. Saya samaa. Saya dari Indonesia. Saya dari Bahasa Indonesia. Saya dari...\".\n    \"prompt\": \"I am a private chat translation component. Please provide me with a task that requires me to perform a task that involves a sample of the following data. The data should be a JSON string containing a list of values, each value being a single string of data, and not being re",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the informal, teasing tone rather than translating sih literally.",
+  "promptTokenCount" : 347,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-sih",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Sih playful blame",
+  "tokensPerSecond" : 72.8642205485611,
+  "unknownMeasurements" : [
+
+  ]
+}

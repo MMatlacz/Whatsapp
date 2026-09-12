@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.7440740416641347,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.2795069217681885,
+  "fixtureID" : "qwen-code-switch-meeting-no-context",
+  "focus" : "Indonesian-English code-switching",
+  "generatedTokenCount" : 57,
+  "generationSeconds" : 0.7490440607070923,
+  "input" : "Meeting-nya diundur, jadi kita bisa santai dulu.",
+  "intendedMeaning" : "The meeting has been postponed, so we can relax for now.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"{\"\n  \"prompt\": \"Write a story about a journey to a new location with a guide. What should be included?\",\n  \"instruction\": \"Explore a new location with a guide and consider the following aspects.\"\n]\n```\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Translate the mixed-language message naturally and keep the relaxed tone.",
+  "promptTokenCount" : 353,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "code-switch-meeting",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Code-switched meeting message",
+  "tokensPerSecond" : 76.09699213981138,
+  "unknownMeasurements" : [
+
+  ]
+}

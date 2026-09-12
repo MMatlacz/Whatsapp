@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.2652444166888017,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.26681995391845703,
+  "fixtureID" : "qwen-negative-mixed-no-context",
+  "focus" : "ga, mager, and contrastive clarification",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2759960889816284,
+  "input" : "Aku ga mager, cuma lagi capek aja.",
+  "intendedMeaning" : "I am not being lazy; I am just tired.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"response\": {\n    \"prompt\": \"Please provide a response suitable for a conversation about a potential ethical challenge.\",\n    \"instruction\": \"Consider a question that requires a solution or a solution that can be applied to a given situation.\",\n    \"context\": \"Specify the potential ethical challenge. For example, a potential ethical challenge could involve a potential for a mistake or a potential for a failure.\",\n    \"state\": \"Provide a",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the contrast and defensive clarification in casual speech.",
+  "promptTokenCount" : 351,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-mixed",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Mixed negative and slang",
+  "tokensPerSecond" : 75.23534031880735,
+  "unknownMeasurements" : [
+
+  ]
+}

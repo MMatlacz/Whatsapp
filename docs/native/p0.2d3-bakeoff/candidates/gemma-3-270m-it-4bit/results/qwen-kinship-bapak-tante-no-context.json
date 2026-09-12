@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.213398416643031,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.2597160339355469,
+  "fixtureID" : "qwen-kinship-bapak-tante-no-context",
+  "focus" : "Bapak and Tante as family roles",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2519699335098267,
+  "input" : "Bapak bilang Tante datang nanti.",
+  "intendedMeaning" : "Dad/father said that Aunt will come later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"response\": {\n    \"instruction\": \"Please provide the text to be translated.\",\n    \"prompt\": \"Please provide the text to be translated.\",\n    \"response\": {\n      \"instruction\": \"Please provide the text to be translated.\",\n      \"prompt\": \"Please provide the text to be translated.\",\n      \"response\": {\n        \"instruction\": \"Please provide the text to be translated.\",\n        \"prompt",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the family roles without replacing them with unrelated names or honorifics.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "kinship-bapak-tante",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kinship terms",
+  "tokensPerSecond" : 76.67915772615197,
+  "unknownMeasurements" : [
+
+  ]
+}

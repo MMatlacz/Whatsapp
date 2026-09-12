@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.6040699583245441,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.5450010299682617,
+  "fixtureID" : "qwen-particle-combo-no-context",
+  "focus" : "nih, kok, and sih in one reaction",
+  "generatedTokenCount" : 16,
+  "generationSeconds" : 0.3485560417175293,
+  "input" : "Serius nih? Kok bisa sih?",
+  "intendedMeaning" : "Seriously? How is that even possible?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "\"Jasne, rozumiem. Co chcesz, żebym zrobił?\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve surprise and disbelief, not the literal particle words.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-combo",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Combined particles",
+  "tokensPerSecond" : 45.90366565204008,
+  "unknownMeasurements" : [
+
+  ]
+}

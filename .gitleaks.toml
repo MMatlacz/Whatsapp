@@ -1,0 +1,16 @@
+title = "WhatsApp Translator gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public Hugging Face snapshot revisions in P0.2d3 bake-off evidence"
+regexTarget = "secret"
+paths = [
+  '''^docs/native/p0\.2d3-bakeoff/.*$''',
+]
+regexes = [
+  '''^15fed4eafb456c6fcb2a1165f19ac609670ed14b$''',
+  '''^5d894f8cc4ef3e6c88537bf3746ed262f549da6a$''',
+  '''^ff1143e3a10547c9f2129e94ca37059b096b23f4$''',
+]

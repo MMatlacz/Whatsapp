@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.430321833351627,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.7837468385696411,
+  "fixtureID" : "qwen-straight-plan-no-context",
+  "focus" : "future plan and casual question particle",
+  "generatedTokenCount" : 37,
+  "generationSeconds" : 0.6299409866333008,
+  "input" : "Besok kita makan siang jam satu ya.",
+  "intendedMeaning" : "The speaker proposes lunch together tomorrow at one o'clock.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Widok na pomyślność w obecnym czasie, nie zmienną, a z dnia, więc nie zwracamy się do tego w przyszłości.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the friendly confirmation-seeking tone of ya.",
+  "promptTokenCount" : 357,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-plan",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward plan",
+  "tokensPerSecond" : 58.73566061758468,
+  "unknownMeasurements" : [
+
+  ]
+}

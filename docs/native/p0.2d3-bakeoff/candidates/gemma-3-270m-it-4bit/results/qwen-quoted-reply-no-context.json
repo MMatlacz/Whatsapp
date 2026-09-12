@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 2.2168348333216272,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.25545990467071533,
+  "fixtureID" : "qwen-quoted-reply-no-context",
+  "focus" : "reply meaning supported by quoted message",
+  "generatedTokenCount" : 96,
+  "generationSeconds" : 1.2635680437088013,
+  "input" : "Aku nggak marah kok.",
+  "intendedMeaning" : "I am not angry, really.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n    \"Key Turn\": olleh de chamanismo.\",\n    \"Prompt\": \"The author is a private chat transcribing an interview.\",\n    \"Prompt\": \"The author is a data serialization task.\",\n    \"Prompt\": \"The author is a data analysis task.\",\n    \"Prompt\": \"The author is a data analysis task with a goal.\",\n    \"Prompt\": \"The author is a data analysis task with a purpose",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+  "promptTokenCount" : 345,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "quoted-reply",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Quoted reply reference",
+  "tokensPerSecond" : 75.97533071366905,
+  "unknownMeasurements" : [
+
+  ]
+}

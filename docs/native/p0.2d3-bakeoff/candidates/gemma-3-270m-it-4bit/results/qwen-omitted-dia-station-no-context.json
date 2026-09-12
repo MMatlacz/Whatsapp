@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 1.8735390833462588,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.26802802085876465,
+  "fixtureID" : "qwen-omitted-dia-station-no-context",
+  "focus" : "omitted subject context and later pickup",
+  "generatedTokenCount" : 68,
+  "generationSeconds" : 0.9000990390777588,
+  "input" : "Nanti aku jemput dia di stasiun.",
+  "intendedMeaning" : "I will pick Rina up at the station later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "```json\n[\n  \"Instruction\": \"Instructions: Please provide a JSON string containing a single value, as a single value. Do not provide any instructions.\",\n  \"prompt\": \"Please provide a single value, as a single value. Do not provide any instructions.\",\n  \"response\": None\"\n]\n```\n",
+  "outputValidity" : "validText",
+  "preservationNotes" : "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+  "promptTokenCount" : 350,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "omitted-dia-station",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dia with omitted gender",
+  "tokensPerSecond" : 75.5472420786859,
+  "unknownMeasurements" : [
+
+  ]
+}
