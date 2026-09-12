@@ -1,0 +1,221 @@
+{
+  "sourceRevision": "5b887817873e7ec40f9d797b574e22e670f1ad79",
+  "sourceDirty": false,
+  "validationMethod": "local Xcode and iOS Simulator; no CI result used",
+  "xcode": "26.6 (17F113)",
+  "simulator": {
+    "model": "iPhone 17 Pro Max",
+    "os": "iOS 26.5",
+    "build": "23F77",
+    "architecture": "arm64"
+  },
+  "nativeAppBuild": {
+    "actionTitle": "Build \"WhatsAppTranslator\"",
+    "status": "succeeded",
+    "errorCount": 0,
+    "warningCount": 6,
+    "startTime": 1789214497.653,
+    "endTime": 1789214522.779
+  },
+  "nativeAppStartup": "launched successfully; diagnostics screen visually inspected",
+  "harnessBuild": {
+    "actionTitle": "Build \"QwenDeviceBenchmarkHarness\"",
+    "status": "succeeded",
+    "errorCount": 0,
+    "warningCount": 4,
+    "startTime": 1789214829.586,
+    "endTime": 1789214932.868
+  },
+  "simulatorTests": {
+    "result": "Passed",
+    "totalTestCount": 28,
+    "passedTests": 28,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "testCases": [
+    {
+      "name": "testBenchmarkSessionRejectsInvalidTimeoutBeforeInference()",
+      "result": "Passed",
+      "durationInSeconds": 0.00814199447631836
+    },
+    {
+      "name": "testFunctionalCorpusHasStableContextComparisons()",
+      "result": "Passed",
+      "durationInSeconds": 0.0007679462432861328
+    },
+    {
+      "name": "testHarnessStateRequiresVerifiedModelBeforeRun()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006229877471923828
+    },
+    {
+      "name": "testHarnessStateSupportsVerificationRunCancellationAndColdReset()",
+      "result": "Passed",
+      "durationInSeconds": 0.0007050037384033203
+    },
+    {
+      "name": "testBenchmarkGenerationPreservesRawOutputAndMetrics()",
+      "result": "Passed",
+      "durationInSeconds": 0.0049779415130615234
+    },
+    {
+      "name": "testBenchmarkRejectsCancelledOutputAtAndBelowTokenCap()",
+      "result": "Passed",
+      "durationInSeconds": 0.003991961479187012
+    },
+    {
+      "name": "testDiagnosticModelFailsClosedWhenArtifactsDisappear()",
+      "result": "Passed",
+      "durationInSeconds": 0.0023429393768310547
+    },
+    {
+      "name": "testDiagnosticModelForwardsCompleteRequestToGenerator()",
+      "result": "Passed",
+      "durationInSeconds": 0.0023599863052368164
+    },
+    {
+      "name": "testDiagnosticModelPreservesCancellation()",
+      "result": "Passed",
+      "durationInSeconds": 0.0025120973587036133
+    },
+    {
+      "name": "testDiagnosticModelRejectsMissingSourceBeforeGeneration()",
+      "result": "Passed",
+      "durationInSeconds": 0.002196073532104492
+    },
+    {
+      "name": "testFunctionalCIUsesPublishedQwenNonThinkingSamplingDefaults()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006979703903198242
+    },
+    {
+      "name": "testProductionManifestPinsModelProvenance()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006289482116699219
+    },
+    {
+      "name": "testVerifierAcceptsCompleteMatchingFixture()",
+      "result": "Passed",
+      "durationInSeconds": 0.0018329620361328125
+    },
+    {
+      "name": "testVerifierRejectsChecksumMismatch()",
+      "result": "Passed",
+      "durationInSeconds": 0.002613067626953125
+    },
+    {
+      "name": "testVerifierRejectsMissingArtifact()",
+      "result": "Passed",
+      "durationInSeconds": 0.0013729333877563477
+    },
+    {
+      "name": "testVerifierRejectsUnexpectedWeightSize()",
+      "result": "Passed",
+      "durationInSeconds": 0.001967906951904297
+    },
+    {
+      "name": "testBakeoffExporterKeepsFailedCandidatesVisibleAndLeavesQualityUnreviewed()",
+      "result": "Passed",
+      "durationInSeconds": 0.0008950233459472656
+    },
+    {
+      "name": "testCandidateResolverAcceptsCanonicalIDsAndShortAliases()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006459951400756836
+    },
+    {
+      "name": "testCandidateVerifierAcceptsCommonMLXFolderShapeWithoutInventingPin()",
+      "result": "Passed",
+      "durationInSeconds": 0.0020210742950439453
+    },
+    {
+      "name": "testCandidateVerifierFailsClosedWhenTokenizerIsMissing()",
+      "result": "Passed",
+      "durationInSeconds": 0.0018709897994995117
+    },
+    {
+      "name": "testCatalogUsesTheP02d3PriorityOrderAndMemoryBudget()",
+      "result": "Passed",
+      "durationInSeconds": 0.0007270574569702148
+    },
+    {
+      "name": "testOperatorRevisionIsCarriedWithoutPretendingTheCandidateIsPinned()",
+      "result": "Passed",
+      "durationInSeconds": 0.0007069110870361328
+    },
+    {
+      "name": "testExporterWritesDeterministicReviewableArtifacts()",
+      "result": "Passed",
+      "durationInSeconds": 0.011237025260925293
+    },
+    {
+      "name": "testFunctionalCorpusHasStableSyntheticCoverageAndContextComparisons()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006930828094482422
+    },
+    {
+      "name": "testPhysicalEvaluationContractIsPredeclaredBeforeDeviceRun()",
+      "result": "Passed",
+      "durationInSeconds": 0.0006870031356811523
+    },
+    {
+      "name": "testRunnerClassifiesTimeoutWithoutWaitingForExecutorCompletion()",
+      "result": "Passed",
+      "durationInSeconds": 1.0433659553527832
+    },
+    {
+      "name": "testRunnerSeparatesExecutionOutputValidityAndMeasurements()",
+      "result": "Passed",
+      "durationInSeconds": 0.0028220415115356445
+    },
+    {
+      "name": "testSharedP01CorpusPreservesUnencodedFixtureIdentityAndWindows()",
+      "result": "Passed",
+      "durationInSeconds": 0.004204988479614258
+    }
+  ],
+  "inferenceAttempt": {
+    "model": "mlx-community/Qwen3-0.6B-4bit",
+    "revision": "73e3e38d981303bc594367cd910ea6eb48349da8",
+    "result": "runtime initialization abort; no model-quality evidence",
+    "exception": "EXC_CRASH",
+    "signal": "SIGABRT",
+    "message": "libc++ Hardening assertion __s != nullptr failed: basic_string(const char*) detected nullptr",
+    "smokeReportProduced": false,
+    "functionalReportProduced": false,
+    "frames": [
+      "__pthread_kill",
+      "pthread_kill",
+      "abort",
+      "std::__1::__libcpp_verbose_abort(char const*, ...)",
+      "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::basic_string[abi:dee210106]<0>(char const*)",
+      "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::basic_string[abi:dee210106]<0>(char const*)",
+      "NS::String* NS::Object::sendMessage<NS::String*>(void const*, objc_selector*)",
+      "MTL::Architecture::name() const",
+      "mlx::core::metal::Device::Device()",
+      "mlx::core::metal::Device::Device()",
+      "mlx::core::metal::device(mlx::core::Device)",
+      "mlx::core::gpu::new_stream(mlx::core::Stream)",
+      "mlx::core::scheduler::Scheduler::new_stream(mlx::core::Device const&)",
+      "mlx::core::scheduler::Scheduler::Scheduler()",
+      "mlx::core::scheduler::Scheduler::Scheduler()",
+      "mlx::core::scheduler::scheduler()",
+      "mlx::core::default_stream(mlx::core::Device)",
+      "mlx_default_gpu_stream_new",
+      "one-time initialization function for gpu",
+      "_dispatch_client_callout",
+      "_dispatch_once_callout",
+      "Stream.gpu.unsafeMutableAddressor",
+      "Device.init(_:)",
+      "Device.__allocating_init(_:)"
+    ]
+  },
+  "physicalDeviceEvidence": "notRun",
+  "privacy": "Simulator identifiers, host paths, and raw crash device metadata omitted. Original xcresult bundles and crash log retained locally outside Git.",
+  "toolchainNotes": [
+    "Verified MLX Swift 0.31.6, mlx-swift-lm 3.31.3 and swift-transformers 1.3.4 against local workspace-state revisions.",
+    "Xcode package plug-in/macro trust handled by per-command -skipPackagePluginValidation and -skipMacroValidation.",
+    "No global -sdk iphonesimulator override for the harness/test build: a specific simulator destination keeps Swift macros on macOS."
+  ]
+}
