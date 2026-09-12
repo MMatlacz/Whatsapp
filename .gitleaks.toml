@@ -15,3 +15,13 @@ regexes = [
   '''^5d894f8cc4ef3e6c88537bf3746ed262f549da6a$''',
   '''^ff1143e3a10547c9f2129e94ca37059b096b23f4$''',
 ]
+
+[[allowlists]]
+description = "Public Qwen snapshot revision in the derived context corpus"
+condition = "AND"
+paths = [
+  '''^docs/native/p0\.2d4-reference-controls/context-corpus\.json$''',
+]
+regexes = [
+  '''^5d894f8cc4ef3e6c88537bf3746ed262f549da6a$''',
+]

@@ -1,0 +1,419 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "2369b810f5540c2e2587d6a72a08d432fa5cde10",
+  "sourceDirty": false,
+  "scriptSHA256": "b3e3c8cfb738c289266a2a379d1e177f0d4c9a65bed76d4bd69feb044051d628",
+  "corpusSHA256": "153768011c2cada57c64bd41d8243ccd8d85db0592a4180d71f4cabb5527a922",
+  "model": {
+    "repository": "facebook/nllb-200-distilled-600M",
+    "revision": "f8d333a098d19b4fd9a8b18f94170487ad3f821d",
+    "license": "CC-BY-NC-4.0; research only",
+    "artifacts": [
+      {
+        "path": "README.md",
+        "bytes": 7667,
+        "sha256": "0964c46d35be00825c73b3a9ca212043b4b4e4f38e18e88c22e4490d31f9f1a3"
+      },
+      {
+        "path": "config.json",
+        "bytes": 846,
+        "sha256": "f9b4081d3d108e9d06532ea8d92b932c04ed3a15ff2f87e6982f8e14db51fbc5"
+      },
+      {
+        "path": "generation_config.json",
+        "bytes": 189,
+        "sha256": "0bb604cdb8392649176935a447ce994128f170a6908c135a17d0e3dfb8113cb2"
+      },
+      {
+        "path": "pytorch_model.bin",
+        "bytes": 2460457927,
+        "sha256": "c266c2cfd19758b6d09c1fc31ecdf1e485509035f6b51dfe84f1ada83eefcc42"
+      },
+      {
+        "path": "sentencepiece.bpe.model",
+        "bytes": 4852054,
+        "sha256": "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a"
+      },
+      {
+        "path": "special_tokens_map.json",
+        "bytes": 3548,
+        "sha256": "992bd4ed610d644d6823081937bcc91bb8878dd556cea4ae5327f2480361330e"
+      },
+      {
+        "path": "tokenizer.json",
+        "bytes": 17331176,
+        "sha256": "e316b82de11d0f951f370943b3c438311629547285129b0b81dadabd01bca665"
+      },
+      {
+        "path": "tokenizer_config.json",
+        "bytes": 564,
+        "sha256": "d1aa8c3697d3e35674f97b5b7e9c99d22b010f528e80140257d97316be90d044"
+      }
+    ]
+  },
+  "profile": "context",
+  "runtime": {
+    "torch": "2.10.0",
+    "transformers": "5.3.0",
+    "mlx": "0.32.2",
+    "mlx-lm": "0.31.1",
+    "tokenizers": "0.22.2",
+    "sentencepiece": "0.2.2",
+    "huggingface-hub": "1.31.0"
+  },
+  "platform": "Darwin-arm64",
+  "device": "cpu",
+  "physicalDeviceEvidence": "notRun",
+  "offlineLocalFilesOnly": true,
+  "generation": {
+    "maxNewTokens": 128,
+    "doSample": false,
+    "numBeams": 5
+  },
+  "qualityReview": "unreviewed",
+  "status": "completed",
+  "results": [
+    {
+      "fixtureID": "qwen-dia-late-context",
+      "semanticCaseID": "dia-late",
+      "input": "Dia bilang akan datang nanti.",
+      "intendedMeaning": "Rina said that she will come later.",
+      "preservationNotes": "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina masih di kantor, tapi sebentar lagi selesai.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Oke, kita tunggu dia di kafe.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "Rina masih di kantor, tapi sebentar lagi selesai.\nOke, kita tunggu dia di kafe.\nDia bilang akan datang nanti.",
+      "output": "Rina jest jeszcze w biurze, ale wkrótce będzie gotowa.",
+      "durationSeconds": 2.4413150420004968,
+      "outputTokenIDs": [
+        256140,
+        250,
+        231,
+        5968,
+        35843,
+        40,
+        245402,
+        372,
+        248079,
+        1819,
+        40,
+        3443,
+        14307,
+        271,
+        33465,
+        124779,
+        80,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-context",
+      "semanticCaseID": "omitted-subject-finished",
+      "input": "Udah selesai, tinggal dikirim.",
+      "intendedMeaning": "The file/task is finished; it only needs to be sent.",
+      "preservationNotes": "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Kamu sudah periksa file laporan itu?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, semua angka sudah benar.",
+            "speaker": "SELF"
+          }
+        ]
+      },
+      "actualInput": "Kamu sudah periksa file laporan itu?\nIya, semua angka sudah benar.\nUdah selesai, tinggal dikirim.",
+      "output": "Tak, wszystkie liczby są prawidłowe.",
+      "durationSeconds": 1.5964651660178788,
+      "outputTokenIDs": [
+        256140,
+        5894,
+        248079,
+        101317,
+        136601,
+        2330,
+        10345,
+        2680,
+        17263,
+        4982,
+        183,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-particle-kok-context",
+      "semanticCaseID": "particle-kok",
+      "input": "Kok kamu belum tidur?",
+      "intendedMeaning": "Why are you still not asleep?",
+      "preservationNotes": "Keep the concerned, mildly surprised chat tone.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Besok kamu harus bangun pagi untuk kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku masih belum ngantuk.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "Besok kamu harus bangun pagi untuk kerja.\nAku masih belum ngantuk.\nKok kamu belum tidur?",
+      "output": "Jutro rano musisz wstać do pracy.",
+      "durationSeconds": 2.4584773749811575,
+      "outputTokenIDs": [
+        256140,
+        125763,
+        312,
+        58124,
+        111432,
+        40,
+        1841,
+        248701,
+        359,
+        96910,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-context",
+      "semanticCaseID": "negative-nggak",
+      "input": "Nggak usah dijemput.",
+      "intendedMeaning": "There is no need to pick me up.",
+      "preservationNotes": "Preserve the polite, practical refusal and first-person implication.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Aku bisa menjemputmu setelah kerja.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Aku sudah pesan ojek online.",
+            "speaker": "SELF"
+          }
+        ]
+      },
+      "actualInput": "Aku bisa menjemputmu setelah kerja.\nAku sudah pesan ojek online.\nNggak usah dijemput.",
+      "output": "Mogę cię odebrać po pracy.",
+      "durationSeconds": 2.4112278330139816,
+      "outputTokenIDs": [
+        256140,
+        128986,
+        24286,
+        28754,
+        5019,
+        248701,
+        390,
+        96910,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-negative-ga-context",
+      "semanticCaseID": "negative-ga",
+      "input": "Kamu ga jadi berangkat?",
+      "intendedMeaning": "Are you no longer going to leave/go?",
+      "preservationNotes": "Preserve the question about a changed plan, not a generic travel question.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bukannya kamu mau berangkat jam tujuh?",
+            "speaker": "P1"
+          },
+          {
+            "body": "Iya, tapi hujan deras sekali.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "Bukannya kamu mau berangkat jam tujuh?\nIya, tapi hujan deras sekali.\nKamu ga jadi berangkat?",
+      "output": "Nie zamierzasz wyruszyć o siódmej?",
+      "durationSeconds": 1.8901982499810401,
+      "outputTokenIDs": [
+        256140,
+        6198,
+        197244,
+        8219,
+        248087,
+        40,
+        55671,
+        60212,
+        26,
+        219,
+        9512,
+        242542,
+        248130,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Kalau Tante datang, kita makan bersama.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "Bapak adalah ayahku dan Tante adalah saudara perempuan ibuku.\nKalau Tante datang, kita makan bersama.\nBapak bilang Tante datang nanti.",
+      "output": "Tata jest moim ojcem, a ciocia siostrą mojej matki.",
+      "durationSeconds": 2.2984369169862475,
+      "outputTokenIDs": [
+        256140,
+        18275,
+        5968,
+        84321,
+        17809,
+        10132,
+        248079,
+        9,
+        60477,
+        1120,
+        219,
+        26642,
+        248587,
+        76883,
+        601,
+        307,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-context",
+      "semanticCaseID": "quoted-reply",
+      "input": "Aku nggak marah kok.",
+      "intendedMeaning": "I am not angry, really.",
+      "preservationNotes": "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "quotedTurn": {
+          "body": "Kamu marah sama aku?",
+          "speaker": "P1"
+        },
+        "recentTurns": [
+          {
+            "body": "Tadi kamu diam saja setelah aku bercanda.",
+            "speaker": "P1"
+          }
+        ]
+      },
+      "actualInput": "Tadi kamu diam saja setelah aku bercanda.\nKamu marah sama aku?\nAku nggak marah kok.",
+      "output": "Byłaś cicho po tym jak żartowałem.",
+      "durationSeconds": 1.7336963750130963,
+      "outputTokenIDs": [
+        256140,
+        11366,
+        23432,
+        916,
+        2009,
+        390,
+        9609,
+        3174,
+        2707,
+        37168,
+        112447,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-context",
+      "semanticCaseID": "omitted-dia-station",
+      "input": "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning": "I will pick Rina up at the station later.",
+      "preservationNotes": "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "contextMode": "bounded",
+      "suppliedContext": {
+        "recentTurns": [
+          {
+            "body": "Rina tiba di stasiun sekitar jam delapan.",
+            "speaker": "P1"
+          },
+          {
+            "body": "Dia membawa koper besar.",
+            "speaker": "P2"
+          }
+        ]
+      },
+      "actualInput": "Rina tiba di stasiun sekitar jam delapan.\nDia membawa koper besar.\nNanti aku jemput dia di stasiun.",
+      "output": "Rina przyjechała na stację około o ósmej.",
+      "durationSeconds": 2.920782250002958,
+      "outputTokenIDs": [
+        256140,
+        250,
+        231,
+        9471,
+        140926,
+        4421,
+        62,
+        1631,
+        71829,
+        7597,
+        4982,
+        26,
+        87919,
+        242542,
+        248075,
+        2
+      ],
+      "hitTokenLimit": false
+    }
+  ],
+  "dtype": "torch.float32",
+  "languageTokenCheck": {
+    "tokenizerClass": "NllbTokenizer",
+    "sourceToken": 256075,
+    "targetToken": 256140,
+    "probeTokens": [
+      "ind_Latn",
+      "▁Aku",
+      "▁sudah",
+      "▁sampai",
+      "▁di",
+      "▁rumah",
+      ".",
+      "</s>"
+    ]
+  },
+  "modelLoadSeconds": 4.493100874999072,
+  "peakRSSBytes": 3330998272,
+  "memoryScope": "isolated macOS process high-water RSS; not iPhone acceptance"
+}

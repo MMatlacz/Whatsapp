@@ -8,6 +8,8 @@ mode enabled. Store the environment and model directory outside the repository.
 Use Python 3.12 with `torch==2.10.0`, `transformers==5.3.0`,
 `mlx-lm==0.31.1`, and `sentencepiece==0.2.2`. The report records the installed
 runtime versions; it does not assume that Python MLX and Swift MLX are identical.
+`requirements.lock` records the full observed Python environment, including the
+pre-commit validation tools, for reproduction.
 
 ```sh
 python reference.py provision --model m2m100 --models /absolute/external/models
