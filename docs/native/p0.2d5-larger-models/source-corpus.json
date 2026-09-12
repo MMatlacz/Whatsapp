@@ -1,0 +1,438 @@
+{
+  "status": "frozen-before-first-4b-output",
+  "review": "agent-authored synthetic, not independently bilingual-validated",
+  "results": [
+    {
+      "fixtureID": "qwen-straight-arrival-no-context",
+      "semanticCaseID": "straight-arrival",
+      "input": "Aku sudah sampai di rumah.",
+      "intendedMeaning": "The speaker has already arrived home.",
+      "preservationNotes": "Keep the first-person voice and informal but neutral register.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-straight-plan-no-context",
+      "semanticCaseID": "straight-plan",
+      "input": "Besok kita makan siang jam satu ya.",
+      "intendedMeaning": "The speaker proposes lunch together tomorrow at one o'clock.",
+      "preservationNotes": "Preserve the friendly confirmation-seeking tone of ya.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-straight-thanks-no-context",
+      "semanticCaseID": "straight-thanks",
+      "input": "Makasih sudah bantu aku hari ini.",
+      "intendedMeaning": "The speaker thanks the other person for helping today.",
+      "preservationNotes": "Keep it warm and conversational rather than formal.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-dia-late-no-context",
+      "semanticCaseID": "dia-late",
+      "input": "Dia bilang akan datang nanti.",
+      "intendedMeaning": "Rina said that she will come later.",
+      "preservationNotes": "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-no-context",
+      "semanticCaseID": "omitted-subject-finished",
+      "input": "Udah selesai, tinggal dikirim.",
+      "intendedMeaning": "The file/task is finished; it only needs to be sent.",
+      "preservationNotes": "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-dong-no-context",
+      "semanticCaseID": "particle-dong",
+      "input": "Tunggu sebentar dong.",
+      "intendedMeaning": "Please wait a moment.",
+      "preservationNotes": "Preserve the soft insistence; do not make it hostile or overly formal.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-sih-no-context",
+      "semanticCaseID": "particle-sih",
+      "input": "Kamu sih bikin aku kaget.",
+      "intendedMeaning": "You startled me; the speaker playfully blames the other person.",
+      "preservationNotes": "Keep the informal, teasing tone rather than translating sih literally.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-nih-no-context",
+      "semanticCaseID": "particle-nih",
+      "input": "Ini nih yang aku maksud.",
+      "intendedMeaning": "This is exactly what I meant.",
+      "preservationNotes": "Preserve emphasis and conversational immediacy.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-lah-no-context",
+      "semanticCaseID": "particle-lah",
+      "input": "Ya sudah lah, besok saja.",
+      "intendedMeaning": "All right then, tomorrow will do.",
+      "preservationNotes": "Keep the resigned, de-escalating tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-kok-no-context",
+      "semanticCaseID": "particle-kok",
+      "input": "Kok kamu belum tidur?",
+      "intendedMeaning": "Why are you still not asleep?",
+      "preservationNotes": "Keep the concerned, mildly surprised chat tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-masa-no-context",
+      "semanticCaseID": "particle-masa",
+      "input": "Masa harus aku jelasin lagi?",
+      "intendedMeaning": "Do I really have to explain it again?",
+      "preservationNotes": "Preserve incredulity, not a neutral information question.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-slang-wkwk-no-context",
+      "semanticCaseID": "slang-wkwk",
+      "input": "Aku salah masuk grup wkwk.",
+      "intendedMeaning": "I joined the wrong group, haha.",
+      "preservationNotes": "Render wkwk as natural laughter in Polish or preserve its light humorous effect.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-slang-mager-no-context",
+      "semanticCaseID": "slang-mager",
+      "input": "Hari ini aku mager banget.",
+      "intendedMeaning": "I am extremely unmotivated/lazy today and do not feel like doing anything.",
+      "preservationNotes": "Keep the casual self-description; do not turn it into a medical or moral judgment.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-slang-baper-no-context",
+      "semanticCaseID": "slang-baper",
+      "input": "Jangan baper, aku cuma bercanda.",
+      "intendedMeaning": "Do not take it personally; I was only joking.",
+      "preservationNotes": "Preserve the reassuring but teasing register.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-negative-gak-no-context",
+      "semanticCaseID": "negative-gak",
+      "input": "Aku gak bisa ikut malam ini.",
+      "intendedMeaning": "I cannot join tonight.",
+      "preservationNotes": "Use informal Polish chat language without adding a reason.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-no-context",
+      "semanticCaseID": "negative-nggak",
+      "input": "Nggak usah dijemput.",
+      "intendedMeaning": "There is no need to pick me up.",
+      "preservationNotes": "Preserve the polite, practical refusal and first-person implication.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-negative-ga-no-context",
+      "semanticCaseID": "negative-ga",
+      "input": "Kamu ga jadi berangkat?",
+      "intendedMeaning": "Are you no longer going to leave/go?",
+      "preservationNotes": "Preserve the question about a changed plan, not a generic travel question.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-no-context",
+      "semanticCaseID": "kinship-bapak-tante",
+      "input": "Bapak bilang Tante datang nanti.",
+      "intendedMeaning": "Dad/father said that Aunt will come later.",
+      "preservationNotes": "Preserve the family roles without replacing them with unrelated names or honorifics.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-code-switch-meeting-no-context",
+      "semanticCaseID": "code-switch-meeting",
+      "input": "Meeting-nya diundur, jadi kita bisa santai dulu.",
+      "intendedMeaning": "The meeting has been postponed, so we can relax for now.",
+      "preservationNotes": "Translate the mixed-language message naturally and keep the relaxed tone.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-joke-treat-no-context",
+      "semanticCaseID": "joke-treat",
+      "input": "Kalau telat lagi, kamu traktir ya 😄",
+      "intendedMeaning": "If you are late again, you have to treat us/pay for the meal, okay?",
+      "preservationNotes": "Keep the playful joke and emoji; do not turn it into a serious threat.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-no-context",
+      "semanticCaseID": "quoted-reply",
+      "input": "Aku nggak marah kok.",
+      "intendedMeaning": "I am not angry, really.",
+      "preservationNotes": "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-no-context",
+      "semanticCaseID": "omitted-dia-station",
+      "input": "Nanti aku jemput dia di stasiun.",
+      "intendedMeaning": "I will pick Rina up at the station later.",
+      "preservationNotes": "The context supports a feminine Polish pronoun; do not add a different destination or time.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-particle-combo-no-context",
+      "semanticCaseID": "particle-combo",
+      "input": "Serius nih? Kok bisa sih?",
+      "intendedMeaning": "Seriously? How is that even possible?",
+      "preservationNotes": "Preserve surprise and disbelief, not the literal particle words.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "qwen-negative-mixed-no-context",
+      "semanticCaseID": "negative-mixed",
+      "input": "Aku ga mager, cuma lagi capek aja.",
+      "intendedMeaning": "I am not being lazy; I am just tired.",
+      "preservationNotes": "Keep the contrast and defensive clarification in casual speech.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "regression"
+    },
+    {
+      "fixtureID": "heldout-rescheduled",
+      "semanticCaseID": "rescheduled",
+      "input": "Jadwalnya dimajuin ke jam sembilan, bukan dibatalin.",
+      "intendedMeaning": "The event has been moved earlier to nine, not cancelled.",
+      "preservationNotes": "Preserve earlier, nine and not cancelled.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-not-yet",
+      "semanticCaseID": "not-yet",
+      "input": "Aku belum bayar, bukan nggak mau bayar.",
+      "intendedMeaning": "I have not paid yet; it is not that I refuse to pay.",
+      "preservationNotes": "Distinguish not yet from refusal.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-pickup-conditional",
+      "semanticCaseID": "pickup-conditional",
+      "input": "Kalau hujannya belum reda, nggak usah jemput aku dulu.",
+      "intendedMeaning": "If the rain has not stopped, do not bother picking me up yet.",
+      "preservationNotes": "Preserve the condition and temporary nature.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-slang-reluctance",
+      "semanticCaseID": "slang-reluctance",
+      "input": "Mager keluar, tapi kalau kamu butuh bantuan aku datang.",
+      "intendedMeaning": "I do not feel like going out, but I will come if you need help.",
+      "preservationNotes": "Preserve reluctance and conditional willingness.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-slang-personal",
+      "semanticCaseID": "slang-personal",
+      "input": "Jangan dibawa perasaan ya, aku ngomongin filmnya, bukan kamu.",
+      "intendedMeaning": "Do not take it personally; I mean the movie, not you.",
+      "preservationNotes": "Preserve reassurance and contrast.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-joke-payment",
+      "semanticCaseID": "joke-payment",
+      "input": "Dompetku lagi diet, kamu dulu yang traktir ya 😂",
+      "intendedMeaning": "My wallet is on a diet; you treat me this time 😂.",
+      "preservationNotes": "Preserve joking metaphor and who pays.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-quantity-time",
+      "semanticCaseID": "quantity-time",
+      "input": "Pesan dua aja, yang satu tanpa sambal. Sampainya sebelum jam enam ya.",
+      "intendedMeaning": "Order only two; one without chili sauce. They should arrive before six.",
+      "preservationNotes": "Preserve quantity, exclusion and before six.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-double-negative",
+      "semanticCaseID": "double-negative",
+      "input": "Bukannya aku nggak percaya, aku cuma mau cek lagi.",
+      "intendedMeaning": "It is not that I do not believe you; I just want to check again.",
+      "preservationNotes": "Do not reverse trust or add accusations.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-quote-instruction",
+      "semanticCaseID": "quote-instruction",
+      "input": "Dia nulis \"jangan datang\", tapi itu buat besok, bukan hari ini.",
+      "intendedMeaning": "They wrote do not come, but that concerns tomorrow, not today.",
+      "preservationNotes": "Preserve quote scope and dates; source gender unspecified.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-code-switch",
+      "semanticCaseID": "code-switch",
+      "input": "Deadline-nya tetap Jumat, cuma meeting review yang digeser ke Senin.",
+      "intendedMeaning": "The deadline is still Friday; only the review meeting moved to Monday.",
+      "preservationNotes": "Do not move the deadline or cancel the meeting.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-wrong-chat",
+      "semanticCaseID": "wrong-chat",
+      "input": "Wkwk salah kirim, itu harusnya buat adikku 😅",
+      "intendedMeaning": "Haha, sent to the wrong recipient; it was meant for my younger sibling 😅.",
+      "preservationNotes": "Preserve wrong recipient; sibling gender unspecified.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    },
+    {
+      "fixtureID": "heldout-no-need-return",
+      "semanticCaseID": "no-need-return",
+      "input": "Nggak perlu dibalikin sekarang, minggu depan juga boleh.",
+      "intendedMeaning": "No need to return it now; next week is also fine.",
+      "preservationNotes": "Preserve permission and timing; no prohibition.",
+      "contextMode": "none",
+      "suppliedContext": {
+        "recentTurns": []
+      },
+      "split": "new-synthetic"
+    }
+  ]
+}

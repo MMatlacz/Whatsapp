@@ -1,0 +1,111 @@
+{
+  "status": "metadata-only-not-approved",
+  "candidates": [
+    {
+      "repository": "Qwen/Qwen3-4B",
+      "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+      "gated": false,
+      "licenseMetadata": {
+        "library_name": "transformers",
+        "license": "apache-2.0",
+        "license_link": "https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE",
+        "pipeline_tag": "text-generation",
+        "base_model": [
+          "Qwen/Qwen3-4B-Base"
+        ]
+      },
+      "metadataSource": "https://huggingface.co/api/models/Qwen/Qwen3-4B"
+    },
+    {
+      "repository": "google/gemma-3-4b-it",
+      "revision": "093f9f388b31de276ce2de164bdc2081324b9767",
+      "gated": "manual",
+      "licenseMetadata": {
+        "license": "gemma",
+        "library_name": "transformers",
+        "pipeline_tag": "image-text-to-text",
+        "extra_gated_heading": "Access Gemma on Hugging Face",
+        "extra_gated_prompt": "To access Gemma on Hugging Face, you’re required to review and agree to Google’s usage license. To do this, please ensure you’re logged in to Hugging Face and click below. Requests are processed immediately.",
+        "extra_gated_button_content": "Acknowledge license",
+        "base_model": "google/gemma-3-4b-pt"
+      },
+      "metadataSource": "https://huggingface.co/api/models/google/gemma-3-4b-it"
+    },
+    {
+      "repository": "google/translategemma-4b-it",
+      "revision": "10042cb0e6e7fdce748996a71dc3dc432a4e0c89",
+      "gated": "manual",
+      "licenseMetadata": {
+        "license": "gemma",
+        "library_name": "transformers",
+        "pipeline_tag": "image-text-to-text",
+        "extra_gated_heading": "Access Gemma on Hugging Face",
+        "extra_gated_prompt": "To access Gemma on Hugging Face, you’re required to review and agree to Google’s usage license. To do this, please ensure you’re logged in to Hugging Face and click below. Requests are processed immediately.",
+        "extra_gated_button_content": "Acknowledge license"
+      },
+      "metadataSource": "https://huggingface.co/api/models/google/translategemma-4b-it"
+    },
+    {
+      "repository": "mlx-community/Qwen3-4B-4bit",
+      "revision": "4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25",
+      "gated": false,
+      "licenseMetadata": {
+        "library_name": "mlx",
+        "license": "apache-2.0",
+        "license_link": "https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE",
+        "pipeline_tag": "text-generation",
+        "base_model": "Qwen/Qwen3-4B",
+        "tags": [
+          "mlx"
+        ]
+      },
+      "metadataSource": "https://huggingface.co/api/models/mlx-community/Qwen3-4B-4bit"
+    },
+    {
+      "repository": "mlx-community/gemma-3-4b-it-qat-4bit",
+      "revision": "3d9ef289111449933c22761961f16a5df237ce2a",
+      "gated": false,
+      "licenseMetadata": {
+        "license": "other",
+        "license_name": "qwen",
+        "license_link": "https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/blob/main/LICENSE",
+        "pipeline_tag": "image-text-to-text",
+        "library_name": "transformers",
+        "base_model": [
+          "OpenGVLab/InternVL3-1B-Instruct"
+        ],
+        "base_model_relation": "finetune",
+        "datasets": [
+          "OpenGVLab/MMPR-v1.2"
+        ],
+        "language": [
+          "multilingual"
+        ],
+        "tags": [
+          "internvl",
+          "custom_code",
+          "mlx"
+        ]
+      },
+      "metadataSource": "https://huggingface.co/api/models/mlx-community/gemma-3-4b-it-qat-4bit"
+    },
+    {
+      "repository": "mlx-community/translategemma-4b-it-4bit",
+      "revision": "5788ec08c047f3f2e17808101b8d9566ac930d58",
+      "gated": false,
+      "licenseMetadata": {
+        "license": "gemma",
+        "library_name": "mlx",
+        "pipeline_tag": "text-generation",
+        "extra_gated_heading": "Access Gemma on Hugging Face",
+        "extra_gated_prompt": "To access Gemma on Hugging Face, you’re required to review and agree to Google’s usage license. To do this, please ensure you’re logged in to Hugging Face and click below. Requests are processed immediately.",
+        "extra_gated_button_content": "Acknowledge license",
+        "tags": [
+          "mlx"
+        ],
+        "base_model": "google/translategemma-4b-it"
+      },
+      "metadataSource": "https://huggingface.co/api/models/mlx-community/translategemma-4b-it-4bit"
+    }
+  ]
+}
