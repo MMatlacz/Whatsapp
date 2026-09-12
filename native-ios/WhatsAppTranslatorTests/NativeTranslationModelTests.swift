@@ -11,7 +11,7 @@ final class NativeTranslationModelTests: XCTestCase {
         .init(id: "period", source: nil, translation: ".")
     ]
 
-    func testKnownWordsPreserveOriginalAndPunctuation() throws {
+    func testKnownWordsPreserveOriginalAndPunctuation() async throws {
         let model = NativeTranslationModel()
         model.seedSample(key: key, original: "Aku minum kopi.", parts: parts)
         model.toggleKnown("kopi", language: "id")
@@ -25,7 +25,7 @@ final class NativeTranslationModelTests: XCTestCase {
         XCTAssertNil(model.record(for: key, original: "Edited source"))
     }
 
-    func testCorrectionPersistsAndRejectsStaleEditor() throws {
+    func testCorrectionPersistsAndRejectsStaleEditor() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appendingPathComponent("state.json")
