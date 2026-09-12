@@ -98,7 +98,7 @@ The app currently exposes:
 
 ## WhatsApp Web profile and session controls
 
-The WhatsApp Web probe uses one stable, dedicated `WKWebsiteDataStore` identifier rather than the app-wide default store. The off-screen `WKWebView` uses that profile and a desktop Safari user agent.
+The WhatsApp Web probe uses one stable, dedicated `WKWebsiteDataStore` identifier rather than the app-wide default store. Its `WKWebView` uses that profile and a desktop Safari user agent. **Load WhatsApp Web** presents an interactive page for manual linking, including phone-number input. **Done** returns to diagnostics and refreshes the session heuristic; **Show WhatsApp Web** reopens the same page without reloading or replacing its session. The diagnostic phone-link shortcut also presents the page, so manual interaction remains available when its English-label heuristic cannot find the control.
 
 The session controller can:
 
@@ -108,6 +108,8 @@ The session controller can:
 - read an eight-character pairing-code candidate when the page exposes one;
 - classify the visible page as authentication UI, authenticated UI, or unknown using non-authoritative heuristics;
 - release its `WKWebView` and remove the dedicated profile when **Disconnect WhatsApp** is used.
+
+If WhatsApp first shows its download prompt, choose **Continue to WhatsApp Web**, then **Log in with phone number** on the page. The browser requests desktop content mode. The iOS target generates a launch screen so it uses the full device viewport instead of legacy 320×480 compatibility sizing. Session labels remain heuristics and do not prove authentication.
 
 The bridge intentionally avoids depending on WhatsApp internal JavaScript objects. DOM selectors are treated as experimental and may need adjustment after physical-device testing. Pairing codes are memory-only and are cleared on new-session/disconnect paths. Page contents, cookies, and authentication material are not copied into app persistence or logs.
 

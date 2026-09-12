@@ -5,6 +5,7 @@ import WebKit
 @MainActor
 struct WhatsAppWebProbeView: View {
     @StateObject private var session = WhatsAppSessionController()
+    @State private var showingWebPage = false
 
     var body: some View {
         NavigationStack {
@@ -18,8 +19,14 @@ struct WhatsAppWebProbeView: View {
                 Section("WhatsApp Web") {
                     Button(session.isLoading ? "Loading WhatsApp Web..." : "Load WhatsApp Web") {
                         session.loadWhatsAppWeb()
+                        showingWebPage = true
                     }
                     .disabled(session.isLoading || session.isDisconnecting)
+
+                    Button("Show WhatsApp Web") {
+                        showingWebPage = true
+                    }
+                    .disabled(session.webView == nil || session.isDisconnecting)
 
                     sessionRow("Load state", value: session.loadState)
                     sessionRow("Current URL", value: session.currentURL)
@@ -30,6 +37,7 @@ struct WhatsAppWebProbeView: View {
                 Section("Phone-number linking") {
                     Button("Start phone-number linking") {
                         session.startPhoneNumberLinking()
+                        showingWebPage = true
                     }
                     .disabled(session.isLoading || session.isDisconnecting)
 
@@ -94,12 +102,26 @@ struct WhatsAppWebProbeView: View {
                 }
 
                 Section {
-                    Text("This controller keeps WhatsApp Web off-screen and only loads it after an explicit action. The DOM bridge is intentionally defensive and does not persist page contents or pairing codes. CI validates compilation and deterministic bridge tests; real pairing, restart restoration, offline sync, and the P0.3/P0.4 go/no-go decisions remain physical-iPhone checks.")
+                    Text("Open WhatsApp Web to complete linking directly on the page. The page uses the same dedicated persistent profile as these diagnostics. Session detection is a heuristic; real pairing, restart restoration, and offline sync remain physical-iPhone checks.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("WhatsApp Web Session")
+            .sheet(isPresented: $showingWebPage, onDismiss: session.refreshSessionState) {
+                NavigationStack {
+                    if let webView = session.webView {
+                        WhatsAppWebPage(webView: webView)
+                            .navigationTitle("WhatsApp Web")
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showingWebPage = false }
+                                }
+                            }
+                    }
+                }
+                .interactiveDismissDisabled()
+            }
         }
     }
 
@@ -113,6 +135,24 @@ struct WhatsAppWebProbeView: View {
         }
     }
 }
+
+// Reuse the controller's exact web view so presenting or dismissing the page
+// never creates a second session or reloads an in-progress linking flow.
+#if os(iOS)
+private struct WhatsAppWebPage: UIViewRepresentable {
+    let webView: WKWebView
+
+    func makeUIView(context: Context) -> WKWebView { webView }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+}
+#else
+private struct WhatsAppWebPage: NSViewRepresentable {
+    let webView: WKWebView
+
+    func makeNSView(context: Context) -> WKWebView { webView }
+    func updateNSView(_ nsView: WKWebView, context: Context) {}
+}
+#endif
 
 enum WhatsAppWebProfile {
     static let identifier = WhatsAppSessionContract.profileIdentifier
@@ -128,6 +168,7 @@ enum WhatsAppWebProfile {
     static func makeWebView() -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = makeDataStore()
+        configuration.defaultWebpagePreferences.preferredContentMode = .desktop
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.customUserAgent = desktopSafariUserAgent
@@ -153,7 +194,7 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
     let userAgentState = "desktop Safari"
     let dataStoreState: String
 
-    private var webView: WKWebView?
+    @Published private(set) var webView: WKWebView?
     private var startPairingAfterLoad = false
 
     override init() {
@@ -261,7 +302,8 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
             const interactive = Array.from(document.querySelectorAll('button, [role="button"], a')).filter(visible);
             const hasPhoneLinkEntry = interactive.some((element) => {
                 const text = normalizedText(element);
-                return text.includes('link with phone number') || text.includes('link with a phone number');
+                return text.includes('link with phone number') || text.includes('link with a phone number')
+                    || text.includes('log in with phone number');
             });
 
             const hasChatUI = Boolean(
@@ -399,7 +441,8 @@ final class WhatsAppSessionController: NSObject, ObservableObject, WKNavigationD
             const candidates = Array.from(document.querySelectorAll('button, [role="button"], a')).filter(visible);
             const entry = candidates.find((element) => {
                 const text = normalizedText(element);
-                return text.includes('link with phone number') || text.includes('link with a phone number');
+                return text.includes('link with phone number') || text.includes('link with a phone number')
+                    || text.includes('log in with phone number');
             });
 
             if (!entry) {
