@@ -1,0 +1,233 @@
+{
+  "status": "provisional-agent-review",
+  "scope": "combined meaning and usable Polish; not equivalent to prior M2/H2 count",
+  "runSHA256": "aa7e54e81a8ac8dea8561fd6dfc32243f2cee4489397629c5746e0493c5a7289",
+  "categories": {
+    "acceptable": "Core meaning retained with usable Polish; minor tone variation permitted.",
+    "minor": "Recognizable core message with omission, nuance loss or language defect.",
+    "major": "Meaning changed or important content not intelligibly conveyed."
+  },
+  "counts": {
+    "acceptable": 6,
+    "minor": 10,
+    "major": 20
+  },
+  "results": [
+    {
+      "fixtureID": "qwen-straight-arrival-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Omits already; first-person arrival home retained."
+    },
+    {
+      "fixtureID": "qwen-straight-plan-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Lunch tomorrow at one retained, but grammatical error and proposal tone weakened."
+    },
+    {
+      "fixtureID": "qwen-straight-thanks-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "Thanks for help today retained."
+    },
+    {
+      "fixtureID": "qwen-dia-late-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "Reported coming later retained; source gender unspecified."
+    },
+    {
+      "fixtureID": "qwen-omitted-subject-finished-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "Finished and only needs sending retained."
+    },
+    {
+      "fixtureID": "qwen-particle-dong-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Spójnie chwili does not express wait a moment."
+    },
+    {
+      "fixtureID": "qwen-particle-sih-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "You startled/surprised me retained."
+    },
+    {
+      "fixtureID": "qwen-particle-nih-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Changes present meaning to past intention."
+    },
+    {
+      "fixtureID": "qwen-particle-lah-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Tomorrow retained but acceptance/resignation is weak and fragmentary."
+    },
+    {
+      "fixtureID": "qwen-particle-kok-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Why still awake becomes when did not sleep."
+    },
+    {
+      "fixtureID": "qwen-particle-masa-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Changes who must explain and loses again/disbelief."
+    },
+    {
+      "fixtureID": "qwen-slang-wkwk-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Wrong-group event is not intelligibly conveyed."
+    },
+    {
+      "fixtureID": "qwen-slang-mager-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Untranslated mager and malformed Polish fail to convey reluctance."
+    },
+    {
+      "fixtureID": "qwen-slang-baper-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Do not take it personally becomes do not be afraid."
+    },
+    {
+      "fixtureID": "qwen-negative-gak-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "Cannot join tonight retained."
+    },
+    {
+      "fixtureID": "qwen-negative-nggak-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "No need for pickup becomes no need to hurry."
+    },
+    {
+      "fixtureID": "qwen-negative-ga-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Departure/change-of-plan question lost."
+    },
+    {
+      "fixtureID": "qwen-kinship-bapak-tante-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Father/aunt roles lost; adds second time."
+    },
+    {
+      "fixtureID": "qwen-code-switch-meeting-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Rescheduled and can relax retained approximately, but Polish is malformed and delay less explicit."
+    },
+    {
+      "fixtureID": "qwen-joke-treat-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Treat/pay becomes convince; condition malformed."
+    },
+    {
+      "fixtureID": "qwen-quoted-reply-no-context",
+      "split": "regression",
+      "assessment": "acceptable",
+      "reason": "Not angry retained; reassuring particle weakened."
+    },
+    {
+      "fixtureID": "qwen-omitted-dia-station-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Adds forget and loses later pickup at station."
+    },
+    {
+      "fixtureID": "qwen-particle-combo-no-context",
+      "split": "regression",
+      "assessment": "minor",
+      "reason": "Seriously retained; how possible becomes why so."
+    },
+    {
+      "fixtureID": "qwen-negative-mixed-no-context",
+      "split": "regression",
+      "assessment": "major",
+      "reason": "Not lazy but tired becomes not too tired but a bit tired."
+    },
+    {
+      "fixtureID": "heldout-rescheduled",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Moved earlier becomes suppose it is nine; event rescheduling lost."
+    },
+    {
+      "fixtureID": "heldout-not-yet",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Not yet/refusal distinction lost."
+    },
+    {
+      "fixtureID": "heldout-pickup-conditional",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Rain becomes wind and pickup becomes listening."
+    },
+    {
+      "fixtureID": "heldout-slang-reluctance",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Reluctance becomes invented thief and profanity."
+    },
+    {
+      "fixtureID": "heldout-slang-personal",
+      "split": "new-synthetic",
+      "assessment": "minor",
+      "reason": "Movie not you retained; reassurance phrased unnaturally as playing with emotions."
+    },
+    {
+      "fixtureID": "heldout-joke-payment",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Who should pay this time is not conveyed; changes time."
+    },
+    {
+      "fixtureID": "heldout-quantity-time",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Ordering two becomes sending two messages; delivery condition shifts person."
+    },
+    {
+      "fixtureID": "heldout-double-negative",
+      "split": "new-synthetic",
+      "assessment": "minor",
+      "reason": "Checking again retained; trust reassurance becomes uncertainty."
+    },
+    {
+      "fixtureID": "heldout-quote-instruction",
+      "split": "new-synthetic",
+      "assessment": "minor",
+      "reason": "Quote and tomorrow-versus-today retained, with malformed verb."
+    },
+    {
+      "fixtureID": "heldout-code-switch",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Friday deadline becomes Monday and Monday review becomes Saturday."
+    },
+    {
+      "fixtureID": "heldout-wrong-chat",
+      "split": "new-synthetic",
+      "assessment": "minor",
+      "reason": "Wrong recipient retained; younger sibling becomes malformed brother and laughter untranslated."
+    },
+    {
+      "fixtureID": "heldout-no-need-return",
+      "split": "new-synthetic",
+      "assessment": "major",
+      "reason": "Return action omitted and next week becomes Sunday."
+    }
+  ]
+}
