@@ -120,12 +120,18 @@ final class NativeChatModel {
     private func handle(_ event: WhatsAppTransportEvent) async {
         switch event {
         case .ready:
-            connectionState = .ready
-            if let transport, let updated = try? await transport.listChats() {
+            guard let transport else { return }
+            do {
+                connectionState = try await transport.connectionState()
+                guard connectionState == .ready else { return }
+                let updated = try await transport.listChats()
                 chats = updated
                 cacheChats()
                 connectionNotice = nil
                 updateFilter()
+            } catch {
+                connectionState = .disconnected
+                connectionNotice = "Connection readiness could not be confirmed. Reconnect before sending."
             }
         case .message(let message), .messageUpdate(let message):
             merge([message], in: message.chatID)

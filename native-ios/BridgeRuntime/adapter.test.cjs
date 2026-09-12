@@ -35,6 +35,25 @@ test('registered reconnect is not mistaken for missing pairing', async () => {
     wpp.conn.isRegistered = () => false;
     assert.equal(await adapter.connectionState(), 'authenticating');
 });
+test('online events do not announce ready before authentication and synchronization', () => {
+    const { adapter, wpp, calls } = fixture();
+    const events = [];
+    const unsubscribe = adapter.subscribe((event) => events.push(event));
+    const online = calls.find(([name]) => name === 'conn.online')[1];
+    wpp.conn.isAuthenticated = () => false;
+    online(true);
+    assert.equal(events.length, 0);
+    wpp.conn.isAuthenticated = () => true;
+    wpp.conn.isMainReady = () => false;
+    online(true);
+    assert.equal(events.length, 0);
+    wpp.conn.isMainReady = () => true;
+    online(true);
+    assert.equal(events[0].kind, 'ready');
+    online(false);
+    assert.equal(events[1].kind, 'disconnected');
+    unsubscribe();
+});
 test('send disables implicit read, mentions and contact creation; reply uses quote', async () => {
     const { adapter, calls } = fixture();
     await adapter.reply({ chatID: 'test@c.us', text: 'Test', messageID: 'quote-1' });

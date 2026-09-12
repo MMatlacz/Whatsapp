@@ -87,9 +87,14 @@
                 };
                 on('chat.new_message', (raw) => emit({ kind: 'message', payload: message(raw) }));
                 on('chat.new_chat', (raw) => emit({ kind: 'chatUpdate', payload: chat(raw) }));
-                on('conn.main_ready', () => emit({ kind: 'ready', payload: {} }));
-                on('conn.online', (online) => emit(online ? { kind: 'ready', payload: {} }
-                    : { kind: 'disconnected', payload: { reason: 'offline' } }));
+                const emitReadyIfUsable = () => {
+                    if (state() === 'ready') emit({ kind: 'ready', payload: {} });
+                };
+                on('conn.main_ready', emitReadyIfUsable);
+                on('conn.online', (online) => {
+                    if (online) emitReadyIfUsable();
+                    else emit({ kind: 'disconnected', payload: { reason: 'offline' } });
+                });
                 on('conn.require_auth', () => emit({ kind: 'disconnected', payload: { reason: 'authentication-required' } }));
                 return () => listeners.forEach(([name, callback]) => wpp.off(name, callback));
             }
