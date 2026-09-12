@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.6890860417042859,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.396016001701355,
+  "fixtureID" : "qwen-negative-gak-no-context",
+  "focus" : "gak variant and future participation",
+  "generatedTokenCount" : 19,
+  "generationSeconds" : 0.2827479839324951,
+  "input" : "Aku gak bisa ikut malam ini.",
+  "intendedMeaning" : "I cannot join tonight.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: \"Nie mogę wziąć udziału w tymi dniach.\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Use informal Polish chat language without adding a reason.",
+  "promptTokenCount" : 349,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-gak",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Gak informal negation",
+  "tokensPerSecond" : 67.19764977895004,
+  "unknownMeasurements" : [
+
+  ]
+}

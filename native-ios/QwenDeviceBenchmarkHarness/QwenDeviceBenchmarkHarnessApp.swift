@@ -9,6 +9,13 @@ import UIKit
 @main
 struct QwenDeviceBenchmarkHarnessApp: App {
     init() {
+        if let configuration = QwenPhysicalCIConfiguration.current {
+            Task { @MainActor in
+                await QwenPhysicalCIRunner.run(configuration)
+            }
+            return
+        }
+
         guard let configuration = QwenSimulatorCIConfiguration.current else {
             return
         }
@@ -794,6 +801,376 @@ private enum QwenSimulatorCIRunner {
             withIntermediateDirectories: true
         )
         try encoder.encode(result).write(to: fileURL, options: .atomic)
+    }
+
+    private static func elapsed(since startedAt: TimeInterval) -> TimeInterval {
+        max(0, ProcessInfo.processInfo.systemUptime - startedAt)
+    }
+}
+
+private struct QwenPhysicalCIConfiguration: Sendable {
+    let modelDirectory: URL
+    let outputFile: URL
+    let sourceRevision: String?
+    let offlineVerified: Bool
+    let cancellationDelaySeconds: Double?
+    let peakMemoryBytes: UInt64?
+    let peakMemoryMeasurementSource: String?
+
+    static var current: QwenPhysicalCIConfiguration? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard
+            let modelPath = value(
+                for: "--qwen-device-model-dir",
+                in: arguments
+            ),
+            let outputPath = value(
+                for: "--qwen-device-output",
+                in: arguments
+            ),
+            let documents = FileManager.default.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            ).first
+        else {
+            return nil
+        }
+
+        let cancellationDelaySeconds = value(
+            for: "--qwen-device-cancel-after-seconds",
+            in: arguments
+        ).flatMap(Double.init)
+        let peakMemoryBytes = value(
+            for: "--qwen-device-peak-memory-bytes",
+            in: arguments
+        ).flatMap(UInt64.init)
+
+        return QwenPhysicalCIConfiguration(
+            modelDirectory: documents.appendingPathComponent(
+                modelPath,
+                isDirectory: true
+            ),
+            outputFile: documents.appendingPathComponent(outputPath),
+            sourceRevision: value(
+                for: "--qwen-device-source-revision",
+                in: arguments
+            ),
+            offlineVerified: arguments.contains(
+                "--qwen-device-offline-verified"
+            ),
+            cancellationDelaySeconds: cancellationDelaySeconds,
+            peakMemoryBytes: peakMemoryBytes,
+            peakMemoryMeasurementSource: value(
+                for: "--qwen-device-memory-measurement-source",
+                in: arguments
+            )
+        )
+    }
+
+    private static func value(
+        for name: String,
+        in arguments: [String]
+    ) -> String? {
+        guard let index = arguments.firstIndex(of: name) else { return nil }
+        let valueIndex = arguments.index(after: index)
+        guard valueIndex < arguments.endIndex else { return nil }
+        let value = arguments[valueIndex]
+        return value.isEmpty ? nil : value
+    }
+}
+
+private struct QwenPhysicalCIResult: Codable {
+    let timestamp: String
+    let status: String
+    let executionEnvironment: String
+    let durationSeconds: TimeInterval
+    let fullResultCount: Int
+    let fullFailureCount: Int
+    let reportDirectory: String
+    let cancellationResult: String?
+    let failure: String?
+}
+
+private enum QwenPhysicalCIRunner {
+    private static let executionEnvironment = "ios-device"
+    private static let benchmarkTimeoutSeconds = 120
+
+    static func run(
+        _ configuration: QwenPhysicalCIConfiguration
+    ) async {
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let baselineThermal = thermalStateDescription(
+            ProcessInfo.processInfo.thermalState
+        )
+        let baselineBattery = batteryObservation()
+
+        do {
+            let verified = try QwenMLXArtifactVerifier.verify(
+                directory: configuration.modelDirectory
+            )
+            let limits = QwenMLXDiagnosticLimits.benchmark
+            let model = QwenMLXDiagnosticModel(
+                verifiedArtifacts: verified,
+                limits: limits
+            )
+            let runner = try makeRunner(model: model, limits: limits)
+            let results = await runner.run(
+                fixtures: QwenFunctionalTranslationBenchmarkFixtures.fixtures
+            )
+
+            let cancellation = try await runCancellationProbe(
+                model: model,
+                limits: limits,
+                delaySeconds: configuration.cancellationDelaySeconds
+            )
+            let evidence = environmentEvidence(
+                sourceRevision: configuration.sourceRevision,
+                offlineVerified: configuration.offlineVerified,
+                cancellationState: cancellation.state,
+                peakMemoryBytes: configuration.peakMemoryBytes,
+                peakMemoryMeasurementSource: configuration.peakMemoryMeasurementSource,
+                baselineThermal: baselineThermal,
+                baselineBattery: baselineBattery
+            )
+            let provenance = TranslationBenchmarkModelProvenance(
+                manifest: verified.manifest,
+                generation: QwenMLXGenerationSettings(limits: limits),
+                executionEnvironment: executionEnvironment
+            )
+            let report = TranslationBenchmarkReport(
+                timestamp: timestamp,
+                sourceRevision: configuration.sourceRevision,
+                model: provenance,
+                maxGeneratedTokens: limits.maxGeneratedTokens,
+                physicalDeviceEvidence: evidence,
+                results: results,
+                corpus: "qwen-functional",
+                timeoutSeconds: benchmarkTimeoutSeconds
+            )
+            let reportDirectory = configuration.outputFile
+                .deletingLastPathComponent()
+                .appendingPathComponent(
+                    "QwenPhysicalReport",
+                    isDirectory: true
+                )
+            try TranslationBenchmarkExporter.write(
+                report: report,
+                to: reportDirectory
+            )
+            var cancellationFile: String?
+            if let cancellationResult = cancellation.result {
+                let fileURL = reportDirectory.appendingPathComponent(
+                    "cancellation.json"
+                )
+                try TranslationBenchmarkExporter.writeResult(
+                    cancellationResult,
+                    to: fileURL
+                )
+                cancellationFile = fileURL.lastPathComponent
+            }
+
+            let failures = results.filter { !isSuccessful($0) }.count
+            let envelope = QwenPhysicalCIResult(
+                timestamp: timestamp,
+                status: failures == 0 ? "passed" : "failed",
+                executionEnvironment: executionEnvironment,
+                durationSeconds: elapsed(since: startedAt),
+                fullResultCount: results.count,
+                fullFailureCount: failures,
+                reportDirectory: reportDirectory.lastPathComponent,
+                cancellationResult: cancellationFile,
+                failure: failures == 0
+                    ? nil
+                    : "Full functional benchmark had invalid result records."
+            )
+            try write(envelope, to: configuration.outputFile)
+            print("QWEN_DEVICE_BENCHMARK_STATUS=\(envelope.status)")
+            print("QWEN_DEVICE_BENCHMARK_RESULTS=\(results.count)")
+            Darwin.exit(failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE)
+        } catch {
+            let envelope = QwenPhysicalCIResult(
+                timestamp: timestamp,
+                status: "failed",
+                executionEnvironment: executionEnvironment,
+                durationSeconds: elapsed(since: startedAt),
+                fullResultCount: 0,
+                fullFailureCount: 0,
+                reportDirectory: "QwenPhysicalReport",
+                cancellationResult: nil,
+                failure: String(describing: error)
+            )
+            try? write(envelope, to: configuration.outputFile)
+            print("QWEN_DEVICE_BENCHMARK_STATUS=failed")
+            print("QWEN_DEVICE_BENCHMARK_ERROR=\(error)")
+            Darwin.exit(EXIT_FAILURE)
+        }
+    }
+
+    private static func makeRunner(
+        model: QwenMLXDiagnosticModel,
+        limits: QwenMLXDiagnosticLimits
+    ) throws -> TranslationBenchmarkRunner {
+        let executor = QwenMLXBenchmarkExecutor(
+            model: model,
+            limits: limits
+        )
+        guard let runner = TranslationBenchmarkRunner(
+            executor: executor,
+            timeoutSeconds: benchmarkTimeoutSeconds
+        ) else {
+            throw NSError(
+                domain: "QwenPhysicalCIRunner",
+                code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Invalid benchmark timeout."
+                ]
+            )
+        }
+        return runner
+    }
+
+    private static func runCancellationProbe(
+        model: QwenMLXDiagnosticModel,
+        limits: QwenMLXDiagnosticLimits,
+        delaySeconds: Double?
+    ) async throws -> (
+        state: PhysicalDeviceEvidenceState,
+        result: TranslationBenchmarkResultRecord?
+    ) {
+        guard let delaySeconds, delaySeconds > 0 else {
+            return (.notRun, nil)
+        }
+        let runner = try makeRunner(model: model, limits: limits)
+        let task = Task {
+            await runner.run(
+                fixtures: [QwenFunctionalTranslationBenchmarkFixtures.smoke]
+            )
+        }
+        let nanoseconds = UInt64(delaySeconds * 1_000_000_000)
+        try await Task.sleep(nanoseconds: nanoseconds)
+        task.cancel()
+        let result = await task.value.first
+        let state: PhysicalDeviceEvidenceState = result?.termination == .cancelled
+            ? .passed
+            : .failed
+        return (state, result)
+    }
+
+    private static func environmentEvidence(
+        sourceRevision: String?,
+        offlineVerified: Bool,
+        cancellationState: PhysicalDeviceEvidenceState,
+        peakMemoryBytes: UInt64?,
+        peakMemoryMeasurementSource: String?,
+        baselineThermal: String,
+        baselineBattery: String
+    ) -> PhysicalDeviceEnvironmentEvidence {
+        var unknown: [String] = []
+        let xcodeVersion = bundleString("DTXcode")
+        let xcodeBuild = bundleString("DTXcodeBuild")
+        let sdkVersion = bundleString("DTSDKName")
+        if sourceRevision == nil { unknown.append("sourceRevision") }
+        if !offlineVerified { unknown.append("offlineAfterProvisioning") }
+        if peakMemoryBytes == nil { unknown.append("peakMemoryBytes") }
+        if peakMemoryMeasurementSource == nil {
+            unknown.append("peakMemoryMeasurementSource")
+        }
+        if cancellationState == .notRun || cancellationState == .unknown {
+            unknown.append("cancellationBehavior")
+        }
+        if xcodeVersion == nil { unknown.append("xcodeVersion") }
+        if xcodeBuild == nil { unknown.append("xcodeBuild") }
+        if sdkVersion == nil { unknown.append("sdkVersion") }
+
+        return PhysicalDeviceEnvironmentEvidence(
+            state: .unknown,
+            deviceModel: machineIdentifier(),
+            osVersion: UIDevice.current.systemVersion,
+            osBuild: ProcessInfo.processInfo.operatingSystemVersionString,
+            xcodeVersion: xcodeVersion,
+            xcodeBuild: xcodeBuild,
+            sdkVersion: sdkVersion,
+            sourceRevision: sourceRevision,
+            provisioningState: "verified-local-copy",
+            offlineAfterProvisioning: offlineVerified ? .passed : .notRun,
+            cancellationBehavior: cancellationState,
+            peakMemoryBytes: peakMemoryBytes,
+            peakMemoryMeasurementSource: peakMemoryMeasurementSource,
+            thermalObservation: "before=\(baselineThermal); after=\(thermalStateDescription(ProcessInfo.processInfo.thermalState))",
+            batteryObservation: "before=\(baselineBattery); after=\(batteryObservation())",
+            unknownMeasurements: unknown
+        )
+    }
+
+    private static func isSuccessful(
+        _ result: TranslationBenchmarkResultRecord
+    ) -> Bool {
+        result.termination == .returned
+            && result.outputValidity == .validText
+            && !(result.output ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty
+    }
+
+    private static func write(
+        _ result: QwenPhysicalCIResult,
+        to fileURL: URL
+    ) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try encoder.encode(result).write(to: fileURL, options: .atomic)
+    }
+
+    private static func machineIdentifier() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let capacity = MemoryLayout.size(ofValue: systemInfo.machine)
+        return withUnsafePointer(to: &systemInfo.machine) { pointer in
+            pointer.withMemoryRebound(to: CChar.self, capacity: capacity) {
+                String(cString: $0)
+            }
+        }
+    }
+
+    private static func thermalStateDescription(
+        _ state: ProcessInfo.ThermalState
+    ) -> String {
+        switch state {
+        case .nominal: "nominal"
+        case .fair: "fair"
+        case .serious: "serious"
+        case .critical: "critical"
+        @unknown default: "unknown"
+        }
+    }
+
+    private static func batteryObservation() -> String {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        let state: String
+        switch UIDevice.current.batteryState {
+        case .unknown: state = "unknown"
+        case .unplugged: state = "unplugged"
+        case .charging: state = "charging"
+        case .full: state = "full"
+        @unknown default: state = "unknown"
+        }
+        let level = UIDevice.current.batteryLevel
+        guard level >= 0 else { return "level=unknown; state=\(state)" }
+        return String(format: "level=%.0f%%; state=%@", level * 100, state)
+    }
+
+    private static func bundleString(_ key: String) -> String? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) else {
+            return nil
+        }
+        if let string = value as? String { return string }
+        if let number = value as? NSNumber { return number.stringValue }
+        return String(describing: value)
     }
 
     private static func elapsed(since startedAt: TimeInterval) -> TimeInterval {
