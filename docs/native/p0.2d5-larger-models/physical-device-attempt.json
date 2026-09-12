@@ -1,0 +1,76 @@
+{
+  "sourceRevision": "1b9105dfd7e82dcd938c3283b8d4991b7d35eab1",
+  "device": "iPhone 15 Pro Max",
+  "os": "iOS 26.6.1",
+  "date": "2026-09-12",
+  "signedBuild": "passed",
+  "installation": "passed without uninstall",
+  "modelArtifactIntegrity": "all manifest hashes passed before loading report",
+  "inputMode": "archived-token-replay",
+  "completedTranslations": 0,
+  "attempts": [
+    {
+      "mode": "devicectl launch",
+      "result": "loading report; process no longer running"
+    },
+    {
+      "mode": "devicectl console",
+      "result": "App terminated due to signal 9"
+    },
+    {
+      "mode": "Instruments Activity Monitor launch",
+      "result": "target exited during loading; 0 rows",
+      "traceExitMetadata": "exit(0); conflicts with prior console SIGKILL, not treated as cause evidence"
+    }
+  ],
+  "baseline": {
+    "sampleCount": 14,
+    "memory-physical-footprint": {
+      "minimumBytes": 21005376,
+      "maximumObservedBytes": 23856192
+    },
+    "memory-real": {
+      "minimumBytes": 72941568,
+      "maximumObservedBytes": 76808192
+    }
+  },
+  "profiledLoad": {
+    "sampleCount": 4,
+    "memory-physical-footprint": {
+      "minimumBytes": 65736,
+      "maximumObservedBytes": 2255997552
+    },
+    "memory-real": {
+      "minimumBytes": 32768,
+      "maximumObservedBytes": 647790592
+    }
+  },
+  "cause": "Confirmed under LLDB: EXC_RESOURCE (RESOURCE_TYPE_MEMORY: high watermark memory limit exceeded) (limit=3376 MB), during MLX weight loading.",
+  "limitations": [
+    "Observed memory peak is sampled, not the exact termination threshold.",
+    "No completed translation, load latency, warm-run latency or sustained thermal/stability acceptance.",
+    "Baseline is ordinary app diagnostics; no representative WhatsApp/WebKit chat workload.",
+    "No defensible safe memory budget established.",
+    "Raw Instruments traces remain outside Git because they include device identifiers."
+  ],
+  "restoredNormalApp": true,
+  "ciUsed": false,
+  "debuggerEvidence": {
+    "stopReason": "EXC_RESOURCE (RESOURCE_TYPE_MEMORY: high watermark memory limit exceeded) (limit=3376 MB)",
+    "frames": [
+      "pread",
+      "mlx::core::io::ParallelFileReader::read (load.cpp:363,375)",
+      "mlx::core::Load::eval_cpu (load.cpp:38)",
+      "ThreadPool worker"
+    ],
+    "scope": "Observed limit for this process/run; not universal iOS limit or safe model budget.",
+    "cleanup": "Stopped debugger process explicitly after collecting evidence; cleanup exit is not failure evidence."
+  },
+  "simulator15ProMax": {
+    "runtime": "iOS 26.5",
+    "sourceRevision": "520ae7fa79423178a1122a799fae62f36b85699a",
+    "input": "same archived 36-case input and model artifacts",
+    "result": "libc++ Hardening assertion __s != nullptr failed: basic_string(const char*) detected nullptr",
+    "note": "Matches earlier simulator assertion; physical device uses iOS 26.6.1. Simulator build predates docs-only commit 1b9105d."
+  }
+}

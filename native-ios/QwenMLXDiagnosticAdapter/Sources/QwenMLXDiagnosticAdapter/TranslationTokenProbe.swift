@@ -56,10 +56,18 @@ public enum TranslationTokenProbe {
             defer { try? handle.close() }
             var hash = SHA256()
             var size = 0
-            while let chunk = try handle.read(upToCount: 4 * 1024 * 1024), !chunk.isEmpty {
+            while true {
                 try Task.checkCancellation()
-                hash.update(data: chunk)
-                size += chunk.count
+                // Drain Foundation's temporary read buffers before loading weights.
+                // An async task need not otherwise drain a pool between reads.
+                let count = try autoreleasepool {
+                    guard let chunk = try handle.read(upToCount: 4 * 1024 * 1024),
+                          !chunk.isEmpty else { return 0 }
+                    hash.update(data: chunk)
+                    return chunk.count
+                }
+                guard count > 0 else { break }
+                size += count
             }
             guard size == artifact.bytes,
                   hex(hash.finalize()) == artifact.sha256 else {

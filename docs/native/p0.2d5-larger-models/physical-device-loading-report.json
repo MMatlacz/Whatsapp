@@ -1,0 +1,20 @@
+{
+  "baselinePeakRSSBytes" : 1092141056,
+  "executionEnvironment" : "ios-device",
+  "inputMode" : "archived-token-replay-not-native-tokenizer-validation",
+  "inputSHA256" : "91a7e5e36074c72dcfa2042c122ea9b3b28d7913aba9f92f8c4c1c49d50b738c",
+  "maxNewTokens" : 512,
+  "productionRouting" : false,
+  "repository" : "mlx-community\/translategemma-4b-it-4bit",
+  "results" : [
+
+  ],
+  "revision" : "5788ec08c047f3f2e17808101b8d9566ac930d58",
+  "sourceRevision" : "1b9105dfd7e82dcd938c3283b8d4991b7d35eab1",
+  "status" : "loading",
+  "stopTokenIDs" : [
+    1,
+    106
+  ],
+  "temperature" : 0
+}
