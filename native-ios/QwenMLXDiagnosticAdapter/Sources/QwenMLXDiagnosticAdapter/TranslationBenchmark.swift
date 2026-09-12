@@ -18,6 +18,7 @@ public enum TranslationBenchmarkOutputValidity: String, Codable, Equatable, Send
     case emptyText
     case thinkingOnly
     case truncated
+    case interrupted
     case notProduced
     case unknown
 }
@@ -116,8 +117,13 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
         do {
             let result = try await model.benchmarkGenerate(request)
             let metrics = result.metrics
+            // Some runtime streams report cancellation at the token cap.
+            // Preserve that raw reason while independently detecting exhaustion.
+            let exhausted = metrics.reachedGenerationLimit == true
+                || (metrics.generatedTokenCount ?? 0) >= limits.maxGeneratedTokens
             return TranslationBenchmarkExecution(
-                termination: .returned,
+                termination: metrics.finishReason == "cancelled" && !exhausted
+                    ? .cancelled : .returned,
                 output: result.output,
                 modelLoadWasCold: metrics.modelLoadWasCold,
                 modelLoadSeconds: metrics.modelLoadSeconds,
@@ -127,7 +133,7 @@ public struct QwenMLXBenchmarkExecutor: TranslationBenchmarkExecuting, Sendable 
                 finishReason: metrics.finishReason,
                 generatedTokenCount: metrics.generatedTokenCount,
                 tokensPerSecond: metrics.tokensPerSecond,
-                reachedGenerationLimit: metrics.reachedGenerationLimit,
+                reachedGenerationLimit: exhausted,
                 durationSeconds: elapsed(since: startedAt)
             )
         } catch let engineFailure as TranslationEngineFailure {
@@ -342,6 +348,12 @@ public struct TranslationBenchmarkResultRecord: Codable, Equatable, Sendable {
     private static func classifyOutput(
         _ execution: TranslationBenchmarkExecution
     ) -> TranslationBenchmarkOutputValidity {
+        if execution.reachedGenerationLimit == true, execution.output != nil {
+            return .truncated
+        }
+        if execution.finishReason == "cancelled", execution.output != nil {
+            return .interrupted
+        }
         guard execution.termination == .returned else {
             return .notProduced
         }

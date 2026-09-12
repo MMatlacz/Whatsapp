@@ -4,6 +4,7 @@ title = "WhatsApp Translator gitleaks configuration"
 useDefault = true
 
 [[allowlists]]
+condition = "AND"
 description = "Public Hugging Face snapshot revisions in P0.2d3 bake-off evidence"
 regexTarget = "secret"
 paths = [
