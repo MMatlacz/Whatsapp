@@ -59,3 +59,30 @@ aborted with SIGABRT in Metal device initialization before producing any row.
 The normal app was relaunched successfully and its diagnostics screen inspected.
 See `native-local-validation.json` and the sanitized runtime-failure report.
 Physical iPhone measurements remain outstanding under issue #122.
+
+## Physical memory diagnosis and bounded-buffer fix
+
+On 2026-09-12 the iPhone 15 Pro Max (iOS 26.6.1) reproduced the
+load failure. LLDB reported `EXC_RESOURCE (RESOURCE_TYPE_MEMORY: high watermark
+memory limit exceeded) (limit=3376 MB)` while MLX read model weights. This is
+an observed process limit, not a universal iOS budget. The earlier sampled
+2.10 GiB footprint was not the exact high-water mark.
+
+Commit `532f6090b10cb40f96935e7134bbd82b16eea717` drains an autorelease pool
+after each 4 MiB artifact-hashing read. This preserves every hash/size check.
+The unchanged model and input then loaded in 3.867 seconds on the phone and
+produced six archived translations before the host connection was lost.
+Pre-load peak RSS fell from 1,081,180,160 to 78,069,760 bytes; the six rows
+reported peak RSS 1,311,260,672 bytes. This supports temporary verification
+buffer retention as a material contributor to the earlier load failure.
+RSS is not the iOS physical-footprint metric. The attempted inference trace
+contained no footprint samples before disconnection.
+
+See `physical-device-pool-partial.json`. Its status intentionally remains
+`running`: the final 36-case outcome and repeat stability are not yet known.
+All 31 adapter tests, focused SwiftLint and local pre-commit checks passed;
+the exact new commit range also passed Gitleaks. CI was not used.
+
+A separate iPhone 15 Pro Max simulator (iOS 26.5) reproduced the libc++
+null-string assertion with the earlier diagnostic build. This is distinct
+from the physical-device resource exception.
