@@ -128,42 +128,63 @@
         const chatAliasCache = new Map();
         const chatAliasInFlight = new Map();
         const CHAT_ALIAS_TTL_MS = 10 * 60 * 1000;
+        const aliasKind = (chatID) => chatID?.endsWith('@c.us') ? 'phone'
+            : chatID?.endsWith('@lid') ? 'lid' : 'other';
         const chatAliases = async (chatID) => {
             const now = Date.now();
             const cached = chatAliasCache.get(chatID);
-            if (cached?.expiresAt > now) return cached.aliases;
+            if (cached?.expiresAt > now) return { status: 'resolved', aliases: cached.aliases };
             if (cached) chatAliasCache.delete(chatID);
             if (chatAliasInFlight.has(chatID)) return chatAliasInFlight.get(chatID);
 
             const pending = (async () => {
                 const aliases = new Set([chatID]);
                 const resolve = wpp.contact?.getPnLidEntry;
-                if (typeof resolve !== 'function') return aliases;
-                const entry = await resolve(chatID);
-                for (const key of ['lid', 'phoneNumber']) {
-                    const alias = id(entry?.[key]);
-                    if (alias) aliases.add(alias);
+                if (typeof resolve !== 'function') {
+                    return { status: 'unknown', aliases, reason: 'alias-resolver-unavailable' };
                 }
-                chatAliasCache.set(chatID, {
-                    aliases,
-                    expiresAt: Date.now() + CHAT_ALIAS_TTL_MS
-                });
-                if (chatAliasCache.size > 256) chatAliasCache.delete(chatAliasCache.keys().next().value);
-                return aliases;
-            })().catch(() => new Set([chatID])).finally(() => {
+                try {
+                    const entry = await resolve(chatID);
+                    for (const key of ['lid', 'phoneNumber']) {
+                        const alias = id(entry?.[key]);
+                        if (alias) aliases.add(alias);
+                    }
+                    chatAliasCache.set(chatID, {
+                        aliases,
+                        expiresAt: Date.now() + CHAT_ALIAS_TTL_MS
+                    });
+                    if (chatAliasCache.size > 256) chatAliasCache.delete(chatAliasCache.keys().next().value);
+                    return { status: 'resolved', aliases };
+                } catch {
+                    return { status: 'unknown', aliases, reason: 'alias-resolution-failed' };
+                }
+            })().finally(() => {
                 chatAliasInFlight.delete(chatID);
             });
             chatAliasInFlight.set(chatID, pending);
             return pending;
         };
         const equivalentChatID = async (actual, expected) => {
-            if (!actual || !expected) return false;
-            if (actual === expected) return true;
-            const [actualAliases, expectedAliases] = await Promise.all([
+            if (!actual || !expected) return { status: 'unknown', reason: 'missing-chat-identifier' };
+            if (actual === expected) return { status: 'equal' };
+            const actualKind = aliasKind(actual);
+            const expectedKind = aliasKind(expected);
+            if (actualKind === expectedKind || actualKind === 'other' || expectedKind === 'other') {
+                return { status: 'different' };
+            }
+            const [actualResolution, expectedResolution] = await Promise.all([
                 chatAliases(actual), chatAliases(expected)
             ]);
-            for (const alias of actualAliases) if (expectedAliases.has(alias)) return true;
-            return false;
+            for (const alias of actualResolution.aliases) {
+                if (expectedResolution.aliases.has(alias)) return { status: 'equal' };
+            }
+            if (actualResolution.status === 'resolved' && expectedResolution.status === 'resolved') {
+                return { status: 'different' };
+            }
+            return {
+                status: 'unknown',
+                reason: actualResolution.reason || expectedResolution.reason || 'alias-resolution-incomplete'
+            };
         };
         const message = (raw) => {
             const key = read(raw, 'id');
@@ -231,8 +252,9 @@
                 }
                 if (raw) {
                     const actualChatID = rawMessageChatID(raw);
-                    if (!await equivalentChatID(actualChatID, chatID)) {
-                        throw new Error('unexpected-send-result');
+                    const identity = await equivalentChatID(actualChatID, chatID);
+                    if (identity.status !== 'equal') {
+                        throw new Error(identity.status === 'unknown' ? 'chat-identity-unresolved' : 'unexpected-send-result');
                     }
                     const accepted = message(raw);
                     accepted.chatID = chatID;
@@ -252,7 +274,10 @@
             const raw = await wpp.chat.getMessageById(messageID);
             if (!raw) throw new Error('preview-message-not-found');
             const actualChatID = rawMessageChatID(raw);
-            if (!await equivalentChatID(actualChatID, chatID)) throw new Error('cross-chat-media');
+            const identity = await equivalentChatID(actualChatID, chatID);
+            if (identity.status !== 'equal') {
+                throw new Error(identity.status === 'unknown' ? 'chat-identity-unresolved' : 'cross-chat-media');
+            }
             if (read(raw, 'isViewOnce') === true) throw new Error('view-once-media');
 
             const preview = read(raw, 'linkPreview');
@@ -315,7 +340,11 @@
                     try {
                         const actualChatID = rawMessageChatID(raw);
                         if (!actualChatID) return { status: 'malformed', error: new Error('invalid-message-chat') };
-                        if (!await equivalentChatID(actualChatID, chatID)) return { status: 'cross-chat' };
+                        const identity = await equivalentChatID(actualChatID, chatID);
+                        if (identity.status === 'unknown') {
+                            return { status: 'unresolved', reason: identity.reason || 'chat-identity-unresolved' };
+                        }
+                        if (identity.status === 'different') return { status: 'cross-chat' };
                         const mapped = message(raw);
                         // WhatsApp can expose the same one-to-one thread through
                         // both its phone-number and LID WIDs. Keep the requested
@@ -326,6 +355,13 @@
                         return { status: 'malformed', error };
                     }
                 }));
+                const unresolvedRows = mappedRows.filter((row) => row.status === 'unresolved');
+                if (unresolvedRows.length > 0) {
+                    const error = new Error('chat-identity-unresolved');
+                    error.code = 'chat-identity-unresolved';
+                    error.reason = unresolvedRows[0].reason;
+                    throw error;
+                }
                 const crossChatCount = mappedRows.filter((row) => row.status === 'cross-chat').length;
                 if (rows.length > 0 && crossChatCount === rows.length) throw new Error('cross-chat-history');
                 const messages = mappedRows.filter((row) => row.status === 'mapped')
@@ -390,7 +426,8 @@
                         const raw = await wpp.chat.getMessageById(key);
                         if (!raw) return;
                         const actualChatID = rawMessageChatID(raw);
-                        if (!await equivalentChatID(actualChatID, chatID)) return;
+                        const identity = await equivalentChatID(actualChatID, chatID);
+                        if (identity.status !== 'equal') return;
                         const updated = message(raw);
                         updated.chatID = chatID;
                         updated.deliveryState = deliveryState(ack);
