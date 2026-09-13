@@ -98,7 +98,11 @@ The app currently exposes:
 
 ## WhatsApp Web profile and session controls
 
-The WhatsApp Web probe uses one stable, dedicated `WKWebsiteDataStore` identifier rather than the app-wide default store. The off-screen `WKWebView` uses that profile and a desktop Safari user agent.
+**Chats** is the app's primary screen. It embeds WhatsApp's own interface for account linking, chat browsing, and user-driven messaging; it is not a custom SwiftUI message list or an implementation of the native runtime adapter. Translation remains disabled.
+
+Chats and Session share one `WKWebView` and one stable, dedicated `WKWebsiteDataStore` identifier. **Open WhatsApp** starts the first load. A non-sensitive preference then permits automatic reopening on app launch using the existing WebKit profile. Returning from the background refreshes diagnostics without reloading an existing page. **Session → Open Chats** returns to that same page. The page menu provides size controls and a confirmed reload; disconnect also requires confirmation and disables automatic reopening after successful profile removal.
+
+The browser uses desktop Safari content mode and user agent. User-activated external web links open in the system browser, keeping the chat page in its dedicated view. Page-process termination and navigation failure expose a retry control. Pending JavaScript results from a released browser are ignored.
 
 The session controller can:
 
@@ -108,6 +112,8 @@ The session controller can:
 - read an eight-character pairing-code candidate when the page exposes one;
 - classify the visible page as authentication UI, authenticated UI, or unknown using non-authoritative heuristics;
 - release its `WKWebView` and remove the dedicated profile when **Disconnect WhatsApp** is used.
+
+If WhatsApp first shows its download prompt, choose **Continue to WhatsApp Web**, then **Log in with phone number** on the page. The browser requests desktop content mode. The iOS target generates a launch screen so it uses the full device viewport instead of legacy 320×480 compatibility sizing. Session labels remain heuristics and do not prove authentication.
 
 The bridge intentionally avoids depending on WhatsApp internal JavaScript objects. DOM selectors are treated as experimental and may need adjustment after physical-device testing. Pairing codes are memory-only and are cleared on new-session/disconnect paths. Page contents, cookies, and authentication material are not copied into app persistence or logs.
 

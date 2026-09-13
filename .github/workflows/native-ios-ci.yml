@@ -97,22 +97,26 @@ jobs:
             -project native-ios/WhatsAppTranslator.xcodeproj \
             -list
 
+      - name: Install Metal toolchain for app and diagnostic MLX adapter
+        run: |
+          set -euo pipefail
+          xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk macosx metal --version
+
       - name: Build native iOS target for Simulator SDK
         run: |
           set -euo pipefail
           xcodebuild \
             -project native-ios/WhatsAppTranslator.xcodeproj \
-            -target WhatsAppTranslator \
+            -scheme WhatsAppTranslator \
             -configuration Debug \
-            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/whatsapp-derived-data" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            INDEX_STORE_PATH="$RUNNER_TEMP/whatsapp-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build
-
-      - name: Install Metal toolchain for diagnostic MLX adapter
-        run: |
-          set -euo pipefail
-          xcodebuild -downloadComponent MetalToolchain
-          xcrun -sdk macosx metal --version
 
       - name: Resolve diagnostic MLX package
         working-directory: native-ios/QwenMLXDiagnosticAdapter
