@@ -29,6 +29,7 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
 
     func testFunctionalCIUsesPublishedQwenNonThinkingSamplingDefaults() {
         let limits = QwenMLXDiagnosticLimits.functionalCI
+        XCTAssertEqual(limits.maxGeneratedTokens, 512)
         XCTAssertEqual(limits.generationTemperature, 0.7)
         XCTAssertEqual(limits.generationTopP, 0.8)
         XCTAssertEqual(limits.generationTopK, 20)
@@ -212,7 +213,8 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         let verified = try QwenMLXArtifactVerifier.verify(
             directory: fixture.directory, manifest: fixture.manifest
         )
-        for count in [12, 96] {
+        let tokenCap = QwenMLXDiagnosticLimits.functionalCI.maxGeneratedTokens
+        for count in [12, tokenCap] {
             let model = QwenMLXDiagnosticModel(
                 verifiedArtifacts: verified,
                 limits: .functionalCI,
@@ -233,8 +235,8 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
             XCTAssertEqual(record.output, "Urwany tekst")
             XCTAssertEqual(record.finishReason, "cancelled")
             XCTAssertEqual(record.generatedTokenCount, count)
-            XCTAssertEqual(record.termination, count == 96 ? .returned : .cancelled)
-            XCTAssertEqual(record.outputValidity, count == 96 ? .truncated : .interrupted)
+            XCTAssertEqual(record.termination, count == tokenCap ? .returned : .cancelled)
+            XCTAssertEqual(record.outputValidity, count == tokenCap ? .truncated : .interrupted)
         }
     }
 

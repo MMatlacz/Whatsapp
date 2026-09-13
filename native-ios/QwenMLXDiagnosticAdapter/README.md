@@ -115,6 +115,32 @@ The predeclared selection criteria and exact evidence-capture sequence live in `
 
 This runner is diagnostic only. It does not select Qwen for production, enable fallback routing, or satisfy the physical-iPhone acceptance work by itself.
 
+## TranslateGemma diagnostic path
+
+`ExperimentalTranslateGemma` is an opt-in research adapter for the locally
+provisioned TranslateGemma 4B snapshot used by the larger-model investigation.
+It remains outside the production router and never sends chat messages. The
+adapter now builds the model-specific message expected by TranslateGemma's
+native chat template, including `source_lang_code = id` and
+`target_lang_code = pl`; it does not hand-build a second Gemma turn or infer
+language metadata from message text.
+
+Guidance is bounded, explicitly labelled, and separated from the target text.
+The local output gate rejects empty, interrupted, token-budget-exhausted,
+unchanged-source, and control-token output. A mechanically valid output is
+still marked `requiresHumanReview`; this package has no automatic semantic or
+Polish-quality scorer and never marks an output safe to send. Word alignment is
+also unavailable until a separately validated alignment method exists, so a
+caller must not invent known-word mappings from the plain output.
+
+The frozen 36-case TranslateGemma greedy review remains the reference for this
+diagnostic work: 13 acceptable, 13 minor, and 10 major source-only results.
+The exact reviewed fixture IDs and reasons are recorded in
+[`translation-quality-gate.md`](../../docs/native/p0.2d5-larger-models/translation-quality-gate.md).
+Changing the prompt implementation or adding the mechanical gate does not
+rewrite that baseline; run a fresh, provisioned model evaluation before making
+any quality claim.
+
 ## Build and deterministic tests
 
 CI installs the Metal toolchain, resolves the locked package graph, builds/tests the package on macOS, builds the benchmark executable, exercises its `--help` path without model weights, and compiles the adapter for the iOS Simulator without downloading model weights.
