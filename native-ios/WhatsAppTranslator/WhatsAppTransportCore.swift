@@ -72,6 +72,52 @@ struct WhatsAppTransportMediaMetadata: Codable, Equatable, Sendable {
     let durationMilliseconds: Int64?
     let width: Int?
     let height: Int?
+    let isViewOnce: Bool
+
+    init(
+        kind: WhatsAppTransportMediaKind, mimeType: String?, filename: String?,
+        sizeBytes: Int64?, durationMilliseconds: Int64?, width: Int?, height: Int?,
+        isViewOnce: Bool = false
+    ) {
+        self.kind = kind
+        self.mimeType = mimeType
+        self.filename = filename
+        self.sizeBytes = sizeBytes
+        self.durationMilliseconds = durationMilliseconds
+        self.width = width
+        self.height = height
+        self.isViewOnce = isViewOnce
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, mimeType, filename, sizeBytes, durationMilliseconds, width, height, isViewOnce
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try values.decode(WhatsAppTransportMediaKind.self, forKey: .kind)
+        mimeType = try values.decodeIfPresent(String.self, forKey: .mimeType)
+        filename = try values.decodeIfPresent(String.self, forKey: .filename)
+        sizeBytes = try values.decodeIfPresent(Int64.self, forKey: .sizeBytes)
+        durationMilliseconds = try values.decodeIfPresent(Int64.self, forKey: .durationMilliseconds)
+        width = try values.decodeIfPresent(Int.self, forKey: .width)
+        height = try values.decodeIfPresent(Int.self, forKey: .height)
+        isViewOnce = try values.decodeIfPresent(Bool.self, forKey: .isViewOnce) ?? false
+    }
+}
+
+struct WhatsAppTransportLinkPreview: Codable, Equatable, Sendable {
+    let matchedText: String
+    let canonicalURL: String?
+    let title: String?
+    let description: String?
+}
+
+struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
+    let mimeType: String
+    let data: Data
+    let width: Int?
+    let height: Int?
 }
 
 struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
@@ -83,6 +129,7 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
     let fromMe: Bool
     let quote: WhatsAppTransportQuote?
     let media: WhatsAppTransportMediaMetadata?
+    let linkPreview: WhatsAppTransportLinkPreview?
     let deliveryState: WhatsAppTransportDeliveryState?
 
     init(
@@ -94,6 +141,7 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
         fromMe: Bool,
         quote: WhatsAppTransportQuote?,
         media: WhatsAppTransportMediaMetadata?,
+        linkPreview: WhatsAppTransportLinkPreview? = nil,
         deliveryState: WhatsAppTransportDeliveryState? = nil
     ) {
         self.id = id
@@ -104,6 +152,7 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
         self.fromMe = fromMe
         self.quote = quote
         self.media = media
+        self.linkPreview = linkPreview
         self.deliveryState = deliveryState
     }
 }
@@ -146,7 +195,18 @@ protocol WhatsAppTransport: Sendable {
         to messageID: String,
         in chatID: String
     ) async throws -> WhatsAppTransportMessage
+    func mediaPreview(chatID: String, messageID: String, maxPixelSize: Int) async throws -> WhatsAppTransportMediaPreview
     func eventStream() async -> AsyncStream<WhatsAppTransportEvent>
+}
+
+extension WhatsAppTransport {
+    func mediaPreview(chatID: String, messageID: String, maxPixelSize: Int) async throws -> WhatsAppTransportMediaPreview {
+        throw WhatsAppTransportMediaPreviewFailure.unavailable
+    }
+}
+
+enum WhatsAppTransportMediaPreviewFailure: Error, Equatable, Sendable {
+    case unavailable
 }
 
 enum WhatsAppBridgeResponse: Equatable, Sendable {
@@ -155,6 +215,7 @@ enum WhatsAppBridgeResponse: Equatable, Sendable {
     case messages(WhatsAppTransportMessagePage)
     case sentMessage(WhatsAppTransportMessage)
     case repliedMessage(WhatsAppTransportMessage)
+    case mediaPreview(WhatsAppTransportMediaPreview)
 }
 
 enum WhatsAppBridgeDecodingError: Error, Equatable, Sendable {
@@ -229,6 +290,10 @@ enum WhatsAppBridgeDecoder {
             let payload = try decodeEnvelope(MessagePayload.self, from: data).payload
             try validate(payload.message)
             return .repliedMessage(payload.message)
+        case "mediaPreview":
+            let payload = try decodeEnvelope(WhatsAppTransportMediaPreview.self, from: data).payload
+            try validate(payload)
+            return .mediaPreview(payload)
         default:
             throw WhatsAppBridgeDecodingError.unknownResponseKind(header.kind)
         }
@@ -292,6 +357,11 @@ enum WhatsAppBridgeDecoder {
         if let media = message.media {
             try validate(media)
         }
+        if let preview = message.linkPreview {
+            guard !preview.matchedText.isEmpty else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("linkPreview")
+            }
+        }
     }
 
     private static func validate(_ media: WhatsAppTransportMediaMetadata) throws {
@@ -302,6 +372,16 @@ enum WhatsAppBridgeDecoder {
         let dimensions: [Int?] = [media.width, media.height]
         guard dimensions.compactMap({ $0 }).allSatisfy({ $0 >= 0 }) else {
             throw WhatsAppBridgeDecodingError.invalidPayload("media")
+        }
+    }
+
+    private static func validate(_ preview: WhatsAppTransportMediaPreview) throws {
+        guard !preview.mimeType.isEmpty, !preview.data.isEmpty, preview.data.count <= 1_500_000 else {
+            throw WhatsAppBridgeDecodingError.invalidPayload("mediaPreview")
+        }
+        let dimensions = [preview.width, preview.height].compactMap { $0 }
+        guard dimensions.allSatisfy({ $0 > 0 && $0 <= 4_096 }) else {
+            throw WhatsAppBridgeDecodingError.invalidPayload("mediaPreview")
         }
     }
 

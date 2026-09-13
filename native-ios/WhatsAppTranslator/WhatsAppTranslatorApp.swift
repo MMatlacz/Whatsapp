@@ -34,21 +34,58 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
         // A fast scroll can create many translation cards at once. Do not
         // retain an unbounded queue of inference continuations: one request
         // runs and the remaining cards stay available for an explicit retry.
-        try await acquireInferenceSlot(waitIfBusy: request.userInitiated)
-        defer { inferenceActive = false }
-        let guidance = request.userInitiated
-            ? "\(Self.manualRevisionPrefix)\n\(request.comment)"
-            : request.comment
-        guard guidance.utf8.count <= TranslateGemmaPrompt.maximumGuidanceUTF8Bytes else {
-            throw ExperimentalTranslateGemma.Failure.invalidInput
+        do {
+            try await acquireInferenceSlot(waitIfBusy: request.userInitiated)
+            defer { inferenceActive = false }
+            let guidance = request.userInitiated
+                ? Self.manualGuidance(for: request)
+                : request.comment
+            guard guidance.utf8.count <= TranslateGemmaPrompt.maximumGuidanceUTF8Bytes else {
+                throw NativeRetranslationFailure.invalidInput
+            }
+            let output = try await engine.translate(
+                request.original,
+                comment: guidance,
+                vocabularyHints: Self.vocabularyHints
+            ).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !output.isEmpty else { throw NativeRetranslationFailure.incomplete }
+            return [.init(id: "translategemma-\(request.revision)", source: nil, translation: output)]
+        } catch is CancellationError {
+            throw NativeRetranslationFailure.cancelled
+        } catch let failure as NativeRetranslationFailure {
+            throw failure
+        } catch let failure as ExperimentalTranslateGemma.Failure {
+            switch failure {
+            case .busy: throw NativeRetranslationFailure.busy
+            case .invalidInput: throw NativeRetranslationFailure.invalidInput
+            case .integrity: throw NativeRetranslationFailure.integrity
+            case .incomplete: throw NativeRetranslationFailure.incomplete
+            }
+        } catch {
+            throw NativeRetranslationFailure.unavailable
         }
-        let output = try await engine.translate(
-            request.original,
-            comment: guidance,
-            vocabularyHints: Self.vocabularyHints
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !output.isEmpty else { throw ExperimentalTranslateGemma.Failure.incomplete }
-        return [.init(id: "translategemma-\(request.revision)", source: nil, translation: output)]
+    }
+
+    private static func manualGuidance(for request: NativeRetranslationRequest) -> String {
+        let previous = clipped(request.previousTranslation, maxUTF8Bytes: 800)
+        let instruction = clipped(request.comment, maxUTF8Bytes: 800)
+        return """
+        \(manualRevisionPrefix)
+        Existing Polish translation:
+        \(previous.isEmpty ? "(none yet)" : previous)
+        User revision request:
+        \(instruction)
+        """
+    }
+
+    private static func clipped(_ value: String, maxUTF8Bytes: Int) -> String {
+        var used = 0
+        return String(value.prefix { character in
+            let count = String(character).utf8.count
+            guard used + count <= maxUTF8Bytes else { return false }
+            used += count
+            return true
+        })
     }
 
     private func acquireInferenceSlot(waitIfBusy: Bool) async throws {

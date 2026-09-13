@@ -4,6 +4,7 @@ struct NativeTranslationCard: View {
     @Bindable var model: NativeTranslationModel
     let key: NativeTranslationKey
     let original: String
+    var automaticTranslationEligible = true
     @State private var sheet: TranslationSheet?
 
     private enum TranslationSheet: String, Identifiable {
@@ -32,7 +33,9 @@ struct NativeTranslationCard: View {
                 }
             } else {
                 Text(model.experimentalTranslationEnabled
-                     ? "Translation is enabled. Waiting for the local model."
+                     ? automaticTranslationEligible
+                        ? "Translation is enabled. Waiting for the local model."
+                        : "Automatic translation skipped for this message. Tap Translate now to override."
                      : "Not translated. Automatic translation is disabled.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if model.experimentalTranslationEnabled {
@@ -53,7 +56,7 @@ struct NativeTranslationCard: View {
             if let error = model.storageError { Text(error).font(.caption).foregroundStyle(.red) }
         }
         .task(id: [model.experimentalTranslationEnabled, model.ownerApprovedExperimentalProvider]) {
-            guard model.experimentalTranslationEnabled,
+            guard model.experimentalTranslationEnabled, automaticTranslationEligible,
                   model.record(for: key, original: original)?.parts.isEmpty != false else { return }
             await model.translate(key: key, original: original)
         }

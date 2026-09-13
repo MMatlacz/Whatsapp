@@ -120,6 +120,78 @@ final class NativeTranslationModelTests: XCTestCase {
         )
     }
 
+    func testAutomaticBusyDoesNotCreateTranslationRevisionOrIntent() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("native-auto-busy-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let contextStore = try SQLiteContextStore(path: url.path)
+        let chatID = try XCTUnwrap(WhatsAppChatID("chat"))
+        let messageID = try XCTUnwrap(WhatsAppMessageID("message"))
+        try contextStore.core.upsert(chat: try XCTUnwrap(WhatsAppChat(
+            id: chatID, title: "Family", kind: .group, unreadCount: 0, lastMessageAt: nil
+        )))
+        try contextStore.core.upsert(message: WhatsAppMessage(
+            id: messageID, chatID: chatID, senderID: nil,
+            timestamp: try XCTUnwrap(WhatsAppTimestamp(millisecondsSince1970: 1_000)),
+            body: "Aku minum kopi.", fromMe: false, quote: nil, media: nil, translation: nil
+        ))
+        let model = NativeTranslationModel(
+            retranslator: FailingNativeRetranslator(failure: .busy),
+            contextStore: contextStore
+        )
+        model.experimentalTranslationEnabled = true
+
+        await model.translate(key: key, original: "Aku minum kopi.")
+
+        XCTAssertTrue(try contextStore.allTranslations().isEmpty)
+        XCTAssertTrue(try contextStore.allTranslationIntents().isEmpty)
+        XCTAssertNil(model.records[key])
+        XCTAssertTrue(model.notices[key]?.contains("busy") == true)
+    }
+
+    func testFailedManualRetranslationPersistsIntentWithoutNewRevision() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("native-manual-intent-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let contextStore = try SQLiteContextStore(path: url.path)
+        let chatID = try XCTUnwrap(WhatsAppChatID("chat"))
+        let messageID = try XCTUnwrap(WhatsAppMessageID("message"))
+        try contextStore.core.upsert(chat: try XCTUnwrap(WhatsAppChat(
+            id: chatID, title: "Family", kind: .group, unreadCount: 0, lastMessageAt: nil
+        )))
+        try contextStore.core.upsert(message: WhatsAppMessage(
+            id: messageID, chatID: chatID, senderID: nil,
+            timestamp: try XCTUnwrap(WhatsAppTimestamp(millisecondsSince1970: 1_000)),
+            body: "Aku minum kopi.", fromMe: false, quote: nil, media: nil, translation: nil
+        ))
+        let model = NativeTranslationModel(
+            retranslator: FailingNativeRetranslator(failure: .incomplete),
+            contextStore: contextStore
+        )
+        XCTAssertTrue(model.saveCorrection(
+            key: key,
+            original: "Aku minum kopi.",
+            parts: parts,
+            expectedRevision: 0
+        ))
+        XCTAssertEqual(try contextStore.allTranslations().count, 1)
+
+        await model.retranslate(
+            key: key,
+            original: "Aku minum kopi.",
+            comment: "Explain the difference between beras and nasi"
+        )
+
+        XCTAssertEqual(try contextStore.allTranslations().count, 1)
+        XCTAssertEqual(try contextStore.allTranslationIntents().count, 1)
+        XCTAssertEqual(model.records[key]?.revision, 1)
+        XCTAssertEqual(model.records[key]?.translatedText, "Piję kawę.")
+        XCTAssertEqual(model.records[key]?.comment, "Explain the difference between beras and nasi")
+        let restored = NativeTranslationModel(contextStore: contextStore)
+        XCTAssertEqual(restored.records[key]?.comment, "Explain the difference between beras and nasi")
+        XCTAssertEqual(restored.records[key]?.revision, 1)
+    }
+
     func testLateRetranslationCannotOverwriteManualCorrection() async {
         let provider = DelayedNativeRetranslator()
         let model = NativeTranslationModel(retranslator: provider)
@@ -284,6 +356,15 @@ private struct SameTranslationNativeRetranslator: NativeRetranslator {
 
     func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
         parts
+    }
+}
+
+private struct FailingNativeRetranslator: NativeRetranslator {
+    nonisolated let isValidated = true
+    let failure: NativeRetranslationFailure
+
+    func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
+        throw failure
     }
 }
 

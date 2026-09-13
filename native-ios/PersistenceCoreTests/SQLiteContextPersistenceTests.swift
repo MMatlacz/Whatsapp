@@ -12,8 +12,8 @@ final class SQLiteContextPersistenceTests: XCTestCase {
 
         let contextStore = try SQLiteContextStore(path: url.path)
 
-        XCTAssertEqual(try contextStore.currentSchemaVersion(), 2)
-        XCTAssertEqual(try contextStore.core.currentSchemaVersion(), 3)
+        XCTAssertEqual(try contextStore.currentSchemaVersion(), 3)
+        XCTAssertEqual(try contextStore.core.currentSchemaVersion(), 4)
         XCTAssertEqual(
             try contextStore.core.message(chatID: ids.chatID, messageID: ids.messageID)?.body,
             "dia lagi di jalan"
@@ -121,6 +121,62 @@ final class SQLiteContextPersistenceTests: XCTestCase {
         )
     }
 
+    func testLatestTranslationsReturnsOnlyNewestRevisionPerMessage() throws {
+        let url = temporaryDatabaseURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = try SQLiteContextStore(path: url.path)
+        let ids = try seedMessage(in: store.core)
+        for revision in 1...3 {
+            let stored = try XCTUnwrap(StoredTranslation(
+                chatID: ids.chatID,
+                messageID: ids.messageID,
+                sourceLanguage: "id",
+                targetLanguage: "pl",
+                revision: revision,
+                revisionKind: revision == 1 ? .model : .retranslation,
+                translatedBody: "revision-\(revision)",
+                sourceHash: "source",
+                contextHash: "context-\(revision)",
+                promptVersion: "prompt",
+                modelIdentifier: "model",
+                knownWordsVersion: 0,
+                contextMessageCount: 0,
+                summaryVersion: nil,
+                correctionComment: nil,
+                createdAt: try XCTUnwrap(WhatsAppTimestamp(millisecondsSince1970: Int64(revision * 1_000))),
+                sourceText: "dia lagi di jalan"
+            ))
+            try store.upsert(translation: stored)
+        }
+        XCTAssertEqual(try store.allTranslations().map(\.revision), [3, 2, 1])
+        XCTAssertEqual(try store.latestTranslations().map(\.revision), [3])
+    }
+
+    func testTranslationIntentPersistsWithoutCreatingTranslationRevision() throws {
+        let url = temporaryDatabaseURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = try SQLiteContextStore(path: url.path)
+        let ids = try seedMessage(in: store.core)
+        let updatedAt = try XCTUnwrap(WhatsAppTimestamp(millisecondsSince1970: 4_000))
+        let intent = try XCTUnwrap(StoredTranslationIntent(
+            chatID: ids.chatID,
+            messageID: ids.messageID,
+            sourceLanguage: "id",
+            targetLanguage: "pl",
+            sourceText: "dia lagi di jalan",
+            correctionComment: "Use Cindy as the subject",
+            updatedAt: updatedAt
+        ))
+
+        try store.upsert(translationIntent: intent)
+
+        XCTAssertEqual(try store.allTranslationIntents(), [intent])
+        XCTAssertTrue(try store.allTranslations().isEmpty)
+        let reopened = try SQLiteContextStore(path: url.path)
+        XCTAssertEqual(try reopened.allTranslationIntents(), [intent])
+        XCTAssertTrue(try reopened.allTranslations().isEmpty)
+    }
+
     func testVersionOneTranslationRowsMigrateWithoutInventingMappings() throws {
         let url = temporaryDatabaseURL()
         defer { try? FileManager.default.removeItem(at: url) }
@@ -164,7 +220,7 @@ final class SQLiteContextPersistenceTests: XCTestCase {
         )
 
         let store = try SQLiteContextStore(path: url.path)
-        XCTAssertEqual(try store.currentSchemaVersion(), 2)
+        XCTAssertEqual(try store.currentSchemaVersion(), 3)
         let restored = try XCTUnwrap(try store.translation(
             chatID: ids.chatID, messageID: ids.messageID, targetLanguage: "pl", revision: 1
         ))
@@ -452,7 +508,7 @@ final class SQLiteContextPersistenceTests: XCTestCase {
 
     private func seedCoreDatabase(at url: URL) throws -> (chatID: WhatsAppChatID, messageID: WhatsAppMessageID) {
         let core = try SQLiteWhatsAppStore(path: url.path)
-        XCTAssertEqual(try core.currentSchemaVersion(), 3)
+        XCTAssertEqual(try core.currentSchemaVersion(), 4)
         return try seedMessage(in: core)
     }
 

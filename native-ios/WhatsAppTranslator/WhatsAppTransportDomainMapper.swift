@@ -31,8 +31,12 @@ enum WhatsAppTransportDomainMapper {
               }, media: value.media.map {
                   .init(kind: transportMediaKind($0.kind), mimeType: $0.mimeType,
                         filename: $0.filename, sizeBytes: $0.sizeBytes,
-                        durationMilliseconds: $0.durationMilliseconds, width: $0.width, height: $0.height)
-              })
+                        durationMilliseconds: $0.durationMilliseconds, width: $0.width, height: $0.height,
+                        isViewOnce: $0.isViewOnce)
+              }, linkPreview: value.linkPreview.map {
+                  .init(matchedText: $0.matchedText, canonicalURL: $0.canonicalURL,
+                        title: $0.title, description: $0.description)
+              }, deliveryState: value.deliveryState.map(transportDeliveryState))
     }
 
     private static func transportMediaKind(_ value: WhatsAppMediaKind) -> WhatsAppTransportMediaKind {
@@ -71,6 +75,8 @@ enum WhatsAppTransportDomainMapper {
             fromMe: value.fromMe,
             quote: try value.quote.map(quote),
             media: try value.media.map(media),
+            linkPreview: try value.linkPreview.map(linkPreview),
+            deliveryState: value.deliveryState.map(deliveryState),
             translation: nil
         )
     }
@@ -119,11 +125,30 @@ enum WhatsAppTransportDomainMapper {
             sizeBytes: value.sizeBytes,
             durationMilliseconds: value.durationMilliseconds,
             width: value.width,
-            height: value.height
+            height: value.height,
+            isViewOnce: value.isViewOnce
         ) else {
             throw WhatsAppDomainMappingError.invalidMedia
         }
         return media
+    }
+
+    private static func linkPreview(_ value: WhatsAppTransportLinkPreview) throws -> WhatsAppLinkPreview {
+        guard let preview = WhatsAppLinkPreview(
+            matchedText: value.matchedText, canonicalURL: value.canonicalURL,
+            title: value.title, description: value.description
+        ) else {
+            throw WhatsAppDomainMappingError.invalidMedia
+        }
+        return preview
+    }
+
+    private static func deliveryState(_ value: WhatsAppTransportDeliveryState) -> WhatsAppDeliveryState {
+        WhatsAppDeliveryState(rawValue: value.rawValue)!
+    }
+
+    private static func transportDeliveryState(_ value: WhatsAppDeliveryState) -> WhatsAppTransportDeliveryState {
+        WhatsAppTransportDeliveryState(rawValue: value.rawValue)!
     }
 
     private static func mediaKind(_ value: WhatsAppTransportMediaKind) -> WhatsAppMediaKind {
