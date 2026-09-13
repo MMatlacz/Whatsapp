@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-native-bridge-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pinned, locally bundled runtime for the hidden WebKit transport",
+  "scripts": {
+    "test": "node --test adapter.test.cjs",
+    "bundle": "node bundle.cjs"
+  },
+  "dependencies": {
+    "@wppconnect/wa-js": "4.6.0"
+  }
+}

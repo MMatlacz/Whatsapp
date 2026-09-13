@@ -24,6 +24,13 @@ public struct StoredTranslation: Equatable, Sendable {
     public let revision: Int
     public let revisionKind: TranslationRevisionKind
     public let translatedBody: String
+    /// The exact source body is kept alongside the cache so a restored
+    /// translation can still be matched to the message without guessing from
+    /// a one-way hash.
+    public let sourceText: String
+    /// JSON encoded `NativeTranslationPart` values. PersistenceCore cannot
+    /// depend on the app target, so this remains an opaque, validated payload.
+    public let partsJSON: String?
     public let sourceHash: String
     public let contextHash: String
     public let promptVersion: String
@@ -50,10 +57,13 @@ public struct StoredTranslation: Equatable, Sendable {
         contextMessageCount: Int,
         summaryVersion: Int?,
         correctionComment: String?,
-        createdAt: WhatsAppTimestamp
+        createdAt: WhatsAppTimestamp,
+        sourceText: String = "",
+        partsJSON: String? = nil
     ) {
         if let sourceLanguage, sourceLanguage.trimmedPersistenceValue.isEmpty { return nil }
         if let correctionComment, correctionComment.trimmedPersistenceValue.isEmpty { return nil }
+        if let partsJSON, partsJSON.trimmedPersistenceValue.isEmpty { return nil }
         guard
             !targetLanguage.trimmedPersistenceValue.isEmpty,
             revision > 0,
@@ -73,6 +83,8 @@ public struct StoredTranslation: Equatable, Sendable {
         self.revision = revision
         self.revisionKind = revisionKind
         self.translatedBody = translatedBody
+        self.sourceText = sourceText
+        self.partsJSON = partsJSON
         self.sourceHash = sourceHash
         self.contextHash = contextHash
         self.promptVersion = promptVersion
@@ -231,7 +243,7 @@ public enum SQLiteContextPersistenceError: Error, Equatable, Sendable {
 }
 
 public final class SQLiteContextStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 1
+    public static let schemaVersion: Int32 = 2
     public let core: SQLiteWhatsAppStore
 
     private static let componentName = "translation_context"
@@ -274,57 +286,93 @@ public final class SQLiteContextStore: @unchecked Sendable {
     }
 
     public func upsert(translation: StoredTranslation) throws {
+        try locked { try upsertTranslationUnlocked(translation) }
+    }
+
+    /// Imports a legacy translation snapshot as one SQLite transaction.
+    ///
+    /// The native model can still keep a legacy snapshot as a recovery copy,
+    /// but it must never copy only the record that was most recently edited.
+    /// A missing message, malformed value, or SQLite failure rolls back the
+    /// complete import so a restart cannot expose a partially migrated state.
+    public func importInitialState(
+        translations: [StoredTranslation],
+        knownWords: [StoredKnownWord]
+    ) throws {
         try locked {
-            guard try messageExists(chatID: translation.chatID, messageID: translation.messageID) else {
-                throw SQLiteContextPersistenceError.missingMessage(
-                    chatID: translation.chatID,
-                    messageID: translation.messageID
-                )
+            try executeUnlocked("BEGIN IMMEDIATE")
+            do {
+                for translation in translations {
+                    try upsertTranslationUnlocked(translation)
+                }
+                for knownWord in knownWords {
+                    if try upsertKnownWordUnlocked(knownWord) {
+                        try incrementKnownWordsVersion()
+                    }
+                }
+                try executeUnlocked("COMMIT")
+            } catch {
+                try? executeUnlocked("ROLLBACK")
+                throw error
             }
-
-            let statement = try prepare(
-                """
-                INSERT INTO translations(
-                    chat_id, whatsapp_message_id, source_language, target_language, revision,
-                    revision_kind, translated_body, source_hash, context_hash, prompt_version,
-                    model_id, known_words_version, context_message_count, summary_version,
-                    correction_comment, created_at_ms
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(chat_id, whatsapp_message_id, target_language, revision) DO UPDATE SET
-                    source_language = excluded.source_language,
-                    revision_kind = excluded.revision_kind,
-                    translated_body = excluded.translated_body,
-                    source_hash = excluded.source_hash,
-                    context_hash = excluded.context_hash,
-                    prompt_version = excluded.prompt_version,
-                    model_id = excluded.model_id,
-                    known_words_version = excluded.known_words_version,
-                    context_message_count = excluded.context_message_count,
-                    summary_version = excluded.summary_version,
-                    correction_comment = excluded.correction_comment,
-                    created_at_ms = excluded.created_at_ms
-                """
-            )
-            defer { sqlite3_finalize(statement) }
-
-            try bindText(translation.chatID.rawValue, at: 1, to: statement)
-            try bindText(translation.messageID.rawValue, at: 2, to: statement)
-            try bindOptionalText(translation.sourceLanguage, at: 3, to: statement)
-            try bindText(translation.targetLanguage, at: 4, to: statement)
-            try bindInt64(Int64(translation.revision), at: 5, to: statement)
-            try bindText(translation.revisionKind.rawValue, at: 6, to: statement)
-            try bindText(translation.translatedBody, at: 7, to: statement)
-            try bindText(translation.sourceHash, at: 8, to: statement)
-            try bindText(translation.contextHash, at: 9, to: statement)
-            try bindText(translation.promptVersion, at: 10, to: statement)
-            try bindText(translation.modelIdentifier, at: 11, to: statement)
-            try bindInt64(Int64(translation.knownWordsVersion), at: 12, to: statement)
-            try bindInt64(Int64(translation.contextMessageCount), at: 13, to: statement)
-            try bindOptionalInt64(translation.summaryVersion.map(Int64.init), at: 14, to: statement)
-            try bindOptionalText(translation.correctionComment, at: 15, to: statement)
-            try bindInt64(translation.createdAt.millisecondsSince1970, at: 16, to: statement)
-            try stepDone(statement)
         }
+    }
+
+    private func upsertTranslationUnlocked(_ translation: StoredTranslation) throws {
+        guard try messageExists(chatID: translation.chatID, messageID: translation.messageID) else {
+            throw SQLiteContextPersistenceError.missingMessage(
+                chatID: translation.chatID,
+                messageID: translation.messageID
+            )
+        }
+
+        let statement = try prepare(
+            """
+            INSERT INTO translations(
+                chat_id, whatsapp_message_id, source_language, target_language, revision,
+                revision_kind, translated_body, source_text, parts_json, source_hash,
+                context_hash, prompt_version,
+                model_id, known_words_version, context_message_count, summary_version,
+                correction_comment, created_at_ms
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(chat_id, whatsapp_message_id, target_language, revision) DO UPDATE SET
+                source_language = excluded.source_language,
+                revision_kind = excluded.revision_kind,
+                translated_body = excluded.translated_body,
+                source_text = excluded.source_text,
+                parts_json = excluded.parts_json,
+                source_hash = excluded.source_hash,
+                context_hash = excluded.context_hash,
+                prompt_version = excluded.prompt_version,
+                model_id = excluded.model_id,
+                known_words_version = excluded.known_words_version,
+                context_message_count = excluded.context_message_count,
+                summary_version = excluded.summary_version,
+                correction_comment = excluded.correction_comment,
+                created_at_ms = excluded.created_at_ms
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(translation.chatID.rawValue, at: 1, to: statement)
+        try bindText(translation.messageID.rawValue, at: 2, to: statement)
+        try bindOptionalText(translation.sourceLanguage, at: 3, to: statement)
+        try bindText(translation.targetLanguage, at: 4, to: statement)
+        try bindInt64(Int64(translation.revision), at: 5, to: statement)
+        try bindText(translation.revisionKind.rawValue, at: 6, to: statement)
+        try bindText(translation.translatedBody, at: 7, to: statement)
+        try bindText(translation.sourceText, at: 8, to: statement)
+        try bindOptionalText(translation.partsJSON, at: 9, to: statement)
+        try bindText(translation.sourceHash, at: 10, to: statement)
+        try bindText(translation.contextHash, at: 11, to: statement)
+        try bindText(translation.promptVersion, at: 12, to: statement)
+        try bindText(translation.modelIdentifier, at: 13, to: statement)
+        try bindInt64(Int64(translation.knownWordsVersion), at: 14, to: statement)
+        try bindInt64(Int64(translation.contextMessageCount), at: 15, to: statement)
+        try bindOptionalInt64(translation.summaryVersion.map(Int64.init), at: 16, to: statement)
+        try bindOptionalText(translation.correctionComment, at: 17, to: statement)
+        try bindInt64(translation.createdAt.millisecondsSince1970, at: 18, to: statement)
+        try stepDone(statement)
     }
 
     public func translation(
@@ -340,9 +388,9 @@ public final class SQLiteContextStore: @unchecked Sendable {
             let statement = try prepare(
                 """
                 SELECT chat_id, whatsapp_message_id, source_language, target_language, revision,
-                       revision_kind, translated_body, source_hash, context_hash, prompt_version,
-                       model_id, known_words_version, context_message_count, summary_version,
-                       correction_comment, created_at_ms
+                       revision_kind, translated_body, source_text, parts_json, source_hash,
+                       context_hash, prompt_version, model_id, known_words_version,
+                       context_message_count, summary_version, correction_comment, created_at_ms
                 FROM translations
                 WHERE chat_id = ? AND whatsapp_message_id = ? AND target_language = ? AND revision = ?
                 """
@@ -371,9 +419,9 @@ public final class SQLiteContextStore: @unchecked Sendable {
             let statement = try prepare(
                 """
                 SELECT chat_id, whatsapp_message_id, source_language, target_language, revision,
-                       revision_kind, translated_body, source_hash, context_hash, prompt_version,
-                       model_id, known_words_version, context_message_count, summary_version,
-                       correction_comment, created_at_ms
+                       revision_kind, translated_body, source_text, parts_json, source_hash,
+                       context_hash, prompt_version, model_id, known_words_version,
+                       context_message_count, summary_version, correction_comment, created_at_ms
                 FROM translations
                 WHERE chat_id = ? AND whatsapp_message_id = ? AND target_language = ?
                 ORDER BY revision DESC
@@ -404,9 +452,9 @@ public final class SQLiteContextStore: @unchecked Sendable {
             let statement = try prepare(
                 """
                 SELECT chat_id, whatsapp_message_id, source_language, target_language, revision,
-                       revision_kind, translated_body, source_hash, context_hash, prompt_version,
-                       model_id, known_words_version, context_message_count, summary_version,
-                       correction_comment, created_at_ms
+                       revision_kind, translated_body, source_text, parts_json, source_hash,
+                       context_hash, prompt_version, model_id, known_words_version,
+                       context_message_count, summary_version, correction_comment, created_at_ms
                 FROM translations
                 WHERE chat_id = ? AND whatsapp_message_id = ? AND target_language = ?
                 ORDER BY revision DESC
@@ -418,6 +466,31 @@ public final class SQLiteContextStore: @unchecked Sendable {
             try bindText(messageID.rawValue, at: 2, to: statement)
             try bindText(targetLanguage, at: 3, to: statement)
             try bindInt64(Int64(limit), at: 4, to: statement)
+            return try collect(statement, decode: decodeTranslation)
+        }
+    }
+
+    /// Returns the persisted translation history across chats. The native
+    /// model uses this on startup to restore the latest revision for each
+    /// message without maintaining a second cache file.
+    public func allTranslations(limit: Int = 10_000) throws -> [StoredTranslation] {
+        guard (1...10_000).contains(limit) else {
+            throw SQLiteContextPersistenceError.invalidArgument("translation history limit")
+        }
+        return try locked {
+            let statement = try prepare(
+                """
+                SELECT chat_id, whatsapp_message_id, source_language, target_language, revision,
+                       revision_kind, translated_body, source_text, parts_json, source_hash,
+                       context_hash, prompt_version, model_id, known_words_version,
+                       context_message_count, summary_version, correction_comment, created_at_ms
+                FROM translations
+                ORDER BY chat_id ASC, whatsapp_message_id ASC, target_language ASC, revision DESC
+                LIMIT ?
+                """
+            )
+            defer { sqlite3_finalize(statement) }
+            try bindInt64(Int64(limit), at: 1, to: statement)
             return try collect(statement, decode: decodeTranslation)
         }
     }
@@ -546,29 +619,37 @@ public final class SQLiteContextStore: @unchecked Sendable {
         try locked {
             try executeUnlocked("BEGIN IMMEDIATE")
             do {
-                let statement = try prepare(
-                    """
-                    INSERT INTO known_words(language, normalized_text, display_text, created_at_ms, updated_at_ms)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(language, normalized_text) DO UPDATE SET
-                        display_text = excluded.display_text,
-                        updated_at_ms = excluded.updated_at_ms
-                    """
-                )
-                defer { sqlite3_finalize(statement) }
-                try bindText(knownWord.language, at: 1, to: statement)
-                try bindText(knownWord.normalizedText, at: 2, to: statement)
-                try bindText(knownWord.displayText, at: 3, to: statement)
-                try bindInt64(knownWord.createdAt.millisecondsSince1970, at: 4, to: statement)
-                try bindInt64(knownWord.updatedAt.millisecondsSince1970, at: 5, to: statement)
-                try stepDone(statement)
-                try incrementKnownWordsVersion()
+                if try upsertKnownWordUnlocked(knownWord) {
+                    try incrementKnownWordsVersion()
+                }
                 try executeUnlocked("COMMIT")
             } catch {
                 try? executeUnlocked("ROLLBACK")
                 throw error
             }
         }
+    }
+
+    private func upsertKnownWordUnlocked(_ knownWord: StoredKnownWord) throws -> Bool {
+        let statement = try prepare(
+            """
+            INSERT INTO known_words(language, normalized_text, display_text, created_at_ms, updated_at_ms)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(language, normalized_text) DO UPDATE SET
+                display_text = excluded.display_text,
+                updated_at_ms = excluded.updated_at_ms
+            WHERE excluded.updated_at_ms >= known_words.updated_at_ms
+            """
+        )
+        defer { sqlite3_finalize(statement) }
+        try bindText(knownWord.language, at: 1, to: statement)
+        try bindText(knownWord.normalizedText, at: 2, to: statement)
+        try bindText(knownWord.displayText, at: 3, to: statement)
+        try bindInt64(knownWord.createdAt.millisecondsSince1970, at: 4, to: statement)
+        try bindInt64(knownWord.updatedAt.millisecondsSince1970, at: 5, to: statement)
+        try stepDone(statement)
+        guard let db else { return false }
+        return sqlite3_changes(db) > 0
     }
 
     public func knownWords(language: String, limit: Int = 500) throws -> [StoredKnownWord] {
@@ -588,6 +669,25 @@ public final class SQLiteContextStore: @unchecked Sendable {
             defer { sqlite3_finalize(statement) }
             try bindText(language, at: 1, to: statement)
             try bindInt64(Int64(limit), at: 2, to: statement)
+            return try collect(statement, decode: decodeKnownWord)
+        }
+    }
+
+    public func allKnownWords(limit: Int = 5_000) throws -> [StoredKnownWord] {
+        guard (1...5_000).contains(limit) else {
+            throw SQLiteContextPersistenceError.invalidArgument("known words history limit")
+        }
+        return try locked {
+            let statement = try prepare(
+                """
+                SELECT language, normalized_text, display_text, created_at_ms, updated_at_ms
+                FROM known_words
+                ORDER BY language ASC, normalized_text ASC
+                LIMIT ?
+                """
+            )
+            defer { sqlite3_finalize(statement) }
+            try bindInt64(Int64(limit), at: 1, to: statement)
             return try collect(statement, decode: decodeKnownWord)
         }
     }
@@ -738,6 +838,7 @@ public final class SQLiteContextStore: @unchecked Sendable {
                     throw SQLiteContextPersistenceError.unsupportedSchemaVersion(version)
                 }
                 if version < 1 { try applyMigration1() }
+                if version < 2 { try applyMigration2() }
                 try setComponentVersion(Self.schemaVersion)
                 try executeUnlocked("COMMIT")
             } catch {
@@ -758,6 +859,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
                 revision INTEGER NOT NULL CHECK(revision > 0),
                 revision_kind TEXT NOT NULL CHECK(revision_kind IN ('model', 'retranslation', 'manual_edit')),
                 translated_body TEXT NOT NULL,
+                source_text TEXT NOT NULL DEFAULT '',
+                parts_json TEXT NULL,
                 source_hash TEXT NOT NULL,
                 context_hash TEXT NOT NULL,
                 prompt_version TEXT NOT NULL,
@@ -843,6 +946,29 @@ public final class SQLiteContextStore: @unchecked Sendable {
         )
     }
 
+    private func applyMigration2() throws {
+        // Version 1 stored only a one-way source hash and a flattened
+        // translation. Add the exact source and opaque structured parts so
+        // startup can restore records and safe source-to-translation mappings.
+        if try !tableHasColumn(table: "translations", column: "source_text") {
+            try executeUnlocked("ALTER TABLE translations ADD COLUMN source_text TEXT NOT NULL DEFAULT ''")
+        }
+        if try !tableHasColumn(table: "translations", column: "parts_json") {
+            try executeUnlocked("ALTER TABLE translations ADD COLUMN parts_json TEXT NULL")
+        }
+    }
+
+    private func tableHasColumn(table: String, column: String) throws -> Bool {
+        let statement = try prepare("PRAGMA table_info(\(table))")
+        defer { sqlite3_finalize(statement) }
+        while true {
+            let result = sqlite3_step(statement)
+            if result == SQLITE_DONE { return false }
+            guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+            if columnText(statement, at: 1) == column { return true }
+        }
+    }
+
     private func componentVersion() throws -> Int32 {
         let statement = try prepare("SELECT version FROM persistence_component_versions WHERE component = ?")
         defer { sqlite3_finalize(statement) }
@@ -918,17 +1044,17 @@ public final class SQLiteContextStore: @unchecked Sendable {
             let rawKind = columnText(statement, at: 5),
             let kind = TranslationRevisionKind(rawValue: rawKind),
             let translatedBody = columnText(statement, at: 6),
-            let sourceHash = columnText(statement, at: 7),
-            let contextHash = columnText(statement, at: 8),
-            let promptVersion = columnText(statement, at: 9),
-            let modelID = columnText(statement, at: 10),
-            let createdAt = timestamp(statement, at: 15)
+            let sourceHash = columnText(statement, at: 9),
+            let contextHash = columnText(statement, at: 10),
+            let promptVersion = columnText(statement, at: 11),
+            let modelID = columnText(statement, at: 12),
+            let createdAt = timestamp(statement, at: 17)
         else { throw SQLiteContextPersistenceError.invalidStoredValue("translations") }
 
         let revision = try positiveInt(statement, at: 4, field: "translations.revision")
-        let knownVersion = try nonNegativeInt(statement, at: 11, field: "translations.known_words_version")
-        let contextCount = try nonNegativeInt(statement, at: 12, field: "translations.context_message_count")
-        let summaryVersion = try optionalPositiveInt(statement, at: 13, field: "translations.summary_version")
+        let knownVersion = try nonNegativeInt(statement, at: 13, field: "translations.known_words_version")
+        let contextCount = try nonNegativeInt(statement, at: 14, field: "translations.context_message_count")
+        let summaryVersion = try optionalPositiveInt(statement, at: 15, field: "translations.summary_version")
 
         guard let value = StoredTranslation(
             chatID: chatID,
@@ -945,8 +1071,10 @@ public final class SQLiteContextStore: @unchecked Sendable {
             knownWordsVersion: knownVersion,
             contextMessageCount: contextCount,
             summaryVersion: summaryVersion,
-            correctionComment: columnText(statement, at: 14),
-            createdAt: createdAt
+            correctionComment: columnText(statement, at: 16),
+            createdAt: createdAt,
+            sourceText: columnText(statement, at: 7) ?? "",
+            partsJSON: columnText(statement, at: 8)
         ) else { throw SQLiteContextPersistenceError.invalidStoredValue("translations") }
         return value
     }

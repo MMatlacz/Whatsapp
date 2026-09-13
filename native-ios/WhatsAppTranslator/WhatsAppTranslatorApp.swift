@@ -1,7 +1,74 @@
 import SwiftUI
-#if DEBUG
 import QwenMLXDiagnosticAdapter
-#endif
+
+actor TranslateGemmaChatRetranslator: NativeRetranslator {
+    nonisolated let isValidated = false
+    private static let sharedApplicationProvider: TranslateGemmaChatRetranslator = {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        return TranslateGemmaChatRetranslator(documentsDirectory: documents)
+    }()
+    private let engine: ExperimentalTranslateGemma
+    private var inferenceActive = false
+
+    init(documentsDirectory: URL) {
+        let probeDirectory = documentsDirectory.appendingPathComponent("TranslationProbe", isDirectory: true)
+        engine = ExperimentalTranslateGemma(
+            directory: probeDirectory.appendingPathComponent("model", isDirectory: true),
+            manifestURL: probeDirectory.appendingPathComponent("input.json")
+        )
+    }
+
+    static func applicationProvider() -> TranslateGemmaChatRetranslator {
+        sharedApplicationProvider
+    }
+
+    func preload() async throws {
+        try acquireInferenceSlot()
+        defer { inferenceActive = false }
+        try await engine.preload()
+    }
+
+    func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
+        // A fast scroll can create many translation cards at once. Do not
+        // retain an unbounded queue of inference continuations: one request
+        // runs and the remaining cards stay available for an explicit retry.
+        try acquireInferenceSlot()
+        defer { inferenceActive = false }
+        let output = try await engine.translate(
+            request.original,
+            comment: request.comment,
+            vocabularyHints: Self.vocabularyHints
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !output.isEmpty else { throw ExperimentalTranslateGemma.Failure.incomplete }
+        return [.init(id: "translategemma-\(request.revision)", source: nil, translation: output)]
+    }
+
+    private func acquireInferenceSlot() throws {
+        guard !inferenceActive else { throw ExperimentalTranslateGemma.Failure.busy }
+        inferenceActive = true
+    }
+
+    private static let vocabularyHints: [TranslateGemmaVocabularyHint] = [
+        vocabularyHint("wkwk", "laughter, not an event or group action"),
+        vocabularyHint("mager", "the speaker feels too lazy or unmotivated; not a person or name"),
+        vocabularyHint("baper", "taking something personally"),
+        vocabularyHint("nggak usah dijemput", "there is no need to pick me up"),
+        vocabularyHint("nggak/ga/gak", "negation; ga jadi means no longer or a changed plan"),
+        vocabularyHint("bapak", "father or dad"),
+        vocabularyHint("tante", "aunt"),
+        vocabularyHint("nanti", "later, not tomorrow unless the source says tomorrow"),
+        vocabularyHint("traktir", "pay for or treat someone to a meal"),
+    ]
+
+    private static func vocabularyHint(_ sourceText: String, _ meaningNote: String) -> TranslateGemmaVocabularyHint {
+        do {
+            return try TranslateGemmaVocabularyHint(sourceText: sourceText, meaningNote: meaningNote)
+        } catch {
+            preconditionFailure("Invalid bundled TranslateGemma vocabulary hint: \(error)")
+        }
+    }
+}
 
 @main
 struct WhatsAppTranslatorApp: App {
@@ -37,17 +104,7 @@ struct WhatsAppTranslatorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                DiagnosticsView()
-                    .tabItem {
-                        Label("Diagnostics", systemImage: "stethoscope")
-                    }
-
-                WhatsAppWebProbeView()
-                    .tabItem {
-                        Label("WebKit Probe", systemImage: "globe")
-                    }
-            }
+            WhatsAppRootView()
         }
     }
 }

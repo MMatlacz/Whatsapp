@@ -20,8 +20,27 @@ public enum SQLitePersistenceError: Error, Equatable, Sendable {
     case unsupportedTranslationMetadata
 }
 
+public struct StoredPendingSend: Equatable, Sendable {
+    public let chatID: String
+    public let body: String
+    public let quoteMessageID: String?
+    public let knownMessageIDs: Set<String>
+    public let attemptStartedMilliseconds: Int64
+    public let historyChecked: Bool
+
+    public init(chatID: String, body: String, quoteMessageID: String?, knownMessageIDs: Set<String>,
+                attemptStartedMilliseconds: Int64, historyChecked: Bool) {
+        self.chatID = chatID
+        self.body = body
+        self.quoteMessageID = quoteMessageID
+        self.knownMessageIDs = knownMessageIDs
+        self.attemptStartedMilliseconds = attemptStartedMilliseconds
+        self.historyChecked = historyChecked
+    }
+}
+
 public final class SQLiteWhatsAppStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 1
+    public static let schemaVersion: Int32 = 3
 
     private let lock = NSLock()
     private var db: OpaquePointer?
@@ -61,6 +80,137 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         try locked { try pragmaUserVersion() }
     }
 
+    /// Drafts deliberately do not require a cached chat row: offline composition
+    /// must survive even when the chat list has not finished synchronizing.
+    public func saveDraft(_ body: String, chatID: WhatsAppChatID) throws {
+        try locked {
+            let statement = try prepare("""
+                INSERT INTO chat_drafts(chat_id, body) VALUES (?, ?)
+                ON CONFLICT(chat_id) DO UPDATE SET body = excluded.body
+                """)
+            defer { sqlite3_finalize(statement) }
+            try bindText(chatID.rawValue, at: 1, to: statement)
+            try bindText(body, at: 2, to: statement)
+            try stepDone(statement)
+        }
+    }
+
+    public func drafts() throws -> [String: String] {
+        try locked {
+            let statement = try prepare("SELECT chat_id, body FROM chat_drafts")
+            defer { sqlite3_finalize(statement) }
+            var values: [String: String] = [:]
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                guard let chatID = columnText(statement, at: 0),
+                      let body = columnText(statement, at: 1) else {
+                    throw SQLitePersistenceError.invalidStoredValue("chat_drafts")
+                }
+                values[chatID] = body
+            }
+        }
+    }
+
+    public func saveReplyTarget(_ messageID: String?, chatID: WhatsAppChatID) throws {
+        try locked {
+            let statement = try prepare("""
+                INSERT INTO composer_state(chat_id, reply_message_id) VALUES (?, ?)
+                ON CONFLICT(chat_id) DO UPDATE SET reply_message_id = excluded.reply_message_id
+                """)
+            defer { sqlite3_finalize(statement) }
+            try bindText(chatID.rawValue, at: 1, to: statement)
+            try bindOptionalText(messageID, at: 2, to: statement)
+            try stepDone(statement)
+        }
+    }
+
+    public func replyTargets() throws -> [String: String] {
+        try locked {
+            let statement = try prepare("SELECT chat_id, reply_message_id FROM composer_state WHERE reply_message_id IS NOT NULL")
+            defer { sqlite3_finalize(statement) }
+            var values: [String: String] = [:]
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                guard let chatID = columnText(statement, at: 0),
+                      let messageID = columnText(statement, at: 1) else {
+                    throw SQLitePersistenceError.invalidStoredValue("composer_state.reply_message_id")
+                }
+                values[chatID] = messageID
+            }
+        }
+    }
+
+    public func savePendingSend(_ pending: StoredPendingSend) throws {
+        let knownIDs = try String(data: JSONEncoder().encode(pending.knownMessageIDs.sorted()), encoding: .utf8)
+        guard let knownIDs else { throw SQLitePersistenceError.invalidArgument("knownMessageIDs") }
+        try locked {
+            let statement = try prepare("""
+                INSERT INTO pending_sends(
+                    chat_id, body, quote_message_id, known_message_ids_json, attempt_started_ms, history_checked
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(chat_id) DO UPDATE SET
+                    body = excluded.body,
+                    quote_message_id = excluded.quote_message_id,
+                    known_message_ids_json = excluded.known_message_ids_json,
+                    attempt_started_ms = excluded.attempt_started_ms,
+                    history_checked = excluded.history_checked
+                """)
+            defer { sqlite3_finalize(statement) }
+            try bindText(pending.chatID, at: 1, to: statement)
+            try bindText(pending.body, at: 2, to: statement)
+            try bindOptionalText(pending.quoteMessageID, at: 3, to: statement)
+            try bindText(knownIDs, at: 4, to: statement)
+            try bindInt64(pending.attemptStartedMilliseconds, at: 5, to: statement)
+            try bindInt64(pending.historyChecked ? 1 : 0, at: 6, to: statement)
+            try stepDone(statement)
+        }
+    }
+
+    public func pendingSends() throws -> [StoredPendingSend] {
+        try locked {
+            let statement = try prepare("""
+                SELECT chat_id, body, quote_message_id, known_message_ids_json,
+                       attempt_started_ms, history_checked
+                FROM pending_sends
+                """)
+            defer { sqlite3_finalize(statement) }
+            var values: [StoredPendingSend] = []
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                guard let chatID = columnText(statement, at: 0),
+                      let body = columnText(statement, at: 1),
+                      let knownJSON = columnText(statement, at: 3),
+                      let knownData = knownJSON.data(using: .utf8) else {
+                    throw SQLitePersistenceError.invalidStoredValue("pending_sends")
+                }
+                let knownIDs = try JSONDecoder().decode([String].self, from: knownData)
+                values.append(.init(
+                    chatID: chatID,
+                    body: body,
+                    quoteMessageID: columnText(statement, at: 2),
+                    knownMessageIDs: Set(knownIDs),
+                    attemptStartedMilliseconds: sqlite3_column_int64(statement, 4),
+                    historyChecked: sqlite3_column_int64(statement, 5) == 1
+                ))
+            }
+        }
+    }
+
+    public func deletePendingSend(chatID: WhatsAppChatID) throws {
+        try locked {
+            let statement = try prepare("DELETE FROM pending_sends WHERE chat_id = ?")
+            defer { sqlite3_finalize(statement) }
+            try bindText(chatID.rawValue, at: 1, to: statement)
+            try stepDone(statement)
+        }
+    }
+
     public func upsert(chat: WhatsAppChat) throws {
         try locked {
             let sql = """
@@ -81,6 +231,23 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             try bindInt64(Int64(chat.unreadCount), at: 4, to: statement)
             try bindOptionalInt64(chat.lastMessageAt?.millisecondsSince1970, at: 5, to: statement)
             try stepDone(statement)
+        }
+    }
+
+    public func chats() throws -> [WhatsAppChat] {
+        try locked {
+            let statement = try prepare("""
+                SELECT id, title, kind, unread_count, last_message_at_ms FROM chats
+                ORDER BY last_message_at_ms DESC, id
+                """)
+            defer { sqlite3_finalize(statement) }
+            var values: [WhatsAppChat] = []
+            while true {
+                let result = sqlite3_step(statement)
+                if result == SQLITE_DONE { return values }
+                guard result == SQLITE_ROW else { throw sqliteError(code: result) }
+                values.append(try decodeChat(statement))
+            }
         }
     }
 
@@ -317,6 +484,30 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             do {
                 if version < 1 {
                     try applyMigration1()
+                }
+                if version < 2 {
+                    try executeUnlocked("""
+                        CREATE TABLE IF NOT EXISTS chat_drafts(
+                            chat_id TEXT PRIMARY KEY NOT NULL,
+                            body TEXT NOT NULL
+                        );
+                        """)
+                }
+                if version < 3 {
+                    try executeUnlocked("""
+                        CREATE TABLE IF NOT EXISTS composer_state(
+                            chat_id TEXT PRIMARY KEY NOT NULL,
+                            reply_message_id TEXT NULL
+                        );
+                        CREATE TABLE IF NOT EXISTS pending_sends(
+                            chat_id TEXT PRIMARY KEY NOT NULL,
+                            body TEXT NOT NULL,
+                            quote_message_id TEXT NULL,
+                            known_message_ids_json TEXT NOT NULL,
+                            attempt_started_ms INTEGER NOT NULL CHECK(attempt_started_ms >= 0),
+                            history_checked INTEGER NOT NULL CHECK(history_checked IN (0, 1))
+                        );
+                        """)
                 }
                 try executeUnlocked("PRAGMA user_version = \(Self.schemaVersion)")
                 try executeUnlocked("COMMIT")

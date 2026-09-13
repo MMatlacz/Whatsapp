@@ -53,7 +53,10 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
     )!
 
     public static let functionalCI = QwenMLXDiagnosticLimits(
-        maxGeneratedTokens: 96,
+        // Functional CI rejects truncated output. Keep the published sampling
+        // settings, but allow the same bounded budget as the diagnostic run so
+        // a valid longer completion does not make this required gate flaky.
+        maxGeneratedTokens: 512,
         maxSourceUTF8Bytes: 16 * 1_024,
         maxPromptUTF8Bytes: 256 * 1_024,
         generationTemperature: 0.7,

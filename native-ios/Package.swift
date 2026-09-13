@@ -30,7 +30,11 @@ let package = Package(
             name: "WhatsAppDomainCore",
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
+                "NativeChatModel.swift",
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
@@ -50,10 +54,12 @@ let package = Package(
         ),
         .target(
             name: "WhatsAppBridgeCore",
-            dependencies: ["WhatsAppDomainCore"],
+            dependencies: ["WhatsAppDomainCore", "PersistenceCore"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationView.swift",
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
@@ -71,6 +77,8 @@ let package = Package(
                 "WhatsAppTransportCore.swift",
                 "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppWebTransportCore.swift",
+                "NativeChatModel.swift",
+                "NativeTranslationModel.swift",
             ]
         ),
         .target(
@@ -78,7 +86,11 @@ let package = Package(
             dependencies: ["WhatsAppDomainCore"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
+                "NativeChatModel.swift",
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
                 "WhatsAppBridge.js",
@@ -103,7 +115,11 @@ let package = Package(
             dependencies: ["WhatsAppDomainCore", "CSQLite"],
             path: "WhatsAppTranslator",
             exclude: [
+                "NativeTranslationModel.swift",
+                "NativeTranslationView.swift",
+                "NativeChatModel.swift",
                 "DiagnosticsView.swift",
+                "WhatsAppRootView.swift",
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
                 "TranslationCore.swift",
@@ -130,7 +146,7 @@ let package = Package(
         ),
         .testTarget(
             name: "WhatsAppBridgeCoreTests",
-            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore"],
+            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore", "PersistenceCore"],
             path: "WhatsAppTranslatorTests"
         ),
         .testTarget(

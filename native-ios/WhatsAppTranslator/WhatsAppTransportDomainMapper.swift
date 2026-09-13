@@ -15,6 +15,37 @@ enum WhatsAppDomainMappingError: Error, Equatable, Sendable {
 }
 
 enum WhatsAppTransportDomainMapper {
+    static func transportChat(_ value: WhatsAppChat) -> WhatsAppTransportChat {
+        .init(id: value.id.rawValue, title: value.title, isGroup: value.kind == .group,
+              unreadCount: value.unreadCount,
+              lastMessageTimestampMilliseconds: value.lastMessageAt?.millisecondsSince1970)
+    }
+
+    static func transportMessage(_ value: WhatsAppMessage) -> WhatsAppTransportMessage {
+        .init(id: value.id.rawValue, chatID: value.chatID.rawValue,
+              senderID: value.senderID?.rawValue,
+              timestampMilliseconds: value.timestamp.millisecondsSince1970,
+              body: value.body, fromMe: value.fromMe,
+              quote: value.quote.map {
+                  .init(messageID: $0.messageID.rawValue, senderID: $0.senderID?.rawValue, body: $0.body)
+              }, media: value.media.map {
+                  .init(kind: transportMediaKind($0.kind), mimeType: $0.mimeType,
+                        filename: $0.filename, sizeBytes: $0.sizeBytes,
+                        durationMilliseconds: $0.durationMilliseconds, width: $0.width, height: $0.height)
+              })
+    }
+
+    private static func transportMediaKind(_ value: WhatsAppMediaKind) -> WhatsAppTransportMediaKind {
+        switch value {
+        case .image: .image
+        case .video: .video
+        case .audio: .audio
+        case .document: .document
+        case .sticker: .sticker
+        case .other: .other
+        }
+    }
+
     static func chat(_ value: WhatsAppTransportChat) throws -> WhatsAppChat {
         let id = try chatID(value.id)
         let timestamp = try value.lastMessageTimestampMilliseconds.map(timestamp)

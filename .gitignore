@@ -1,4 +1,6 @@
 whatsapp-translator/node_modules/
+native-ios/BridgeRuntime/node_modules/
+native-ios/BridgeRuntime/generated/
 whatsapp-translator/data/
 whatsapp-translator/dist/
 whatsapp-translator/.wwebjs_cache/

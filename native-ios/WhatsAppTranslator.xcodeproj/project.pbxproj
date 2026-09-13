@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C30000000000000000000009 /* generated runtime in Resources */ = {isa = PBXBuildFile; fileRef = C3000000000000000000000A; };
+		C30000000000000000000005 /* NativeTranslationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000006; };
+		C30000000000000000000007 /* NativeTranslationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000008; };
+		C30000000000000000000003 /* NativeChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000004 /* NativeChatModel.swift */; };
+		C30000000000000000000001 /* WhatsAppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000002 /* WhatsAppRootView.swift */; };
 		A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* WhatsAppTranslatorApp.swift */; };
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
 		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
@@ -25,6 +30,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C3000000000000000000000A /* generated runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../BridgeRuntime/generated; sourceTree = "<group>"; };
+		C30000000000000000000006 /* NativeTranslationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationModel.swift; sourceTree = "<group>"; };
+		C30000000000000000000008 /* NativeTranslationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationView.swift; sourceTree = "<group>"; };
+		C30000000000000000000004 /* NativeChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeChatModel.swift; sourceTree = "<group>"; };
+		C30000000000000000000002 /* WhatsAppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppRootView.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* WhatsAppTranslator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhatsAppTranslator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000011 /* WhatsAppTranslatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTranslatorApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
@@ -66,6 +76,11 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000011 /* WhatsAppTranslatorApp.swift */,
+				C30000000000000000000002 /* WhatsAppRootView.swift */,
+				C30000000000000000000004 /* NativeChatModel.swift */,
+				C30000000000000000000006 /* NativeTranslationModel.swift */,
+				C30000000000000000000008 /* NativeTranslationView.swift */,
+				C3000000000000000000000A /* generated runtime */,
 				A10000000000000000000012 /* DiagnosticsView.swift */,
 				A10000000000000000000013 /* WhatsAppWebProbeView.swift */,
 				A10000000000000000000014 /* WhatsAppBridgeSupport.swift */,
@@ -98,6 +113,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A10000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslator" */;
 			buildPhases = (
+				D40000000000000000000001 /* Verify generated transport runtime */,
 				A10000000000000000000021 /* Sources */,
 				A10000000000000000000020 /* Frameworks */,
 				A10000000000000000000022 /* Resources */,
@@ -160,10 +176,36 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000B /* WhatsAppBridge.js in Resources */,
+				C30000000000000000000009 /* generated runtime in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D40000000000000000000001 /* Verify generated transport runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/BridgeRuntime/adapter.js",
+				"$(SRCROOT)/BridgeRuntime/bundle.cjs",
+				"$(SRCROOT)/BridgeRuntime/generated/WhatsAppRuntime.js",
+			);
+			name = "Verify generated transport runtime";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/BridgeRuntime\"\nNODE_BIN=\"$(command -v node 2>/dev/null || true)\"\nif [ -z \"$NODE_BIN\" ]; then\n  for candidate in /opt/homebrew/bin/node /usr/local/bin/node; do\n    if [ -x \"$candidate\" ]; then\n      NODE_BIN=\"$candidate\"\n      break\n    fi\n  done\nfi\nif [ -z \"$NODE_BIN\" ]; then\n  echo \"error: Node.js is required to verify the generated transport runtime.\" >&2\n  exit 1\nfi\n\"$NODE_BIN\" bundle.cjs --check\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000021 /* Sources */ = {
@@ -171,6 +213,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */,
+				C30000000000000000000001 /* WhatsAppRootView.swift in Sources */,
+				C30000000000000000000003 /* NativeChatModel.swift in Sources */,
+				C30000000000000000000005 /* NativeTranslationModel.swift in Sources */,
+				C30000000000000000000007 /* NativeTranslationView.swift in Sources */,
 				A10000000000000000000002 /* DiagnosticsView.swift in Sources */,
 				A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */,
 				A10000000000000000000004 /* WhatsAppBridgeSupport.swift in Sources */,
@@ -232,6 +278,7 @@
 				DEVELOPMENT_TEAM = 8AQ98242AE;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;
@@ -253,6 +300,7 @@
 				DEVELOPMENT_TEAM = 8AQ98242AE;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1.0;

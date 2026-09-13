@@ -10,7 +10,7 @@ final class PersistenceCoreTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let store = try SQLiteWhatsAppStore(path: url.path)
-        XCTAssertEqual(try store.currentSchemaVersion(), 1)
+        XCTAssertEqual(try store.currentSchemaVersion(), 3)
 
         let chatID = try XCTUnwrap(WhatsAppChatID("group-1"))
         let participantID = try XCTUnwrap(WhatsAppParticipantID("person-1"))
