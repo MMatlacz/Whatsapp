@@ -51,7 +51,14 @@ public actor ExperimentalTranslateGemma {
             throw Failure.invalidInput
         }
         running = true
-        defer { running = false }
+        defer {
+            running = false
+            // Keep the verified model container resident, but release MLX's
+            // transient compute buffers after every generation. Without this,
+            // repeated translations can retain enough GPU cache for iOS to
+            // terminate the app under memory pressure.
+            Memory.clearCache()
+        }
         let container = try await loadedContainer()
         // Use TranslateGemma's own chat template and content metadata. This
         // matches the measured diagnostic baseline and avoids an adapter-local
