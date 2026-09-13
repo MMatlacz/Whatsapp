@@ -203,7 +203,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/BridgeRuntime\"\n/usr/bin/env node bundle.cjs --check\n";
+			shellScript = "cd \"$SRCROOT/BridgeRuntime\"\nNODE_BIN=\"$(command -v node 2>/dev/null || true)\"\nif [ -z \"$NODE_BIN\" ]; then\n  for candidate in /opt/homebrew/bin/node /usr/local/bin/node; do\n    if [ -x \"$candidate\" ]; then\n      NODE_BIN=\"$candidate\"\n      break\n    fi\n  done\nfi\nif [ -z \"$NODE_BIN\" ]; then\n  echo \"error: Node.js is required to verify the generated transport runtime.\" >&2\n  exit 1\nfi\n\"$NODE_BIN\" bundle.cjs --check\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
