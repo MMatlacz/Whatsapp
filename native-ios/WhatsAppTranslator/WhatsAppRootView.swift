@@ -199,6 +199,13 @@ private struct NativePairingView: View {
 
     private func refreshUntilLinked() async {
         while !Task.isCancelled {
+            if let previousCode = linkingCode,
+               let currentCode = try? await runtime.startPhoneNumberLinking(phone: phoneNumber),
+               currentCode != previousCode {
+                linkingCode = currentCode
+                notice = "WhatsApp refreshed the linking code. Enter the code currently shown above."
+            }
+            await model.refreshConnectionAfterPairing()
             if model.connectionState == .ready {
                 linkingCode = nil
                 backgroundLease.end()

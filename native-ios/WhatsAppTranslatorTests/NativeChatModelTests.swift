@@ -84,6 +84,24 @@ final class NativeChatModelTests: XCTestCase {
         XCTAssertFalse(model.canSend(chatID: "unknown"))
     }
 
+    func testPairingRefreshRecoversMissedReadyEventAndClearsNotice() async throws {
+        let chat = WhatsAppTransportChat(id: "paired@c.us", title: "Paired", isGroup: false,
+            unreadCount: 0, lastMessageTimestampMilliseconds: 1_000)
+        let transport = PairingTransitionTransport(chat: chat)
+        let model = NativeChatModel(transport: transport)
+
+        try await model.connect()
+        XCTAssertEqual(model.connectionState, .authenticating)
+        XCTAssertNotNil(model.connectionNotice)
+
+        await transport.completePairing()
+        await model.refreshConnectionAfterPairing()
+
+        XCTAssertEqual(model.connectionState, .ready)
+        XCTAssertEqual(model.chats, [chat])
+        XCTAssertNil(model.connectionNotice)
+    }
+
     func testSearchAndFilters() async {
         let model = NativeChatModel()
         model.openSamples()
@@ -258,5 +276,38 @@ private actor RecordingIdentityProvider: NativeContactIdentityProvider {
     func identity(for id: String) async throws -> NativeContactIdentity {
         callCount += 1
         return identity
+    }
+}
+
+private actor PairingTransitionTransport: WhatsAppTransport {
+    let chat: WhatsAppTransportChat
+    private var paired = false
+
+    init(chat: WhatsAppTransportChat) {
+        self.chat = chat
+    }
+
+    func completePairing() {
+        paired = true
+    }
+
+    func connect() async throws {}
+    func connectionState() async throws -> WhatsAppTransportConnectionState {
+        paired ? .ready : .authenticating
+    }
+    func listChats() async throws -> [WhatsAppTransportChat] { [chat] }
+    func loadMessages(chatID: String, cursor: WhatsAppTransportMessageCursor?,
+                      limit: Int) async throws -> WhatsAppTransportMessagePage {
+        .init(messages: [], nextCursor: nil)
+    }
+    func sendText(_ text: String, to chatID: String) async throws -> WhatsAppTransportMessage {
+        throw WhatsAppWebTransportError.bridgeUnavailable("test")
+    }
+    func reply(_ text: String, to messageID: String,
+               in chatID: String) async throws -> WhatsAppTransportMessage {
+        throw WhatsAppWebTransportError.bridgeUnavailable("test")
+    }
+    func eventStream() async -> AsyncStream<WhatsAppTransportEvent> {
+        AsyncStream { _ in }
     }
 }

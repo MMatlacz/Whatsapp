@@ -213,6 +213,7 @@ final class NativeChatModel {
                 if connectionState == .ready {
                     chats = try await transport.listChats()
                     cacheChats()
+                    connectionNotice = nil
                     updateFilter()
                     return
                 }
@@ -234,6 +235,24 @@ final class NativeChatModel {
 
     func reconnect() async {
         do { try await connect() } catch { /* User-visible status is set by connect. */ }
+    }
+
+    /// Reconciles a pairing transition that can complete between WA-JS event
+    /// subscription and the primary phone returning this app to the foreground.
+    /// This reads the existing session and never reloads or clears its profile.
+    func refreshConnectionAfterPairing() async {
+        guard let transport, !isConnecting else { return }
+        do {
+            connectionState = try await transport.connectionState()
+            guard connectionState == .ready else { return }
+            chats = try await transport.listChats()
+            cacheChats()
+            connectionNotice = nil
+            updateFilter()
+        } catch {
+            connectionState = .disconnected
+            connectionNotice = "Connection readiness could not be confirmed. Reconnect before sending."
+        }
     }
 
     private func handle(_ event: WhatsAppTransportEvent) async {
