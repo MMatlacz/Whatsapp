@@ -158,10 +158,12 @@ xcodebuild \
   -configuration Debug \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath .xcodebuild-ios \
-  -skipPackagePluginValidation \
-  -skipMacroValidation \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```
+
+Approve only the package plugin and macro targets pinned by `Package.resolved`.
+CI installs their reviewed fingerprints from `native-ios/ci`; it does not disable
+SwiftPM build-code validation.
 
 The ordinary package tests and `--help` path prove compilation and deterministic boundary behavior without weights. The functional command loads the verified local snapshot and performs real inference; it must only be run with the pinned artifacts. Neither CI nor macOS fallback establishes physical-iPhone performance or quality.

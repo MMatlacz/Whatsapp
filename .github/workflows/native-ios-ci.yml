@@ -110,6 +110,14 @@ jobs:
           xcodebuild -downloadComponent MetalToolchain
           xcrun -sdk macosx metal --version
 
+      - name: Install reviewed Swift package build-code approvals
+        run: |
+          set -euo pipefail
+          security_dir="$HOME/Library/org.swift.swiftpm/security"
+          mkdir -p "$security_dir"
+          install -m 600 native-ios/ci/swiftpm-plugins.json "$security_dir/plugins.json"
+          install -m 600 native-ios/ci/swiftpm-macros.json "$security_dir/macros.json"
+
       - name: Build native iOS target for Simulator SDK
         run: |
           set -euo pipefail
@@ -119,8 +127,6 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/whatsapp-derived-data" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
             INDEX_STORE_PATH="$RUNNER_TEMP/whatsapp-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build
@@ -158,8 +164,6 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$PWD/.xcodebuild-ios" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             build
 
@@ -179,8 +183,6 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/qwen-device-benchmark-derived-data" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
             INDEX_STORE_PATH="$RUNNER_TEMP/qwen-device-benchmark-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build

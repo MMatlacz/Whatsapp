@@ -50,6 +50,14 @@ jobs:
           xcodebuild -downloadComponent MetalToolchain
           xcrun -sdk macosx metal --version
 
+      - name: Install reviewed Swift package build-code approvals
+        run: |
+          set -euo pipefail
+          security_dir="$HOME/Library/org.swift.swiftpm/security"
+          mkdir -p "$security_dir"
+          install -m 600 native-ios/ci/swiftpm-plugins.json "$security_dir/plugins.json"
+          install -m 600 native-ios/ci/swiftpm-macros.json "$security_dir/macros.json"
+
       - name: Resolve and build the pinned diagnostic package
         working-directory: native-ios/QwenMLXDiagnosticAdapter
         run: |
@@ -66,8 +74,6 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/qwen-simulator-derived-data" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
             INDEX_STORE_PATH="$RUNNER_TEMP/qwen-simulator-index" \
             CODE_SIGNING_ALLOWED=NO \
             clean build
