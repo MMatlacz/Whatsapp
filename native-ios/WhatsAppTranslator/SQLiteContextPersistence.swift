@@ -97,6 +97,40 @@ public struct StoredTranslation: Equatable, Sendable {
     }
 }
 
+public struct StoredTranslationIntent: Equatable, Sendable {
+    public let chatID: WhatsAppChatID
+    public let messageID: WhatsAppMessageID
+    public let sourceLanguage: String
+    public let targetLanguage: String
+    public let sourceText: String
+    public let correctionComment: String
+    public let updatedAt: WhatsAppTimestamp
+
+    public init?(
+        chatID: WhatsAppChatID,
+        messageID: WhatsAppMessageID,
+        sourceLanguage: String,
+        targetLanguage: String,
+        sourceText: String,
+        correctionComment: String,
+        updatedAt: WhatsAppTimestamp
+    ) {
+        guard
+            !sourceLanguage.trimmedPersistenceValue.isEmpty,
+            !targetLanguage.trimmedPersistenceValue.isEmpty,
+            !sourceText.trimmedPersistenceValue.isEmpty,
+            !correctionComment.trimmedPersistenceValue.isEmpty
+        else { return nil }
+        self.chatID = chatID
+        self.messageID = messageID
+        self.sourceLanguage = sourceLanguage
+        self.targetLanguage = targetLanguage
+        self.sourceText = sourceText
+        self.correctionComment = correctionComment
+        self.updatedAt = updatedAt
+    }
+}
+
 public struct StoredVocabularyEntry: Equatable, Sendable {
     public let id: String
     public let chatID: WhatsAppChatID
@@ -243,7 +277,7 @@ public enum SQLiteContextPersistenceError: Error, Equatable, Sendable {
 }
 
 public final class SQLiteContextStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 2
+    public static let schemaVersion: Int32 = 3
     public let core: SQLiteWhatsAppStore
 
     private static let componentName = "translation_context"
@@ -283,6 +317,59 @@ public final class SQLiteContextStore: @unchecked Sendable {
 
     public func currentSchemaVersion() throws -> Int32 {
         try locked { try componentVersion() }
+    }
+
+    public func upsert(translationIntent intent: StoredTranslationIntent) throws {
+        try locked {
+            guard try messageExists(chatID: intent.chatID, messageID: intent.messageID) else {
+                throw SQLiteContextPersistenceError.missingMessage(
+                    chatID: intent.chatID,
+                    messageID: intent.messageID
+                )
+            }
+            let statement = try prepare(
+                """
+                INSERT INTO translation_intents(
+                    chat_id, whatsapp_message_id, source_language, target_language,
+                    source_text, correction_comment, updated_at_ms
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(chat_id, whatsapp_message_id, target_language) DO UPDATE SET
+                    source_language = excluded.source_language,
+                    source_text = excluded.source_text,
+                    correction_comment = excluded.correction_comment,
+                    updated_at_ms = excluded.updated_at_ms
+                """
+            )
+            defer { sqlite3_finalize(statement) }
+            try bindText(intent.chatID.rawValue, at: 1, to: statement)
+            try bindText(intent.messageID.rawValue, at: 2, to: statement)
+            try bindText(intent.sourceLanguage, at: 3, to: statement)
+            try bindText(intent.targetLanguage, at: 4, to: statement)
+            try bindText(intent.sourceText, at: 5, to: statement)
+            try bindText(intent.correctionComment, at: 6, to: statement)
+            try bindInt64(intent.updatedAt.millisecondsSince1970, at: 7, to: statement)
+            try stepDone(statement)
+        }
+    }
+
+    public func allTranslationIntents(limit: Int = 10_000) throws -> [StoredTranslationIntent] {
+        guard (1...10_000).contains(limit) else {
+            throw SQLiteContextPersistenceError.invalidArgument("translation intent limit")
+        }
+        return try locked {
+            let statement = try prepare(
+                """
+                SELECT chat_id, whatsapp_message_id, source_language, target_language,
+                       source_text, correction_comment, updated_at_ms
+                FROM translation_intents
+                ORDER BY chat_id ASC, whatsapp_message_id ASC, target_language ASC
+                LIMIT ?
+                """
+            )
+            defer { sqlite3_finalize(statement) }
+            try bindInt64(Int64(limit), at: 1, to: statement)
+            return try collect(statement, decode: decodeTranslationIntent)
+        }
     }
 
     public func upsert(translation: StoredTranslation) throws {
@@ -473,6 +560,37 @@ public final class SQLiteContextStore: @unchecked Sendable {
     /// Returns the persisted translation history across chats. The native
     /// model uses this on startup to restore the latest revision for each
     /// message without maintaining a second cache file.
+    public func latestTranslations(limit: Int = 10_000) throws -> [StoredTranslation] {
+        guard (1...10_000).contains(limit) else {
+            throw SQLiteContextPersistenceError.invalidArgument("latest translation limit")
+        }
+        return try locked {
+            let statement = try prepare(
+                """
+                SELECT t.chat_id, t.whatsapp_message_id, t.source_language, t.target_language, t.revision,
+                       t.revision_kind, t.translated_body, t.source_text, t.parts_json, t.source_hash,
+                       t.context_hash, t.prompt_version, t.model_id, t.known_words_version,
+                       t.context_message_count, t.summary_version, t.correction_comment, t.created_at_ms
+                FROM translations AS t
+                JOIN (
+                    SELECT chat_id, whatsapp_message_id, target_language, MAX(revision) AS max_revision
+                    FROM translations
+                    GROUP BY chat_id, whatsapp_message_id, target_language
+                ) AS latest
+                  ON latest.chat_id = t.chat_id
+                 AND latest.whatsapp_message_id = t.whatsapp_message_id
+                 AND latest.target_language = t.target_language
+                 AND latest.max_revision = t.revision
+                ORDER BY t.chat_id ASC, t.whatsapp_message_id ASC, t.target_language ASC
+                LIMIT ?
+                """
+            )
+            defer { sqlite3_finalize(statement) }
+            try bindInt64(Int64(limit), at: 1, to: statement)
+            return try collect(statement, decode: decodeTranslation)
+        }
+    }
+
     public func allTranslations(limit: Int = 10_000) throws -> [StoredTranslation] {
         guard (1...10_000).contains(limit) else {
             throw SQLiteContextPersistenceError.invalidArgument("translation history limit")
@@ -839,6 +957,7 @@ public final class SQLiteContextStore: @unchecked Sendable {
                 }
                 if version < 1 { try applyMigration1() }
                 if version < 2 { try applyMigration2() }
+                if version < 3 { try applyMigration3() }
                 try setComponentVersion(Self.schemaVersion)
                 try executeUnlocked("COMMIT")
             } catch {
@@ -958,6 +1077,27 @@ public final class SQLiteContextStore: @unchecked Sendable {
         }
     }
 
+    private func applyMigration3() throws {
+        // User correction intent is durable independently from model output.
+        // A failed or deferred inference must not manufacture a translation revision.
+        try executeUnlocked(
+            """
+            CREATE TABLE IF NOT EXISTS translation_intents(
+                chat_id TEXT NOT NULL,
+                whatsapp_message_id TEXT NOT NULL,
+                source_language TEXT NOT NULL,
+                target_language TEXT NOT NULL,
+                source_text TEXT NOT NULL,
+                correction_comment TEXT NOT NULL,
+                updated_at_ms INTEGER NOT NULL CHECK(updated_at_ms >= 0),
+                PRIMARY KEY(chat_id, whatsapp_message_id, target_language),
+                FOREIGN KEY(chat_id, whatsapp_message_id)
+                    REFERENCES messages(chat_id, whatsapp_message_id) ON DELETE CASCADE
+            );
+            """
+        )
+    }
+
     private func tableHasColumn(table: String, column: String) throws -> Bool {
         let statement = try prepare("PRAGMA table_info(\(table))")
         defer { sqlite3_finalize(statement) }
@@ -1038,8 +1178,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
 
     private func decodeTranslation(_ statement: OpaquePointer) throws -> StoredTranslation {
         guard
-            let chatID = columnText(statement, at: 0).flatMap { WhatsAppChatID($0) },
-            let messageID = columnText(statement, at: 1).flatMap { WhatsAppMessageID($0) },
+            let chatID = columnText(statement, at: 0).flatMap({ WhatsAppChatID($0) }),
+            let messageID = columnText(statement, at: 1).flatMap({ WhatsAppMessageID($0) }),
             let targetLanguage = columnText(statement, at: 3),
             let rawKind = columnText(statement, at: 5),
             let kind = TranslationRevisionKind(rawValue: rawKind),
@@ -1079,11 +1219,33 @@ public final class SQLiteContextStore: @unchecked Sendable {
         return value
     }
 
+    private func decodeTranslationIntent(_ statement: OpaquePointer) throws -> StoredTranslationIntent {
+        guard
+            let chatID = columnText(statement, at: 0).flatMap({ WhatsAppChatID($0) }),
+            let messageID = columnText(statement, at: 1).flatMap({ WhatsAppMessageID($0) }),
+            let sourceLanguage = columnText(statement, at: 2),
+            let targetLanguage = columnText(statement, at: 3),
+            let sourceText = columnText(statement, at: 4),
+            let comment = columnText(statement, at: 5),
+            let updatedAt = timestamp(statement, at: 6),
+            let value = StoredTranslationIntent(
+                chatID: chatID,
+                messageID: messageID,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage,
+                sourceText: sourceText,
+                correctionComment: comment,
+                updatedAt: updatedAt
+            )
+        else { throw SQLiteContextPersistenceError.invalidStoredValue("translation_intents") }
+        return value
+    }
+
     private func decodeVocabulary(_ statement: OpaquePointer) throws -> StoredVocabularyEntry {
         guard
             let id = columnText(statement, at: 0),
-            let chatID = columnText(statement, at: 1).flatMap { WhatsAppChatID($0) },
-            let messageID = columnText(statement, at: 2).flatMap { WhatsAppMessageID($0) },
+            let chatID = columnText(statement, at: 1).flatMap({ WhatsAppChatID($0) }),
+            let messageID = columnText(statement, at: 2).flatMap({ WhatsAppMessageID($0) }),
             let sourceLanguage = columnText(statement, at: 3),
             let targetLanguage = columnText(statement, at: 4),
             let sourceText = columnText(statement, at: 6),
@@ -1133,8 +1295,8 @@ public final class SQLiteContextStore: @unchecked Sendable {
 
     private func decodeSummary(_ statement: OpaquePointer) throws -> StoredConversationSummary {
         guard
-            let chatID = columnText(statement, at: 0).flatMap { WhatsAppChatID($0) },
-            let messageID = columnText(statement, at: 2).flatMap { WhatsAppMessageID($0) },
+            let chatID = columnText(statement, at: 0).flatMap({ WhatsAppChatID($0) }),
+            let messageID = columnText(statement, at: 2).flatMap({ WhatsAppMessageID($0) }),
             let throughTimestamp = timestamp(statement, at: 3),
             let contextHash = columnText(statement, at: 5),
             let summaryText = columnText(statement, at: 6),

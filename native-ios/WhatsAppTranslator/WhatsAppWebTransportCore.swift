@@ -6,6 +6,7 @@ enum WhatsAppBridgeRequestKind: String, Codable, Equatable, Sendable {
     case loadMessages
     case sendText
     case reply
+    case mediaPreview
 }
 
 struct WhatsAppBridgeRequestPayload: Codable, Equatable, Sendable {
@@ -14,19 +15,22 @@ struct WhatsAppBridgeRequestPayload: Codable, Equatable, Sendable {
     let limit: Int?
     let text: String?
     let messageID: String?
+    let maxPixelSize: Int?
 
     init(
         chatID: String? = nil,
         cursor: WhatsAppTransportMessageCursor? = nil,
         limit: Int? = nil,
         text: String? = nil,
-        messageID: String? = nil
+        messageID: String? = nil,
+        maxPixelSize: Int? = nil
     ) {
         self.chatID = chatID
         self.cursor = cursor
         self.limit = limit
         self.text = text
         self.messageID = messageID
+        self.maxPixelSize = maxPixelSize
     }
 }
 
@@ -222,6 +226,28 @@ actor WhatsAppWebTransport: WhatsAppTransport {
         return message
     }
 
+    func mediaPreview(
+        chatID: String,
+        messageID: String,
+        maxPixelSize: Int
+    ) async throws -> WhatsAppTransportMediaPreview {
+        try requireIdentifier(chatID, field: "chatID")
+        try requireIdentifier(messageID, field: "messageID")
+        guard (64...1_280).contains(maxPixelSize) else {
+            throw WhatsAppWebTransportError.invalidArgument("maxPixelSize")
+        }
+        let response = try await perform(
+            kind: .mediaPreview,
+            payload: WhatsAppBridgeRequestPayload(
+                chatID: chatID, messageID: messageID, maxPixelSize: maxPixelSize
+            )
+        )
+        guard case .mediaPreview(let preview) = response else {
+            throw unexpected(expected: "mediaPreview", response: response)
+        }
+        return preview
+    }
+
     func eventStream() async -> AsyncStream<WhatsAppTransportEvent> {
         let source = await runtime.eventStream()
         return AsyncStream { continuation in
@@ -299,6 +325,7 @@ actor WhatsAppWebTransport: WhatsAppTransport {
         case .messages: "loadMessages"
         case .sentMessage: "sendText"
         case .repliedMessage: "reply"
+        case .mediaPreview: "mediaPreview"
         }
     }
 }

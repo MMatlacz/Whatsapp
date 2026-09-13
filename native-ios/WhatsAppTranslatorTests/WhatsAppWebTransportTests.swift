@@ -38,6 +38,17 @@ final class WhatsAppWebTransportTests: XCTestCase {
                     kind: "reply",
                     payload: ["message": try jsonObject(message)]
                 )
+            case .mediaPreview:
+                return try wireResponse(
+                    request,
+                    kind: "mediaPreview",
+                    payload: [
+                        "mimeType": "image/jpeg",
+                        "data": Data([1, 2, 3]).base64EncodedString(),
+                        "width": 120,
+                        "height": 80
+                    ]
+                )
             }
         }
         let transport = WhatsAppWebTransport(runtime: runtime)
@@ -79,6 +90,28 @@ final class WhatsAppWebTransportTests: XCTestCase {
                 $0.version == WhatsAppBridgeContract.version && !$0.requestID.isEmpty
             }
         )
+    }
+
+    func testMediaPreviewBuildsBoundedRequestAndDecodesData() async throws {
+        let runtime = StubBridgeRuntime { request in
+            try wireResponse(request, kind: "mediaPreview", payload: [
+                "mimeType": "image/jpeg",
+                "data": Data([1, 2, 3, 4]).base64EncodedString(),
+                "width": 320,
+                "height": 180
+            ])
+        }
+        let transport = WhatsAppWebTransport(runtime: runtime)
+        let preview = try await transport.mediaPreview(
+            chatID: "group@g.us", messageID: "message-1", maxPixelSize: 768
+        )
+        XCTAssertEqual(preview.mimeType, "image/jpeg")
+        XCTAssertEqual(preview.data, Data([1, 2, 3, 4]))
+        XCTAssertEqual(preview.width, 320)
+        XCTAssertEqual(preview.height, 180)
+        let requests = await runtime.capturedRequests()
+        XCTAssertEqual(requests.first?.kind, .mediaPreview)
+        XCTAssertEqual(requests.first?.payload.maxPixelSize, 768)
     }
 
     func testTransportRejectsInvalidArgumentsWithoutInvokingRuntime() async throws {

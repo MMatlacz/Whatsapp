@@ -129,6 +129,30 @@ public enum WhatsAppMediaKind: Equatable, Sendable {
     case other
 }
 
+public enum WhatsAppDeliveryState: String, Equatable, Sendable {
+    case pending
+    case sent
+    case delivered
+    case read
+    case played
+    case failed
+}
+
+public struct WhatsAppLinkPreview: Equatable, Sendable {
+    public let matchedText: String
+    public let canonicalURL: String?
+    public let title: String?
+    public let description: String?
+
+    public init?(matchedText: String, canonicalURL: String?, title: String?, description: String?) {
+        guard !matchedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        self.matchedText = matchedText
+        self.canonicalURL = canonicalURL
+        self.title = title
+        self.description = description
+    }
+}
+
 public struct WhatsAppMediaMetadata: Equatable, Sendable {
     public let kind: WhatsAppMediaKind
     public let mimeType: String?
@@ -137,6 +161,7 @@ public struct WhatsAppMediaMetadata: Equatable, Sendable {
     public let durationMilliseconds: Int64?
     public let width: Int?
     public let height: Int?
+    public let isViewOnce: Bool
 
     public init?(
         kind: WhatsAppMediaKind,
@@ -145,7 +170,8 @@ public struct WhatsAppMediaMetadata: Equatable, Sendable {
         sizeBytes: Int64?,
         durationMilliseconds: Int64?,
         width: Int?,
-        height: Int?
+        height: Int?,
+        isViewOnce: Bool = false
     ) {
         let largeValues = [sizeBytes, durationMilliseconds].compactMap { $0 }
         let dimensions = [width, height].compactMap { $0 }
@@ -159,6 +185,7 @@ public struct WhatsAppMediaMetadata: Equatable, Sendable {
         self.durationMilliseconds = durationMilliseconds
         self.width = width
         self.height = height
+        self.isViewOnce = isViewOnce
     }
 }
 
@@ -203,6 +230,8 @@ public struct WhatsAppMessage: Equatable, Sendable {
     public let fromMe: Bool
     public let quote: WhatsAppQuote?
     public let media: WhatsAppMediaMetadata?
+    public let linkPreview: WhatsAppLinkPreview?
+    public let deliveryState: WhatsAppDeliveryState?
     public let translation: WhatsAppTranslationMetadata?
 
     public init(
@@ -214,6 +243,8 @@ public struct WhatsAppMessage: Equatable, Sendable {
         fromMe: Bool,
         quote: WhatsAppQuote?,
         media: WhatsAppMediaMetadata?,
+        linkPreview: WhatsAppLinkPreview? = nil,
+        deliveryState: WhatsAppDeliveryState? = nil,
         translation: WhatsAppTranslationMetadata?
     ) {
         self.id = id
@@ -224,6 +255,8 @@ public struct WhatsAppMessage: Equatable, Sendable {
         self.fromMe = fromMe
         self.quote = quote
         self.media = media
+        self.linkPreview = linkPreview
+        self.deliveryState = deliveryState
         self.translation = translation
     }
 }

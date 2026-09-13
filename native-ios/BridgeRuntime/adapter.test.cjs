@@ -64,6 +64,53 @@ test('keeps the requested chat ID stable across the public phone/LID mapping', a
     const page = await adapter.loadMessages({ chatID: '491234@c.us', limit: 1 });
     assert.equal(page.messages[0].chatID, '491234@c.us');
 });
+test('retries transient phone/LID alias resolution instead of caching the failure', async () => {
+    const { adapter, wpp, raw } = fixture();
+    raw.id.remote = { _serialized: '987654@lid' };
+    let attempts = 0;
+    wpp.contact = {
+        getPnLidEntry: async (value) => {
+            attempts += 1;
+            if (attempts <= 2) throw new Error('temporary-alias-failure');
+            const valueID = typeof value === 'string' ? value : value?._serialized;
+            return valueID === '987654@lid'
+                ? { lid: { _serialized: '987654@lid' }, phoneNumber: { _serialized: '491234@c.us' } }
+                : { phoneNumber: { _serialized: '491234@c.us' }, lid: { _serialized: '987654@lid' } };
+        }
+    };
+    await assert.rejects(adapter.loadMessages({ chatID: '491234@c.us', limit: 1 }), /cross-chat-history/);
+    const page = await adapter.loadMessages({ chatID: '491234@c.us', limit: 1 });
+    assert.equal(page.messages[0].chatID, '491234@c.us');
+    assert.ok(attempts >= 4);
+});
+test('isolates malformed history rows and advances with the raw page boundary', async () => {
+    const { adapter, wpp, raw } = fixture();
+    const malformed = {
+        id: { _serialized: 'message-bad', remote: { _serialized: 'test@c.us' } },
+        t: 50,
+        body: 'not safely hydrated yet'
+    };
+    wpp.chat.getMessages = async () => [raw, malformed];
+    const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 2 });
+    assert.deepEqual(page.messages.map((message) => message.id), ['message-1']);
+    assert.equal(page.nextCursor.beforeMessageID, 'message-bad');
+    assert.equal(page.nextCursor.beforeTimestampMilliseconds, 50000);
+});
+test('drops isolated cross-chat history rows but rejects a page that is entirely cross-chat', async () => {
+    const { adapter, wpp, raw } = fixture();
+    const foreign = {
+        id: { _serialized: 'foreign-1', remote: { _serialized: 'other@c.us' }, fromMe: false },
+        t: 50,
+        body: 'foreign',
+        from: { _serialized: 'other@c.us' }
+    };
+    wpp.chat.getMessages = async () => [raw, foreign];
+    const mixed = await adapter.loadMessages({ chatID: 'test@c.us', limit: 2 });
+    assert.deepEqual(mixed.messages.map((message) => message.id), ['message-1']);
+    assert.equal(mixed.nextCursor.beforeMessageID, 'foreign-1');
+    wpp.chat.getMessages = async () => [foreign];
+    await assert.rejects(adapter.loadMessages({ chatID: 'test@c.us', limit: 1 }), /cross-chat-history/);
+});
 test('rejects timestamps that cannot be represented safely in the native wire format', async () => {
     const { adapter, raw } = fixture();
     raw.t = Number.MAX_SAFE_INTEGER;
@@ -106,6 +153,46 @@ test('maps quote and safe media metadata without copying thumbnail bodies or med
     raw.isViewOnce = true;
     const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 10 });
     assert.equal(page.messages[0].body, null);
+});
+test('maps WhatsApp link preview metadata without embedding thumbnail bytes in history', async () => {
+    const { adapter, raw } = fixture();
+    raw.body = 'Watch https://example.com/video';
+    raw.linkPreview = {
+        matchedText: 'https://example.com/video',
+        canonicalUrl: 'https://example.com/video',
+        title: 'Example video',
+        description: 'Preview from WhatsApp',
+        thumbnail: Buffer.from('small-thumbnail').toString('base64')
+    };
+    const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 1 });
+    assert.deepEqual(page.messages[0].linkPreview, {
+        matchedText: 'https://example.com/video',
+        canonicalURL: 'https://example.com/video',
+        title: 'Example video',
+        description: 'Preview from WhatsApp'
+    });
+    assert.ok(!JSON.stringify(page.messages[0]).includes(raw.linkPreview.thumbnail));
+    const preview = await adapter.mediaPreview({
+        chatID: 'test@c.us', messageID: 'message-1', maxPixelSize: 320
+    });
+    assert.equal(preview.data, raw.linkPreview.thumbnail);
+    assert.equal(preview.mimeType, 'image/jpeg');
+});
+test('refuses view-once media previews before download', async () => {
+    const { adapter, wpp, raw } = fixture();
+    let downloads = 0;
+    Object.assign(raw, { type: 'image', mimetype: 'image/jpeg', isViewOnce: true });
+    wpp.chat.downloadMedia = async () => {
+        downloads += 1;
+        return new Blob(['secret'], { type: 'image/jpeg' });
+    };
+    await assert.rejects(
+        adapter.mediaPreview({ chatID: 'test@c.us', messageID: 'message-1', maxPixelSize: 768 }),
+        /view-once-media/
+    );
+    assert.equal(downloads, 0);
+    const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 1 });
+    assert.equal(page.messages[0].media.isViewOnce, true);
 });
 test('online events do not announce ready before authentication and synchronization', () => {
     const { adapter, wpp, calls } = fixture();

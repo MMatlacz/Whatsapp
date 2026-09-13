@@ -125,8 +125,40 @@
                 'media.durationMilliseconds'
             ),
             width: optionalNonNegativeInteger(value.width, 'media.width'),
-            height: optionalNonNegativeInteger(value.height, 'media.height')
+            height: optionalNonNegativeInteger(value.height, 'media.height'),
+            isViewOnce: Boolean(value.isViewOnce)
         };
+    };
+
+    const normalizeLinkPreview = (value) => {
+        if (value === null || value === undefined) return null;
+        if (typeof value !== 'object') throw new BridgeError('invalid-adapter-payload', 'linkPreview');
+        const matchedText = requireNonEmptyString(value.matchedText, 'linkPreview.matchedText');
+        if (matchedText.length > 4096) throw new BridgeError('invalid-adapter-payload', 'linkPreview.matchedText');
+        const canonicalURL = optionalString(value.canonicalURL, 'linkPreview.canonicalURL');
+        const title = optionalString(value.title, 'linkPreview.title');
+        const description = optionalString(value.description, 'linkPreview.description');
+        if (canonicalURL?.length > 4096 || title?.length > 512 || description?.length > 2048) {
+            throw new BridgeError('invalid-adapter-payload', 'linkPreview.size');
+        }
+        return { matchedText, canonicalURL, title, description };
+    };
+
+    const normalizeMediaPreview = (value) => {
+        if (!value || typeof value !== 'object') throw new BridgeError('invalid-adapter-payload', 'mediaPreview');
+        const mimeType = requireNonEmptyString(value.mimeType, 'mediaPreview.mimeType');
+        const data = requireNonEmptyString(value.data, 'mediaPreview.data');
+        if (!/^image\/(jpeg|png|webp)$/.test(mimeType) || data.length > 2_000_000 ||
+            !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) {
+            throw new BridgeError('invalid-adapter-payload', 'mediaPreview.data');
+        }
+        const width = optionalNonNegativeInteger(value.width, 'mediaPreview.width');
+        const height = optionalNonNegativeInteger(value.height, 'mediaPreview.height');
+        if ((width !== null && (width < 1 || width > 4096)) ||
+            (height !== null && (height < 1 || height > 4096))) {
+            throw new BridgeError('invalid-adapter-payload', 'mediaPreview.dimensions');
+        }
+        return { mimeType, data, width, height };
     };
 
     const normalizeMessage = (value) => {
@@ -145,7 +177,8 @@
             fromMe: Boolean(value.fromMe),
             deliveryState: optionalDeliveryState(value.deliveryState, 'message.deliveryState'),
             quote: normalizeQuote(value.quote),
-            media: normalizeMedia(value.media)
+            media: normalizeMedia(value.media),
+            linkPreview: normalizeLinkPreview(value.linkPreview)
         };
     };
 
@@ -193,7 +226,7 @@
 
     const validateAdapter = (adapter) => {
         if (!adapter || typeof adapter !== 'object') return null;
-        const methods = ['connectionState', 'listChats', 'loadMessages', 'sendText', 'reply'];
+        const methods = ['connectionState', 'listChats', 'loadMessages', 'sendText', 'reply', 'mediaPreview'];
         return methods.every((name) => typeof adapter[name] === 'function') ? adapter : null;
     };
 
@@ -293,6 +326,17 @@
             const text = requiredPayloadText(payload);
             const message = await adapter.reply({ chatID, messageID, text });
             response(request.requestID, 'reply', { message: normalizeMessage(message) });
+            return;
+        }
+        case 'mediaPreview': {
+            const chatID = requiredPayloadIdentifier(payload, 'chatID');
+            const messageID = requiredPayloadIdentifier(payload, 'messageID');
+            const maxPixelSize = nonNegativeInteger(payload.maxPixelSize, 'payload.maxPixelSize');
+            if (maxPixelSize < 64 || maxPixelSize > 1280) {
+                throw new BridgeError('invalid-request', 'payload.maxPixelSize');
+            }
+            const preview = await adapter.mediaPreview({ chatID, messageID, maxPixelSize });
+            response(request.requestID, 'mediaPreview', normalizeMediaPreview(preview));
             return;
         }
         default:

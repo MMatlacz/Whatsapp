@@ -1,9 +1,36 @@
 import SwiftUI
 import WebKit
 import ImageIO
+import NaturalLanguage
 #if canImport(UIKit)
 import UIKit
 #endif
+
+private enum NativeAutomaticTranslationEligibility {
+    private static let shortIndonesianTokens: Set<String> = [
+        "aku", "kamu", "dia", "iya", "ya", "nggak", "gak", "ga", "udah", "sudah",
+        "belum", "mau", "nanti", "bisa", "boleh", "makasih", "wkwk", "mager", "baper"
+    ]
+
+    static func allows(message: WhatsAppTransportMessage, body: String) -> Bool {
+        guard !message.fromMe else { return false }
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.unicodeScalars.contains(where: CharacterSet.letters.contains),
+              !isURLOnly(trimmed) else { return false }
+        if NLLanguageRecognizer.dominantLanguage(for: trimmed) == .indonesian { return true }
+        let tokens = trimmed.lowercased().split { !$0.isLetter }.map(String.init)
+        return tokens.contains(where: shortIndonesianTokens.contains)
+    }
+
+    private static func isURLOnly(_ text: String) -> Bool {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return false
+        }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        let matches = detector.matches(in: text, range: range)
+        return matches.count == 1 && matches[0].range == range
+    }
+}
 
 @MainActor
 struct WhatsAppRootView: View {
@@ -458,7 +485,8 @@ private struct NativeConversation: View {
                                             translationKey: model.translationKey(chatID: chatID, messageID: message.id),
                                             senderName: senderName(for: message),
                                             senderIdentity: senderIdentity(for: message),
-                                            quoteSenderName: quoteSenderName(for: message))
+                                            quoteSenderName: quoteSenderName(for: message),
+                                            mediaPreview: model.mediaPreviews[message.id])
                             .task(id: model.connectionState) {
                                 if !message.fromMe, let senderID = message.senderID,
                                    model.chats.first(where: { $0.id == chatID })?.isGroup == true {
@@ -467,6 +495,7 @@ private struct NativeConversation: View {
                                 if let quoteSenderID = message.quote?.senderID {
                                     await model.loadIdentity(for: quoteSenderID)
                                 }
+                                await model.loadMediaPreview(for: message)
                             }
                             .contextMenu {
                                 Button("Reply", systemImage: "arrowshape.turn.up.left") {
@@ -516,6 +545,7 @@ private struct NativeMessageBubble: View {
     let senderName: String?
     let senderIdentity: NativeContactIdentity?
     let quoteSenderName: String?
+    let mediaPreview: WhatsAppTransportMediaPreview?
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -539,12 +569,21 @@ private struct NativeMessageBubble: View {
                         .background(.primary.opacity(0.06), in: .rect(cornerRadius: 8))
                 }
                 if let body = message.body {
-                    NativeTranslationCard(model: translations, key: translationKey, original: body)
+                    NativeTranslationCard(
+                        model: translations,
+                        key: translationKey,
+                        original: body,
+                        automaticTranslationEligible: NativeAutomaticTranslationEligibility.allows(
+                            message: message, body: body
+                        )
+                    )
+                }
+                if let linkPreview = message.linkPreview {
+                    NativeLinkPreviewCard(preview: linkPreview, thumbnail: mediaPreview)
                 }
                 if let media = message.media {
-                    Label(media.filename ?? media.kind.rawValue.capitalized, systemImage: "paperclip")
-                    Text("Attachment preview is not available yet.").font(.caption).foregroundStyle(.secondary)
-                } else if message.body == nil {
+                    NativeMediaAttachmentView(media: media, preview: mediaPreview)
+                } else if message.body == nil, message.linkPreview == nil {
                     Text("Message content is unavailable")
                 }
                 HStack(spacing: 4) {
@@ -564,6 +603,117 @@ private struct NativeMessageBubble: View {
         .containerRelativeFrame(.horizontal, count: 6, span: 5, spacing: 0)
         .frame(maxWidth: .infinity, alignment: message.fromMe ? .trailing : .leading)
         .accessibilityElement(children: .contain)
+    }
+}
+
+private struct NativeLinkPreviewCard: View {
+    let preview: WhatsAppTransportLinkPreview
+    let thumbnail: WhatsAppTransportMediaPreview?
+
+    var body: some View {
+        Group {
+            if let url = safeURL {
+                Link(destination: url) { content }
+            } else {
+                content
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let thumbnail { NativePreviewImage(preview: thumbnail, height: 120) }
+            if let title = preview.title, !title.isEmpty {
+                Text(title).font(.subheadline.bold()).lineLimit(2)
+            }
+            if let description = preview.description, !description.isEmpty {
+                Text(description).font(.caption).foregroundStyle(.secondary).lineLimit(3)
+            }
+            Text(hostText).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.primary.opacity(0.05), in: .rect(cornerRadius: 10))
+    }
+
+    private var safeURL: URL? {
+        let raw = preview.canonicalURL ?? preview.matchedText
+        guard let url = URL(string: raw), let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http" else { return nil }
+        return url
+    }
+
+    private var hostText: String {
+        safeURL?.host(percentEncoded: false) ?? preview.matchedText
+    }
+}
+
+private struct NativeMediaAttachmentView: View {
+    let media: WhatsAppTransportMediaMetadata
+    let preview: WhatsAppTransportMediaPreview?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(label, systemImage: systemImage)
+            if media.isViewOnce {
+                Text("View-once attachment is not previewed or cached.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else if (media.kind == .image || media.kind == .sticker), let preview {
+                NativePreviewImage(preview: preview, height: media.kind == .sticker ? 140 : 240)
+            } else if media.kind == .image || media.kind == .sticker {
+                ProgressView("Loading attachment preview…").font(.caption)
+            } else if let size = media.sizeBytes {
+                Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("Attachment preview is not available yet.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var label: String {
+        media.filename ?? media.kind.rawValue.capitalized
+    }
+
+    private var systemImage: String {
+        switch media.kind {
+        case .image: "photo"
+        case .video: "video"
+        case .audio: "waveform"
+        case .document: "doc"
+        case .sticker: "face.smiling"
+        case .other: "paperclip"
+        }
+    }
+}
+
+private struct NativePreviewImage: View {
+    let preview: WhatsAppTransportMediaPreview
+    let height: CGFloat
+
+    var body: some View {
+        Group {
+            if let source = CGImageSourceCreateWithData(preview.data as CFData, nil),
+               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: 768,
+                kCGImageSourceCreateThumbnailWithTransform: true
+               ] as CFDictionary) {
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.primary.opacity(0.06))
+                    .overlay(Text("Preview unavailable").font(.caption).foregroundStyle(.secondary))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .clipShape(.rect(cornerRadius: 10))
+        .accessibilityHidden(true)
     }
 }
 
