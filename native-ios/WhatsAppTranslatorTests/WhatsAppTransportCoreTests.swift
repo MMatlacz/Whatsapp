@@ -17,6 +17,7 @@ final class WhatsAppTransportCoreTests: XCTestCase {
                     "timestampMilliseconds": 123,
                     "body": "halo",
                     "fromMe": false,
+                    "deliveryState": "read",
                     "quote": {
                       "messageID": "m0",
                       "senderID": "participant-2",
@@ -60,7 +61,8 @@ final class WhatsAppTransportCoreTests: XCTestCase {
                         durationMilliseconds: nil,
                         width: 640,
                         height: 480
-                    )
+                    ),
+                    deliveryState: .read
                 )
             )
         )

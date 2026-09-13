@@ -8,6 +8,39 @@ enum WhatsAppTransportConnectionState: String, Codable, Equatable, Sendable {
     case ready
 }
 
+/// Delivery state reported by WhatsApp's message ACK stream. `nil` means the
+/// runtime did not provide an ACK, so callers must not infer a state from
+/// message direction or a successful bridge response.
+enum WhatsAppTransportDeliveryState: String, Codable, Equatable, Sendable {
+    case pending
+    case sent
+    case delivered
+    case read
+    case played
+    case failed
+
+    var displayName: String {
+        switch self {
+        case .pending: "Pending"
+        case .sent: "Sent"
+        case .delivered: "Delivered"
+        case .read: "Read"
+        case .played: "Played"
+        case .failed: "Failed"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .pending: "clock"
+        case .sent: "checkmark"
+        case .delivered: "checkmark.circle"
+        case .read, .played: "checkmark.circle.fill"
+        case .failed: "exclamationmark.triangle"
+        }
+    }
+}
+
 struct WhatsAppTransportChat: Codable, Equatable, Sendable {
     let id: String
     let title: String
@@ -50,6 +83,29 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
     let fromMe: Bool
     let quote: WhatsAppTransportQuote?
     let media: WhatsAppTransportMediaMetadata?
+    let deliveryState: WhatsAppTransportDeliveryState?
+
+    init(
+        id: String,
+        chatID: String,
+        senderID: String?,
+        timestampMilliseconds: Int64,
+        body: String?,
+        fromMe: Bool,
+        quote: WhatsAppTransportQuote?,
+        media: WhatsAppTransportMediaMetadata?,
+        deliveryState: WhatsAppTransportDeliveryState? = nil
+    ) {
+        self.id = id
+        self.chatID = chatID
+        self.senderID = senderID
+        self.timestampMilliseconds = timestampMilliseconds
+        self.body = body
+        self.fromMe = fromMe
+        self.quote = quote
+        self.media = media
+        self.deliveryState = deliveryState
+    }
 }
 
 struct WhatsAppTransportMessageCursor: Codable, Equatable, Sendable {

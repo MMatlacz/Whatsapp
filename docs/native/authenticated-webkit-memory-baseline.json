@@ -1,0 +1,40 @@
+{
+  "sourceRevision": "ee2332370ae944790727f4a43f977001e39c9e1a",
+  "deviceClass": "iPhone 15 Pro Max",
+  "measurementSource": "Instruments Activity Monitor, all processes",
+  "durationSeconds": 121.404014,
+  "workload": [
+    "restored authenticated WhatsApp Web session",
+    "native chat list",
+    "self-chat history",
+    "group-chat history",
+    "enabled translation intent with fail-closed provider gate"
+  ],
+  "componentUpdateCounts": {
+    "app": 45,
+    "webContent": 118,
+    "gpu": 82,
+    "networking": 118
+  },
+  "combinedForwardFilledPoints": 118,
+  "combinedPeakPhysicalFootprintBytes": 975918344,
+  "combinedPeakRealMemoryBytes": 1413840896,
+  "componentPeakPhysicalFootprintBytes": {
+    "app": 53544168,
+    "webContent": 891521096,
+    "gpu": 17794208,
+    "networking": 13058872
+  },
+  "maximumObservedThermalState": "nominal",
+  "thermalStateInduced": false,
+  "processAttribution": "The app and the three sequentially launched WebKit processes disappeared after terminating only the app. Older unrelated WebKit processes remained and were excluded.",
+  "stabilityObservation": "The authenticated app remained usable throughout the bounded trace. It restored the linked session and native chat list after the attribution termination and relaunch.",
+  "messagesSentDuringTrace": 0,
+  "translationProviderLoaded": false,
+  "acceptance": "authenticated app plus WebKit baseline only",
+  "limitations": [
+    "No validated translation provider was loaded.",
+    "The 121-second run is not a sustained lifecycle or memory-pressure test.",
+    "This result does not establish a production phone memory budget or close issue 122."
+  ]
+}
