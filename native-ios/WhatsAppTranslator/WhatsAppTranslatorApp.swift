@@ -50,16 +50,24 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
     }
 
     private static let vocabularyHints: [TranslateGemmaVocabularyHint] = [
-        try! .init(sourceText: "wkwk", meaningNote: "laughter, not an event or group action"),
-        try! .init(sourceText: "mager", meaningNote: "the speaker feels too lazy or unmotivated; not a person or name"),
-        try! .init(sourceText: "baper", meaningNote: "taking something personally"),
-        try! .init(sourceText: "nggak usah dijemput", meaningNote: "there is no need to pick me up"),
-        try! .init(sourceText: "nggak/ga/gak", meaningNote: "negation; ga jadi means no longer or a changed plan"),
-        try! .init(sourceText: "bapak", meaningNote: "father or dad"),
-        try! .init(sourceText: "tante", meaningNote: "aunt"),
-        try! .init(sourceText: "nanti", meaningNote: "later, not tomorrow unless the source says tomorrow"),
-        try! .init(sourceText: "traktir", meaningNote: "pay for or treat someone to a meal"),
+        vocabularyHint("wkwk", "laughter, not an event or group action"),
+        vocabularyHint("mager", "the speaker feels too lazy or unmotivated; not a person or name"),
+        vocabularyHint("baper", "taking something personally"),
+        vocabularyHint("nggak usah dijemput", "there is no need to pick me up"),
+        vocabularyHint("nggak/ga/gak", "negation; ga jadi means no longer or a changed plan"),
+        vocabularyHint("bapak", "father or dad"),
+        vocabularyHint("tante", "aunt"),
+        vocabularyHint("nanti", "later, not tomorrow unless the source says tomorrow"),
+        vocabularyHint("traktir", "pay for or treat someone to a meal"),
     ]
+
+    private static func vocabularyHint(_ sourceText: String, _ meaningNote: String) -> TranslateGemmaVocabularyHint {
+        do {
+            return try TranslateGemmaVocabularyHint(sourceText: sourceText, meaningNote: meaningNote)
+        } catch {
+            preconditionFailure("Invalid bundled TranslateGemma vocabulary hint: \(error)")
+        }
+    }
 }
 
 @main
