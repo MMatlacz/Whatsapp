@@ -28,6 +28,12 @@ public actor ExperimentalTranslateGemma {
         self.manifestURL = manifestURL
     }
 
+    /// Loads and verifies the model once, then keeps the container resident for
+    /// subsequent translations while the application process remains alive.
+    public func preload() async throws {
+        _ = try await loadedContainer()
+    }
+
     public func translate(
         _ text: String,
         comment: String,
@@ -46,47 +52,7 @@ public actor ExperimentalTranslateGemma {
         }
         running = true
         defer { running = false }
-        if container == nil {
-            let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestURL)).model
-            guard manifest.repository == "mlx-community/translategemma-4b-it-4bit",
-                  manifest.revision == "5788ec08c047f3f2e17808101b8d9566ac930d58",
-                  !manifest.artifacts.isEmpty,
-                  Set(manifest.artifacts.map(\.path)).isSuperset(of: ["config.json", "tokenizer.json", "model.safetensors"]),
-                  manifest.artifacts.allSatisfy({ $0.bytes >= 0 && !$0.sha256.isEmpty }) else {
-                throw Failure.integrity
-            }
-            for artifact in manifest.artifacts {
-                guard !artifact.path.isEmpty,
-                      !artifact.path.contains("/"),
-                      artifact.path != ".",
-                      artifact.path != ".." else { throw Failure.integrity }
-                let handle = try FileHandle(forReadingFrom: directory.appendingPathComponent(artifact.path))
-                defer { try? handle.close() }
-                var hash = SHA256()
-                var size = 0
-                while true {
-                    try Task.checkCancellation()
-                    let count = try autoreleasepool {
-                        guard let bytes = try handle.read(upToCount: 4 * 1024 * 1024), !bytes.isEmpty else { return 0 }
-                        hash.update(data: bytes)
-                        return bytes.count
-                    }
-                    if count == 0 { break }
-                    size += count
-                }
-                guard size == artifact.bytes,
-                      hash.finalize().map({ String(format: "%02x", $0) }).joined() == artifact.sha256 else {
-                    throw Failure.integrity
-                }
-            }
-            let loaded = try await LLMModelFactory.shared.loadContainer(from: directory, using: #huggingFaceTokenizerLoader())
-            await loaded.update {
-                $0.configuration.extraEOSTokens.insert("<end_of_turn>")
-                $0.configuration.eosTokenIds.formUnion([1, 106])
-            }
-            container = loaded
-        }
-        guard let container else { throw Failure.integrity }
+        let container = try await loadedContainer()
         // Use TranslateGemma's own chat template and content metadata. This
         // matches the measured diagnostic baseline and avoids an adapter-local
         // hand-built turn that could silently drift from the model contract.
@@ -101,7 +67,7 @@ public actor ExperimentalTranslateGemma {
         var output = ""
         var completed = false
         for await event in try await container.generate(
-            input: LMInput(tokens: MLXArray(tokens)), parameters: GenerateParameters(maxTokens: 512, temperature: 0)
+            input: LMInput(tokens: MLXArray(tokens)), parameters: GenerateParameters(maxTokens: 128, temperature: 0)
         ) {
             try Task.checkCancellation()
             switch event {
@@ -130,5 +96,51 @@ public actor ExperimentalTranslateGemma {
             throw Failure.incomplete
         }
         return output
+    }
+
+    private func loadedContainer() async throws -> ModelContainer {
+        if let container { return container }
+        let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestURL)).model
+        guard manifest.repository == "mlx-community/translategemma-4b-it-4bit",
+              manifest.revision == "5788ec08c047f3f2e17808101b8d9566ac930d58",
+              !manifest.artifacts.isEmpty,
+              Set(manifest.artifacts.map(\.path)).isSuperset(of: ["config.json", "tokenizer.json", "model.safetensors"]),
+              manifest.artifacts.allSatisfy({ $0.bytes >= 0 && !$0.sha256.isEmpty }) else {
+            throw Failure.integrity
+        }
+        for artifact in manifest.artifacts {
+            guard !artifact.path.isEmpty,
+                  !artifact.path.contains("/"),
+                  artifact.path != ".",
+                  artifact.path != ".." else { throw Failure.integrity }
+            let handle = try FileHandle(forReadingFrom: directory.appendingPathComponent(artifact.path))
+            defer { try? handle.close() }
+            var hash = SHA256()
+            var size = 0
+            while true {
+                try Task.checkCancellation()
+                let count = try autoreleasepool {
+                    guard let bytes = try handle.read(upToCount: 4 * 1024 * 1024), !bytes.isEmpty else { return 0 }
+                    hash.update(data: bytes)
+                    return bytes.count
+                }
+                if count == 0 { break }
+                size += count
+            }
+            guard size == artifact.bytes,
+                  hash.finalize().map({ String(format: "%02x", $0) }).joined() == artifact.sha256 else {
+                throw Failure.integrity
+            }
+        }
+        let loaded = try await LLMModelFactory.shared.loadContainer(
+            from: directory,
+            using: #huggingFaceTokenizerLoader()
+        )
+        await loaded.update {
+            $0.configuration.extraEOSTokens.insert("<end_of_turn>")
+            $0.configuration.eosTokenIds.formUnion([1, 106])
+        }
+        container = loaded
+        return loaded
     }
 }

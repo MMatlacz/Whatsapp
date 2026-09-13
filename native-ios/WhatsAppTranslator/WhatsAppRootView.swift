@@ -8,17 +8,23 @@ import UIKit
 @MainActor
 struct WhatsAppRootView: View {
     @AppStorage("translation.enabled") private var translationEnabled = true
+    @AppStorage("translation.ownerApprovedTranslateGemma") private var ownerApprovedTranslateGemma = false
     @State private var runtime: WhatsAppWebKitBridgeRuntime
     @State private var model: NativeChatModel
+    @State private var translationModelStatus = "Not loaded"
+    private let translationProvider: TranslateGemmaChatRetranslator
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
 
     init() {
         let runtime = WhatsAppWebKitBridgeRuntime()
+        let translationProvider = TranslateGemmaChatRetranslator.applicationProvider()
+        self.translationProvider = translationProvider
         _runtime = State(initialValue: runtime)
         _model = State(initialValue: NativeChatModel.applicationModel(
             transport: WhatsAppWebTransport(runtime: runtime),
+            retranslator: translationProvider,
             identityProvider: runtime))
     }
 
@@ -50,8 +56,10 @@ struct WhatsAppRootView: View {
                         }
                         Section("Translation") {
                             Toggle("Translate messages", isOn: $translationEnabled)
+                            Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
+                            Text("TranslateGemma: \(translationModelStatus)")
                             Text(translationEnabled
-                                 ? "Translation stays enabled. Messages run only through a model that has passed the quality and device stability gates."
+                                 ? "Translation stays enabled. TranslateGemma remains resident while this app process is running."
                                  : "Translation is turned off.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
@@ -82,13 +90,34 @@ struct WhatsAppRootView: View {
         }
         .task {
             model.translations.experimentalTranslationEnabled = translationEnabled
+            model.translations.ownerApprovedExperimentalProvider = ownerApprovedTranslateGemma
             await model.reconnect()
+            await updateTranslateGemmaState()
         }
         .onChange(of: translationEnabled) { _, enabled in
             model.translations.experimentalTranslationEnabled = enabled
         }
+        .onChange(of: ownerApprovedTranslateGemma) { _, enabled in
+            model.translations.ownerApprovedExperimentalProvider = enabled
+            Task { await updateTranslateGemmaState() }
+        }
         .sheet(isPresented: $showingSamples) { NativeSampleBrowser() }
         .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
+    }
+
+    private func updateTranslateGemmaState() async {
+        guard translationEnabled, ownerApprovedTranslateGemma else {
+            translationModelStatus = "Not loaded"
+            return
+        }
+        translationModelStatus = "Loading and verifying…"
+        do {
+            try await translationProvider.preload()
+            translationModelStatus = "Loaded · resident"
+        } catch {
+            model.translations.ownerApprovedExperimentalProvider = false
+            translationModelStatus = "Could not load"
+        }
     }
 }
 

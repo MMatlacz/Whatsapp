@@ -60,6 +60,7 @@ final class NativeTranslationModel {
     private(set) var storageError: String?
     var showKnownWords = false
     var experimentalTranslationEnabled = false
+    var ownerApprovedExperimentalProvider = false
     @ObservationIgnored private let fileURL: URL?
     @ObservationIgnored private let retranslator: (any NativeRetranslator)?
     @ObservationIgnored private let contextStore: SQLiteContextStore?
@@ -250,7 +251,7 @@ final class NativeTranslationModel {
         guard commit(records: updated, words: knownWords, changedKey: key, revisionKind: pendingKind) else {
             return
         }
-        guard let retranslator, retranslator.isValidated else {
+        guard let retranslator, retranslator.isValidated || ownerApprovedExperimentalProvider else {
             notices[key] = "Comment saved. Retranslation is blocked until a validated translation engine is enabled. No model was run."
             return
         }
@@ -288,7 +289,7 @@ final class NativeTranslationModel {
             notices[key] = "Automatic translation is disabled until a validated engine passes quality and resource review."
             return
         }
-        guard let retranslator, retranslator.isValidated else {
+        guard let retranslator, retranslator.isValidated || ownerApprovedExperimentalProvider else {
             notices[key] = "No validated local translation model is installed and configured. No model was run."
             return
         }

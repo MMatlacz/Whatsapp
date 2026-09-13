@@ -143,7 +143,20 @@ TranslateGemma glossary guidance reduced the provisional review from 10 to 5 maj
 errors across the same 36 cases, with 18 minor and 13 acceptable outputs. The run used
 the exact model revision and greedy settings, but its source tree was dirty and the
 review is not independent. Wrong group, pickup, payment/treat and permission meanings
-remain major failures, so actual translation and retranslation stay disabled.
+remain major failures, so TranslateGemma is not a validated or release-default provider.
+The device owner explicitly enabled a persistent local experimental override for personal
+use. The app verifies the pinned artifacts, retains one shared model container, serializes
+requests and caps live output at 128 tokens. A physical native-group check translated
+`Lagi ngantuk itu` to `Czuję się bardzo zmęczony.` while the authenticated hidden WebKit
+transport remained active. An earlier build was terminated with signal 9 during generation
+because separate SwiftUI-created providers could load duplicate containers; the shared
+provider completed the same workflow and remained alive. The output remains human-review
+only, is never sent automatically, and does not provide known-word alignment.
+
+The setting and generated result were written to the existing app data container, whose
+identity was preserved across in-place installs. A privacy gate correctly rejected copying
+the whole chat database off-device for inspection. Full sustained model-plus-WebKit memory,
+background/foreground and pressure evidence is still outstanding, so keep #122 open.
 
 Both active native workflows now install the exact owner-reviewed SwiftPM plugin and
 macro fingerprints and contain no package-plugin or macro-validation skip flags. Local

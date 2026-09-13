@@ -64,6 +64,19 @@ final class NativeTranslationModelTests: XCTestCase {
         XCTAssertNil(model.records[key])
     }
 
+    func testOwnerApprovedExperimentalProviderCanTranslate() async {
+        let provider = UnvalidatedNativeRetranslator()
+        let model = NativeTranslationModel(retranslator: provider)
+        model.experimentalTranslationEnabled = true
+        model.ownerApprovedExperimentalProvider = true
+
+        await model.translate(key: key, original: "Aku minum kopi.")
+
+        let calls = await provider.count()
+        XCTAssertEqual(model.records[key]?.translatedText, "must not run")
+        XCTAssertEqual(calls, 1)
+    }
+
     func testCommentIsForwardedToInjectedTranslator() async {
         let provider = CapturingNativeRetranslator()
         let model = NativeTranslationModel(retranslator: provider)

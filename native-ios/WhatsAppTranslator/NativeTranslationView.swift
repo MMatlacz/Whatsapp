@@ -32,7 +32,7 @@ struct NativeTranslationCard: View {
                 }
             } else {
                 Text(model.experimentalTranslationEnabled
-                     ? "Translation is enabled. Waiting for a validated local model."
+                     ? "Translation is enabled. Waiting for the local model."
                      : "Not translated. Automatic translation is disabled.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if model.experimentalTranslationEnabled {
@@ -52,9 +52,9 @@ struct NativeTranslationCard: View {
             if let notice = model.notices[key] { Text(notice).font(.caption).foregroundStyle(.secondary) }
             if let error = model.storageError { Text(error).font(.caption).foregroundStyle(.red) }
         }
-        .task(id: model.experimentalTranslationEnabled) {
+        .task(id: [model.experimentalTranslationEnabled, model.ownerApprovedExperimentalProvider]) {
             guard model.experimentalTranslationEnabled,
-                  model.record(for: key, original: original) == nil else { return }
+                  model.record(for: key, original: original)?.parts.isEmpty != false else { return }
             await model.translate(key: key, original: original)
         }
         .sheet(item: $sheet) { selected in

@@ -119,8 +119,10 @@ This runner is diagnostic only. It does not select Qwen for production, enable f
 
 `ExperimentalTranslateGemma` is an opt-in research adapter for the locally
 provisioned TranslateGemma 4B snapshot used by the larger-model investigation.
-It remains outside the production router and never sends chat messages. The
-adapter now builds the model-specific message expected by TranslateGemma's
+The native app can route translations through it only when the device owner
+enables the persistent TranslateGemma override in Settings. It remains an
+unvalidated local provider, and its output is displayed for review rather than
+sent as a chat message. The adapter builds the model-specific message expected by TranslateGemma's
 native chat template, including `source_lang_code = id` and
 `target_lang_code = pl`; it does not hand-build a second Gemma turn or infer
 language metadata from message text.
@@ -129,7 +131,9 @@ Guidance is bounded, explicitly labelled, and separated from the target text.
 The local output gate rejects empty, interrupted, token-budget-exhausted,
 unchanged-source, and control-token output. A mechanically valid output is
 still marked `requiresHumanReview`; this package has no automatic semantic or
-Polish-quality scorer and never marks an output safe to send. Word alignment is
+Polish-quality scorer and never marks an output safe to send. The app keeps one
+verified model container resident while its process remains alive, serializes
+generation requests, and caps live output at 128 tokens. Word alignment is
 also unavailable until a separately validated alignment method exists, so a
 caller must not invent known-word mappings from the plain output.
 
