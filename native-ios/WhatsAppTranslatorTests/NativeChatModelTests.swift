@@ -1,5 +1,6 @@
 import XCTest
 import PersistenceCore
+import WhatsAppDomainCore
 @testable import WhatsAppBridgeCore
 
 @available(macOS 14, iOS 17, *)
@@ -20,6 +21,44 @@ final class NativeChatModelTests: XCTestCase {
         model[draft: chat.id] = "Do not send offline"
         XCTAssertFalse(model.canSend(chatID: chat.id))
         XCTAssertNil(model.storageNotice)
+    }
+
+    func testCachedGroupPreviewRestoresSenderName() throws {
+        let store = try SQLiteWhatsAppStore(path: ":memory:")
+        let chat = WhatsAppTransportChat(id: "family@g.us", title: "Keluarga Panjaitan", isGroup: true,
+            unreadCount: 1, lastMessageTimestampMilliseconds: 1000)
+        let sender = WhatsAppParticipantID("alice@c.us")!
+        let message = WhatsAppTransportMessage(id: "group-message", chatID: chat.id,
+            senderID: sender.rawValue, timestampMilliseconds: 1000, body: "Halo semuanya",
+            fromMe: false, quote: nil, media: nil)
+        try store.upsert(chat: WhatsAppTransportDomainMapper.chat(chat))
+        try store.upsert(participant: .init(id: sender, displayName: "Alice"))
+        try store.upsert(message: WhatsAppTransportDomainMapper.message(message))
+
+        let model = NativeChatModel(store: store)
+
+        XCTAssertEqual(model.preview(for: chat.id), "Alice: Halo semuanya")
+        XCTAssertEqual(model.identities[sender.rawValue]?.name, "Alice")
+    }
+
+    func testIdentityPhotoAndNameAreFetchedOnceAndCached() async throws {
+        let chat = WhatsAppTransportChat(id: "family@g.us", title: "Keluarga Panjaitan", isGroup: true,
+            unreadCount: 0, lastMessageTimestampMilliseconds: nil)
+        let senderID = "alice@c.us"
+        let provider = RecordingIdentityProvider(identity: .init(name: "Alice", photo: Data([1, 2, 3])))
+        let model = NativeChatModel(
+            transport: ReadyChatTransport(chat: chat),
+            store: try SQLiteWhatsAppStore(path: ":memory:"),
+            identityProvider: provider
+        )
+        try await model.connect()
+
+        await model.loadIdentity(for: senderID)
+        await model.loadIdentity(for: senderID)
+
+        XCTAssertEqual(model.identities[senderID], .init(name: "Alice", photo: Data([1, 2, 3])))
+        let calls = await provider.callCount
+        XCTAssertEqual(calls, 1)
     }
 
     func testComposerDraftRestoresAcrossModelRecreation() async throws {
@@ -66,7 +105,7 @@ final class NativeChatModelTests: XCTestCase {
         let chatID = "sample-alex"
         model[draft: chatID] = " \n "
         XCTAssertFalse(model.canSend(chatID: chatID))
-        model.quotes[chatID] = model.messages[chatID]?.first
+        model.setReply(model.messages[chatID]?.first, chatID: chatID)
         let quoteID = model.quotes[chatID]?.id
         model[draft: chatID] = "A local reply"
         await model.send(chatID: chatID)
@@ -93,10 +132,10 @@ final class NativeChatModelTests: XCTestCase {
         let model = NativeChatModel(transport: FailingNativeTransport())
         try await model.connect()
         model[draft: "test-chat"] = "Keep this draft"
-        model.quotes["test-chat"] = .init(
+        model.setReply(.init(
             id: "quote", chatID: "test-chat", senderID: nil, timestampMilliseconds: 1,
             body: "Original", fromMe: false, quote: nil, media: nil
-        )
+        ), chatID: "test-chat")
         await model.send(chatID: "test-chat")
         XCTAssertEqual(model[draft: "test-chat"], "Keep this draft")
         XCTAssertEqual(model.quotes["test-chat"]?.id, "quote")
@@ -105,6 +144,64 @@ final class NativeChatModelTests: XCTestCase {
         XCTAssertNil(model.messages["test-chat"])
         model.openSamples()
         XCTAssertFalse(model.isSample)
+    }
+
+    func testUncertainSendRequiresFreshHistoryAndExplicitResolution() async throws {
+        let chat = WhatsAppTransportChat(id: "test-chat", title: "Test", isGroup: false,
+            unreadCount: 0, lastMessageTimestampMilliseconds: 1_000)
+        let oldSameBody = WhatsAppTransportMessage(
+            id: "old-message", chatID: chat.id, senderID: nil, timestampMilliseconds: 1_000,
+            body: "Keep this draft", fromMe: true, quote: nil, media: nil
+        )
+        let model = NativeChatModel(
+            transport: ReadyChatTransport(chat: chat, history: [oldSameBody]),
+            store: try SQLiteWhatsAppStore(path: ":memory:")
+        )
+        try await model.connect()
+        model[draft: chat.id] = "Keep this draft"
+
+        await model.send(chatID: chat.id)
+        XCTAssertTrue(model.uncertainSends.contains(chat.id))
+        XCTAssertFalse(model.canSend(chatID: chat.id))
+
+        model.resolveUncertainSend(chatID: chat.id)
+        XCTAssertTrue(model.uncertainSends.contains(chat.id))
+
+        await model.load(chatID: chat.id)
+        XCTAssertTrue(model.historyCheckedAfterUncertainSends.contains(chat.id))
+        XCTAssertFalse(model.canSend(chatID: chat.id))
+
+        model.resolveUncertainSend(chatID: chat.id)
+        XCTAssertFalse(model.uncertainSends.contains(chat.id))
+        XCTAssertTrue(model.canSend(chatID: chat.id))
+    }
+
+    func testReplyAndUncertainSendRestoreAcrossModelRecreation() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let chat = WhatsAppTransportChat(id: "restore@c.us", title: "Restore", isGroup: false,
+            unreadCount: 0, lastMessageTimestampMilliseconds: 1_000)
+        let quoted = WhatsAppTransportMessage(
+            id: "quoted", chatID: chat.id, senderID: "contact@c.us", timestampMilliseconds: 1_000,
+            body: "Original", fromMe: false, quote: nil, media: nil
+        )
+        do {
+            let store = try SQLiteWhatsAppStore(path: url.path)
+            try store.upsert(chat: WhatsAppTransportDomainMapper.chat(chat))
+            try store.upsert(message: WhatsAppTransportDomainMapper.message(quoted))
+            let model = NativeChatModel(transport: ReadyChatTransport(chat: chat), store: store)
+            try await model.connect()
+            model[draft: chat.id] = "Keep after relaunch"
+            model.setReply(quoted, chatID: chat.id)
+            await model.send(chatID: chat.id)
+            XCTAssertTrue(model.uncertainSends.contains(chat.id))
+        }
+
+        let restored = NativeChatModel(store: try SQLiteWhatsAppStore(path: url.path))
+        XCTAssertEqual(restored[draft: chat.id], "Keep after relaunch")
+        XCTAssertEqual(restored.quotes[chat.id]?.id, quoted.id)
+        XCTAssertTrue(restored.uncertainSends.contains(chat.id))
+        XCTAssertFalse(restored.canSend(chatID: chat.id))
     }
 }
 
@@ -126,4 +223,40 @@ private struct FailingNativeTransport: WhatsAppTransport {
         throw WhatsAppWebTransportError.bridgeUnavailable("test-offline")
     }
     func eventStream() async -> AsyncStream<WhatsAppTransportEvent> { AsyncStream { $0.finish() } }
+}
+
+private struct ReadyChatTransport: WhatsAppTransport {
+    let chat: WhatsAppTransportChat
+    var history: [WhatsAppTransportMessage] = []
+
+    func connect() async throws {}
+    func connectionState() async throws -> WhatsAppTransportConnectionState { .ready }
+    func listChats() async throws -> [WhatsAppTransportChat] { [chat] }
+    func loadMessages(chatID: String, cursor: WhatsAppTransportMessageCursor?,
+                      limit: Int) async throws -> WhatsAppTransportMessagePage {
+        .init(messages: history, nextCursor: nil)
+    }
+    func sendText(_ text: String, to chatID: String) async throws -> WhatsAppTransportMessage {
+        throw WhatsAppWebTransportError.bridgeUnavailable("test")
+    }
+    func reply(_ text: String, to messageID: String, in chatID: String) async throws -> WhatsAppTransportMessage {
+        throw WhatsAppWebTransportError.bridgeUnavailable("test")
+    }
+    func eventStream() async -> AsyncStream<WhatsAppTransportEvent> {
+        AsyncStream { _ in }
+    }
+}
+
+private actor RecordingIdentityProvider: NativeContactIdentityProvider {
+    let identity: NativeContactIdentity
+    private(set) var callCount = 0
+
+    init(identity: NativeContactIdentity) {
+        self.identity = identity
+    }
+
+    func identity(for id: String) async throws -> NativeContactIdentity {
+        callCount += 1
+        return identity
+    }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
-import CoreImage.CIFilterBuiltins
 import WebKit
+import ImageIO
 
 @MainActor
 struct WhatsAppRootView: View {
@@ -14,7 +14,8 @@ struct WhatsAppRootView: View {
         let runtime = WhatsAppWebKitBridgeRuntime()
         _runtime = State(initialValue: runtime)
         _model = State(initialValue: NativeChatModel.applicationModel(
-            transport: WhatsAppWebTransport(runtime: runtime)))
+            transport: WhatsAppWebTransport(runtime: runtime),
+            identityProvider: runtime))
     }
 
     var body: some View {
@@ -28,7 +29,12 @@ struct WhatsAppRootView: View {
                         Section("Connection") {
                             Text("Connection: \(model.connectionState.rawValue)")
                             Button("Link WhatsApp") { showingPairing = true }
-                            Button("Reconnect saved session") { Task { await model.reconnect() } }
+                            Button("Reconnect saved session") {
+                                Task {
+                                    runtime.prepareSessionPreservingReload()
+                                    await model.reconnect()
+                                }
+                            }
                                 .disabled(model.isConnecting)
                             if let notice = model.connectionNotice { Text(notice).font(.footnote) }
                             Button("Check connection details") {
@@ -39,8 +45,8 @@ struct WhatsAppRootView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Section("Translation") {
-                            Label("Translation disabled", systemImage: "hand.raised")
-                            Text("Model quality must pass validation before real messages can be translated.")
+                            Text("Automatic translation is disabled until a model passes the quality and device stability gates.")
+                                .font(.footnote).foregroundStyle(.secondary)
                         }
                         Section("Interface testing") {
                             Button("Open local sample chats") { showingSamples = true }
@@ -96,63 +102,110 @@ private struct NativePairingView: View {
     let model: NativeChatModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @State private var qrImage: CGImage?
-    @State private var notice = "Preparing a linking code…"
+    @State private var phoneNumber = ""
+    @State private var linkingCode: String?
+    @State private var requestingCode = false
+    @State private var notice = "Enter your WhatsApp number including country code."
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    Text("On your primary phone, open WhatsApp → Settings → Linked Devices → Link a Device, then scan this code.")
-                    if let qrImage {
-                        Image(decorative: qrImage, scale: 1)
-                            .interpolation(.none).resizable().scaledToFit()
-                            .frame(maxWidth: 300).padding(24).background(.white)
-                            .accessibilityLabel("WhatsApp linking QR code")
-                            .privacySensitive()
-                    } else {
-                        ProgressView().accessibilityLabel("Waiting for linking code")
+                    Text("Link this app with the phone number of your primary WhatsApp account.")
+                    TextField("Phone number with country code", text: $phoneNumber)
+                        .textFieldStyle(.roundedBorder)
+                        .privacySensitive()
+                        .textContentType(.telephoneNumber)
+                    Button {
+                        Task { await requestPhoneCode(refresh: false) }
+                    } label: {
+                        Label(requestingCode ? "Requesting code…" : "Get linking code", systemImage: "number")
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(requestingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if let linkingCode {
+                        VStack(spacing: 10) {
+                            Text("Enter this code on your primary phone")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            Text(linkingCode)
+                                .font(.system(.title2, design: .monospaced).weight(.semibold))
+                                .textSelection(.enabled)
+                                .privacySensitive()
+                                .accessibilityLabel("WhatsApp phone linking code")
+                            HStack {
+                                Button("Refresh code") {
+                                    Task { await requestPhoneCode(refresh: true) }
+                                }
+                                .disabled(requestingCode)
+                                Button("Cancel code") {
+                                    self.linkingCode = nil
+                                    Task { await runtime.cancelPhoneNumberLinking() }
+                                }
+                                .disabled(requestingCode)
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.green.opacity(0.12), in: .rect(cornerRadius: 12))
+                    }
+                    Text("On your primary phone, open WhatsApp → Settings → Linked Devices → Link with phone number, then enter the code above.")
+                        .font(.footnote)
                     Text(notice).font(.footnote)
-                    Text("Keep this code private. Linking must be approved on your primary phone.")
+                    Text("Keep your phone number and code private. Linking must be approved on your primary phone.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }.padding()
             }
             .navigationTitle("Link WhatsApp")
             .toolbar { Button("Close") { dismiss() } }
             .task(id: scenePhase) {
-                guard scenePhase == .active else { qrImage = nil; return }
+                guard scenePhase == .active else { return }
                 await refreshUntilLinked()
             }
-            .onDisappear { qrImage = nil }
+            .onDisappear {
+                linkingCode = nil
+                Task { await runtime.cancelPhoneNumberLinking() }
+            }
         }
     }
 
     private func refreshUntilLinked() async {
         while !Task.isCancelled {
-            do {
-                if model.connectionState == .ready { qrImage = nil; dismiss(); return }
-                let code = try await runtime.pairingCode()
-                try Task.checkCancellation()
-                if let code {
-                    let filter = CIFilter.qrCodeGenerator()
-                    filter.message = Data(code.utf8)
-                    filter.correctionLevel = "M"
-                    if let output = filter.outputImage {
-                        qrImage = CIContext().createCGImage(output, from: output.extent)
-                    }
-                    notice = "Scan with your primary phone. The code updates automatically."
-                } else {
-                    qrImage = nil
-                    notice = "Waiting for WhatsApp to provide a code or finish linking…"
-                }
-                try await Task.sleep(for: .seconds(3))
-            } catch is CancellationError { return }
-            catch {
-                qrImage = nil
-                notice = "Could not load the linking code. Close this screen and reconnect to retry."
+            if model.connectionState == .ready {
+                linkingCode = nil
+                dismiss()
                 return
             }
+            if model.connectionState == .disconnected {
+                notice = "Waiting for the saved WhatsApp session. Reconnect if the page is offline."
+            }
+            try? await Task.sleep(for: .seconds(1))
+        }
+    }
+
+    private func requestPhoneCode(refresh: Bool) async {
+        guard !requestingCode else { return }
+        requestingCode = true
+        defer { requestingCode = false }
+        do {
+            let code = refresh
+                ? try await runtime.refreshPhoneNumberLinking()
+                : try await runtime.startPhoneNumberLinking(phone: phoneNumber)
+            try Task.checkCancellation()
+            linkingCode = code
+            notice = "Code ready. Approve linking on your primary phone."
+        } catch is CancellationError {
+            return
+        } catch let error as WhatsAppWebTransportError {
+            switch error {
+            case .invalidArgument:
+                notice = "Enter a valid phone number with country code."
+            case .bridgeUnavailable:
+                notice = "WhatsApp is not ready to create a phone linking code. Reconnect and try again."
+            default:
+                notice = "WhatsApp could not create a linking code. Try again after reconnecting."
+            }
+        } catch {
+            notice = "WhatsApp could not create a linking code. Try again after reconnecting."
         }
     }
 }
@@ -192,7 +245,8 @@ private struct NativeChatList: View {
                 }
                 ForEach(model.visibleChats, id: \.id) { chat in
                     NavigationLink(value: chat.id) {
-                        NativeChatRow(chat: chat, preview: model.preview(for: chat.id))
+                        NativeChatRow(chat: chat, preview: model.preview(for: chat.id), identity: model.identities[chat.id])
+                            .task(id: model.connectionState) { await model.loadIdentity(for: chat.id) }
                     }
                 }
             }
@@ -225,13 +279,14 @@ private struct NativeChatList: View {
 private struct NativeChatRow: View {
     let chat: WhatsAppTransportChat
     let preview: String
+    let identity: NativeContactIdentity?
 
     var body: some View {
         HStack(spacing: 12) {
-            NativeAvatar(title: chat.title, isGroup: chat.isGroup)
+            NativeAvatar(title: chat.title, isGroup: chat.isGroup, photo: identity?.photo)
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text(chat.title).font(.headline).lineLimit(1)
+                    Text(chat.isGroup ? chat.title : identity?.name ?? chat.title).font(.headline).lineLimit(1)
                     Spacer()
                     if let time = chat.lastMessageTimestampMilliseconds {
                         Text(Date(timeIntervalSince1970: Double(time) / 1_000), format: .dateTime.hour().minute())
@@ -258,12 +313,20 @@ private struct NativeChatRow: View {
 private struct NativeAvatar: View {
     let title: String
     let isGroup: Bool
-    @ScaledMetric private var size = 48.0
+    var photo: Data? = nil
+    var size = 48.0
 
     var body: some View {
         ZStack {
             Circle().fill(.green.opacity(0.15))
-            if isGroup {
+            if let photo, let source = CGImageSourceCreateWithData(photo as CFData, nil),
+               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: 192,
+                kCGImageSourceCreateThumbnailWithTransform: true
+               ] as CFDictionary) {
+                Image(decorative: image, scale: 1).resizable().scaledToFill()
+            } else if isGroup {
                 Image(systemName: "person.2.fill")
             } else {
                 Text(String(title.prefix(1)).uppercased()).font(.title3.bold())
@@ -271,6 +334,7 @@ private struct NativeAvatar: View {
         }
         .foregroundStyle(.green)
         .frame(width: size, height: size)
+        .clipShape(Circle())
         .accessibilityHidden(true)
     }
 }
@@ -278,6 +342,25 @@ private struct NativeAvatar: View {
 private struct NativeConversation: View {
     @Bindable var model: NativeChatModel
     let chatID: String
+
+    private func senderName(for message: WhatsAppTransportMessage) -> String? {
+        guard !message.fromMe, let senderID = message.senderID,
+              model.chats.first(where: { $0.id == chatID })?.isGroup == true else { return nil }
+        return model.identities[senderID]?.name ?? "Group participant"
+    }
+
+    private func senderIdentity(for message: WhatsAppTransportMessage) -> NativeContactIdentity? {
+        guard !message.fromMe, let senderID = message.senderID,
+              model.chats.first(where: { $0.id == chatID })?.isGroup == true else { return nil }
+        return model.identities[senderID]
+    }
+
+    private func quoteSenderName(for message: WhatsAppTransportMessage) -> String? {
+        guard let senderID = message.quote?.senderID else { return nil }
+        return model.identities[senderID]?.name
+            ?? (model.chats.first(where: { $0.id == chatID })?.isGroup == true
+                ? "Group participant" : "Contact")
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -291,10 +374,22 @@ private struct NativeConversation: View {
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in
                         NativeMessageBubble(message: message, translations: model.translations,
-                                            translationKey: model.translationKey(chatID: chatID, messageID: message.id))
+                                            translationKey: model.translationKey(chatID: chatID, messageID: message.id),
+                                            senderName: senderName(for: message),
+                                            senderIdentity: senderIdentity(for: message),
+                                            quoteSenderName: quoteSenderName(for: message))
+                            .task(id: model.connectionState) {
+                                if !message.fromMe, let senderID = message.senderID,
+                                   model.chats.first(where: { $0.id == chatID })?.isGroup == true {
+                                    await model.loadIdentity(for: senderID)
+                                }
+                                if let quoteSenderID = message.quote?.senderID {
+                                    await model.loadIdentity(for: quoteSenderID)
+                                }
+                            }
                             .contextMenu {
                                 Button("Reply", systemImage: "arrowshape.turn.up.left") {
-                                    model.quotes[chatID] = message
+                                    model.setReply(message, chatID: chatID)
                                 }
                             }
                             .id(message.id)
@@ -311,11 +406,24 @@ private struct NativeConversation: View {
             }
             .safeAreaInset(edge: .bottom) { NativeComposer(model: model, chatID: chatID) }
             .navigationTitle(model.title(for: chatID))
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack {
+                        NativeAvatar(title: model.title(for: chatID),
+                                     isGroup: model.chats.first { $0.id == chatID }?.isGroup ?? false,
+                                     photo: model.identities[chatID]?.photo)
+                        Text(model.title(for: chatID)).font(.headline).lineLimit(1)
+                    }
+                }
+            }
+            .task(id: model.connectionState) {
+                await model.loadIdentity(for: chatID)
+                await model.load(chatID: chatID)
+            }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarVisibility(.hidden, for: .tabBar)
             #endif
-            .task { await model.load(chatID: chatID) }
         }
     }
 }
@@ -324,31 +432,54 @@ private struct NativeMessageBubble: View {
     let message: WhatsAppTransportMessage
     let translations: NativeTranslationModel
     let translationKey: NativeTranslationKey
+    let senderName: String?
+    let senderIdentity: NativeContactIdentity?
+    let quoteSenderName: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if let quote = message.quote {
-                Text(quote.body ?? "Quoted message")
-                    .font(.subheadline).foregroundStyle(.secondary)
-                    .padding(8).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.primary.opacity(0.06), in: .rect(cornerRadius: 8))
+        HStack(alignment: .top, spacing: 8) {
+            if let senderName {
+                NativeAvatar(title: senderName, isGroup: false, photo: senderIdentity?.photo, size: 30)
+                    .padding(.top, 8)
             }
-            if let body = message.body {
-                NativeTranslationCard(model: translations, key: translationKey, original: body)
-            } else {
-                Text("Unsupported attachment")
+            VStack(alignment: .leading, spacing: 6) {
+                if let senderName {
+                    Text(senderName).font(.caption.bold()).foregroundStyle(.green)
+                }
+                if let quote = message.quote {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let quoteSenderName {
+                            Text(quoteSenderName).font(.caption.bold()).foregroundStyle(.green)
+                        }
+                        Text(quote.body ?? "Quoted message")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                        .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.primary.opacity(0.06), in: .rect(cornerRadius: 8))
+                }
+                if let body = message.body {
+                    NativeTranslationCard(model: translations, key: translationKey, original: body)
+                }
+                if let media = message.media {
+                    Label(media.filename ?? media.kind.rawValue.capitalized, systemImage: "paperclip")
+                    Text("Attachment preview is not available yet.").font(.caption).foregroundStyle(.secondary)
+                } else if message.body == nil {
+                    Text("Message content is unavailable")
+                }
+                HStack(spacing: 4) {
+                    Text(Date(timeIntervalSince1970: Double(message.timestampMilliseconds) / 1_000),
+                         format: .dateTime.hour().minute())
+                    if message.fromMe, let deliveryState = message.deliveryState {
+                        Label(deliveryState.displayName, systemImage: deliveryState.systemImage)
+                    }
+                }
+                .font(.caption2).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            HStack(spacing: 4) {
-                Text(Date(timeIntervalSince1970: Double(message.timestampMilliseconds) / 1_000),
-                     format: .dateTime.hour().minute())
-                if message.fromMe { Text("Accepted") }
-            }
-            .font(.caption2).foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(12)
+            .background(message.fromMe ? Color.green.opacity(0.20) : Color.secondary.opacity(0.10),
+                        in: .rect(cornerRadius: 16))
         }
-        .padding(12)
-        .background(message.fromMe ? Color.green.opacity(0.20) : Color.secondary.opacity(0.10),
-                    in: .rect(cornerRadius: 16))
         .containerRelativeFrame(.horizontal, count: 6, span: 5, spacing: 0)
         .frame(maxWidth: .infinity, alignment: message.fromMe ? .trailing : .leading)
         .accessibilityElement(children: .contain)
@@ -366,8 +497,27 @@ private struct NativeComposer: View {
                     Label(quote.body ?? "Message", systemImage: "arrowshape.turn.up.left")
                         .lineLimit(2).font(.footnote)
                     Spacer()
-                    Button("Cancel reply", systemImage: "xmark.circle.fill") { model.quotes[chatID] = nil }
+                    Button("Cancel reply", systemImage: "xmark.circle.fill") {
+                        model.setReply(nil, chatID: chatID)
+                    }
                         .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                }
+            }
+            if model.uncertainSends.contains(chatID) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(model.historyCheckedAfterUncertainSends.contains(chatID)
+                         ? "This send is still unconfirmed after refreshing history."
+                         : "This send may already have been delivered. Refresh history before retrying.")
+                        .font(.footnote).foregroundStyle(.orange)
+                    HStack {
+                        Button("Refresh conversation") {
+                            Task { await model.load(chatID: chatID) }
+                        }
+                        .disabled(model.loadingHistory.contains(chatID))
+                        if model.historyCheckedAfterUncertainSends.contains(chatID) {
+                            Button("Allow retry") { model.resolveUncertainSend(chatID: chatID) }
+                        }
+                    }
                 }
             }
             if let error = model.errors[chatID] {

@@ -7,6 +7,7 @@
     const GLOBAL_ADAPTER = '__waTranslatorRuntimeAdapter';
     const VALID_STATES = new Set(['disconnected', 'connecting', 'authenticating', 'syncing', 'ready']);
     const VALID_MEDIA_KINDS = new Set(['image', 'video', 'audio', 'document', 'sticker', 'other']);
+    const VALID_DELIVERY_STATES = new Set(['pending', 'sent', 'delivered', 'read', 'played', 'failed']);
 
     if (globalThis[GLOBAL_BRIDGE]?.version === BRIDGE_VERSION) {
         return;
@@ -49,6 +50,14 @@
     const optionalNonNegativeInteger = (value, field) => {
         if (value === null || value === undefined) return null;
         return nonNegativeInteger(value, field);
+    };
+
+    const optionalDeliveryState = (value, field) => {
+        if (value === null || value === undefined) return null;
+        if (typeof value !== 'string' || !VALID_DELIVERY_STATES.has(value)) {
+            throw new BridgeError('invalid-adapter-payload', field);
+        }
+        return value;
     };
 
     const postWireMessage = (message) => {
@@ -134,6 +143,7 @@
             ),
             body: optionalString(value.body, 'message.body'),
             fromMe: Boolean(value.fromMe),
+            deliveryState: optionalDeliveryState(value.deliveryState, 'message.deliveryState'),
             quote: normalizeQuote(value.quote),
             media: normalizeMedia(value.media)
         };

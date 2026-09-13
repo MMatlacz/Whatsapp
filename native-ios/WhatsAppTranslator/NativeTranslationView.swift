@@ -33,7 +33,14 @@ struct NativeTranslationCard: View {
             } else {
                 Text("Not translated. Automatic translation is disabled.")
                     .font(.subheadline).foregroundStyle(.secondary)
+                if model.experimentalTranslationEnabled {
+                    Button("Translate experimentally", systemImage: "character.bubble") {
+                        Task { await model.translate(key: key, original: original) }
+                    }
+                    .disabled(model.running.contains(key))
+                }
             }
+            if model.running.contains(key) { ProgressView("Translating locally…") }
             ViewThatFits(in: .horizontal) {
                 HStack { correctionButton; wordsButton }
                 VStack(alignment: .leading) { correctionButton; wordsButton }

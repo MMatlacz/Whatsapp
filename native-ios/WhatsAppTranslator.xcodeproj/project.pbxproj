@@ -113,6 +113,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A10000000000000000000061 /* Build configuration list for PBXNativeTarget "WhatsAppTranslator" */;
 			buildPhases = (
+				D40000000000000000000001 /* Verify generated transport runtime */,
 				A10000000000000000000021 /* Sources */,
 				A10000000000000000000020 /* Frameworks */,
 				A10000000000000000000022 /* Resources */,
@@ -180,6 +181,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D40000000000000000000001 /* Verify generated transport runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/BridgeRuntime/adapter.js",
+				"$(SRCROOT)/BridgeRuntime/bundle.cjs",
+				"$(SRCROOT)/BridgeRuntime/generated/WhatsAppRuntime.js",
+			);
+			name = "Verify generated transport runtime";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/BridgeRuntime\"\n/usr/bin/env node bundle.cjs --check\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10000000000000000000021 /* Sources */ = {
