@@ -86,8 +86,38 @@ final class NativeTranslationModelTests: XCTestCase {
         XCTAssertEqual(request?.comment, "More natural")
         XCTAssertEqual(request?.original, "Aku minum kopi.")
         XCTAssertEqual(request?.previousTranslation, "Piję kawę.")
+        XCTAssertEqual(request?.userInitiated, true)
         XCTAssertEqual(model.records[key]?.translatedText, "Test result")
         XCTAssertTrue(model.running.isEmpty)
+    }
+
+    func testAutomaticTranslationIsMarkedAsBackgroundWork() async {
+        let provider = CapturingNativeRetranslator()
+        let model = NativeTranslationModel(retranslator: provider)
+        model.experimentalTranslationEnabled = true
+
+        await model.translate(key: key, original: "Aku minum kopi.")
+
+        let request = await provider.request
+        XCTAssertEqual(request?.userInitiated, false)
+        XCTAssertEqual(model.notices[key], "Translation updated.")
+    }
+
+    func testManualRetranslationReportsWhenModelReturnsSameText() async {
+        let provider = SameTranslationNativeRetranslator(parts: parts)
+        let model = NativeTranslationModel(retranslator: provider)
+        model.seedSample(key: key, original: "Aku minum kopi.", parts: parts)
+
+        await model.retranslate(
+            key: key,
+            original: "Aku minum kopi.",
+            comment: "Explain the difference between beras and nasi"
+        )
+
+        XCTAssertEqual(
+            model.notices[key],
+            "The model returned the same translation. Your comment was saved; try a more specific instruction."
+        )
     }
 
     func testLateRetranslationCannotOverwriteManualCorrection() async {
@@ -245,6 +275,15 @@ private actor CapturingNativeRetranslator: NativeRetranslator {
     func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
         self.request = request
         return [.init(id: "result", source: nil, translation: "Test result")]
+    }
+}
+
+private struct SameTranslationNativeRetranslator: NativeRetranslator {
+    nonisolated let isValidated = true
+    let parts: [NativeTranslationPart]
+
+    func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
+        parts
     }
 }
 

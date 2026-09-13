@@ -148,9 +148,10 @@ private struct NativeRetranslationEditor: View {
                 Section("What should change?") {
                     TextField("For example: keep the informal tone; this refers to tomorrow", text: $comment, axis: .vertical)
                         .lineLimit(3...8).accessibilityIdentifier("translation-comment")
-                    Text("Your comment is saved locally. Until a validated engine is enabled, no retranslation runs and your existing translation is kept.")
+                    Text("Your comment is saved locally and applied to the revised Polish output. Ask for a brief explanation when a term needs context.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                if model.running.contains(key) { ProgressView("Applying comment locally…") }
                 if let notice = model.notices[key] { Text(notice).font(.footnote) }
                 if let error = model.storageError { Text(error).foregroundStyle(.red) }
                 Button("Retranslate with comment") {
