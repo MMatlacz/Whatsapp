@@ -7,6 +7,7 @@ import UIKit
 
 @MainActor
 struct WhatsAppRootView: View {
+    @AppStorage("translation.enabled") private var translationEnabled = true
     @State private var runtime: WhatsAppWebKitBridgeRuntime
     @State private var model: NativeChatModel
     @State private var showingSamples = false
@@ -48,7 +49,10 @@ struct WhatsAppRootView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Section("Translation") {
-                            Text("Automatic translation is disabled until a model passes the quality and device stability gates.")
+                            Toggle("Translate messages", isOn: $translationEnabled)
+                            Text(translationEnabled
+                                 ? "Translation stays enabled. Messages run only through a model that has passed the quality and device stability gates."
+                                 : "Translation is turned off.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         Section("Interface testing") {
@@ -76,7 +80,13 @@ struct WhatsAppRootView: View {
                 Text(notice).font(.footnote).padding().background(.yellow.opacity(0.2))
             }
         }
-        .task { await model.reconnect() }
+        .task {
+            model.translations.experimentalTranslationEnabled = translationEnabled
+            await model.reconnect()
+        }
+        .onChange(of: translationEnabled) { _, enabled in
+            model.translations.experimentalTranslationEnabled = enabled
+        }
         .sheet(isPresented: $showingSamples) { NativeSampleBrowser() }
         .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
     }
@@ -409,7 +419,10 @@ private struct NativeConversation: View {
                         Button("Load older messages") { Task { await model.load(chatID: chatID, older: true) } }
                             .disabled(model.loadingHistory.contains(chatID))
                     }
-                    Text(model.isSample ? "LOCAL SAMPLE · NO NETWORK" : "Translation disabled")
+                    Text(model.isSample ? "LOCAL SAMPLE · NO NETWORK"
+                         : model.translations.experimentalTranslationEnabled
+                            ? "Translation enabled"
+                            : "Translation disabled")
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in
                         NativeMessageBubble(message: message, translations: model.translations,

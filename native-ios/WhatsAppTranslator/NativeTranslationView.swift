@@ -31,10 +31,12 @@ struct NativeTranslationCard: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             } else {
-                Text("Not translated. Automatic translation is disabled.")
+                Text(model.experimentalTranslationEnabled
+                     ? "Translation is enabled. Waiting for a validated local model."
+                     : "Not translated. Automatic translation is disabled.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if model.experimentalTranslationEnabled {
-                    Button("Translate experimentally", systemImage: "character.bubble") {
+                    Button("Translate now", systemImage: "character.bubble") {
                         Task { await model.translate(key: key, original: original) }
                     }
                     .disabled(model.running.contains(key))
@@ -49,6 +51,11 @@ struct NativeTranslationCard: View {
                 .font(.caption).disabled(model.running.contains(key))
             if let notice = model.notices[key] { Text(notice).font(.caption).foregroundStyle(.secondary) }
             if let error = model.storageError { Text(error).font(.caption).foregroundStyle(.red) }
+        }
+        .task(id: model.experimentalTranslationEnabled) {
+            guard model.experimentalTranslationEnabled,
+                  model.record(for: key, original: original) == nil else { return }
+            await model.translate(key: key, original: original)
         }
         .sheet(item: $sheet) { selected in
             switch selected {
