@@ -111,9 +111,9 @@ establish sustained physical-device stability or approval to merge.
 Physical-device preparation: on 2026-09-13 the iPhone 15 Pro Max was available. The
 latest native app built and signed without package-plugin or macro-validation bypasses,
 updated the existing installation in place, and launched through devicectl. No data
-container was erased. This proves installation/launch only; authenticated phone UI,
-sustained workload, combined app/WebKit memory, thermal behavior and model acceptance
-remain unverified.
+container was erased. Phone-number linking then completed through the official WhatsApp
+flow. The native chat list, real history, an authorized self-send reaching Read and
+linked-session restoration after relaunch were observed on the phone.
 
 Sanitized physical linking-screen baseline on 2026-09-13: a 121.081-second Instruments
 Activity Monitor capture collected 55 simultaneous samples across the app, WebContent,
@@ -124,9 +124,20 @@ terminating only the app, while unrelated WebKit remained. The phone was still o
 linking screen and unauthenticated, with no model or sustained authenticated workload;
 this is a baseline only and does not satisfy #122.
 
-A later launch succeeded after the phone became available. The operator must confirm
-whether the app restored an authenticated native chat list or requires the memory-only
-phone-number linking flow before sustained tracing begins.
+An authenticated 121.404-second all-process Activity Monitor trace then exercised the
+native chat list, self history and Keluarga O. Panjaitan group history while the hidden
+WebKit transport remained active. The matched app, WebContent, GPU and Networking group
+peaked at 975,918,344 bytes (about 930.708 MiB) combined physical footprint; the peak
+combined real-memory signal was 1,413,840,896 bytes. Thermal state remained Nominal.
+Process attribution was checked by terminating only the app: the three matched WebKit
+processes exited with it while older unrelated WebKit processes remained. The linked
+session and native chats restored on relaunch. The sanitized measurement is in
+`authenticated-webkit-memory-baseline.json`.
+
+This is a bounded authenticated baseline with translation intent enabled but no
+validated translation provider loaded. It is not the selected-model concurrency,
+memory-pressure, background/foreground or sustained-duration evidence required by
+#122, and it does not establish a production phone memory budget. Keep #122 open.
 
 TranslateGemma glossary guidance reduced the provisional review from 10 to 5 major
 errors across the same 36 cases, with 18 minor and 13 acceptable outputs. The run used
