@@ -4,7 +4,7 @@ import XCTest
 @available(macOS 14, iOS 17, *)
 @MainActor
 final class NativeChatModelTests: XCTestCase {
-    func testStartsWithoutFakeAccountOrChats() {
+    func testStartsWithoutFakeAccountOrChats() async {
         let model = NativeChatModel()
         XCTAssertFalse(model.isSample)
         XCTAssertTrue(model.chats.isEmpty)
@@ -12,7 +12,7 @@ final class NativeChatModelTests: XCTestCase {
         XCTAssertFalse(model.canSend(chatID: "unknown"))
     }
 
-    func testSearchAndFilters() {
+    func testSearchAndFilters() async {
         let model = NativeChatModel()
         model.openSamples()
         XCTAssertEqual(model.visibleChats.count, 3)
