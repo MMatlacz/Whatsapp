@@ -64,9 +64,16 @@ test('keeps the requested chat ID stable across the public phone/LID mapping', a
     const page = await adapter.loadMessages({ chatID: '491234@c.us', limit: 1 });
     assert.equal(page.messages[0].chatID, '491234@c.us');
 });
-test('retries transient phone/LID alias resolution instead of caching the failure', async () => {
+test('retries transient phone/LID alias resolution without returning a partial page', async () => {
     const { adapter, wpp, raw } = fixture();
-    raw.id.remote = { _serialized: '987654@lid' };
+    raw.id.remote = { _serialized: '491234@c.us' };
+    const lidRow = {
+        ...raw,
+        id: { _serialized: 'message-lid', remote: { _serialized: '987654@lid' }, fromMe: false },
+        t: 99,
+        from: { _serialized: '987654@lid' }
+    };
+    wpp.chat.getMessages = async () => [raw, lidRow];
     let attempts = 0;
     wpp.contact = {
         getPnLidEntry: async (value) => {
@@ -78,10 +85,25 @@ test('retries transient phone/LID alias resolution instead of caching the failur
                 : { phoneNumber: { _serialized: '491234@c.us' }, lid: { _serialized: '987654@lid' } };
         }
     };
-    await assert.rejects(adapter.loadMessages({ chatID: '491234@c.us', limit: 1 }), /cross-chat-history/);
-    const page = await adapter.loadMessages({ chatID: '491234@c.us', limit: 1 });
-    assert.equal(page.messages[0].chatID, '491234@c.us');
-    assert.ok(attempts >= 4);
+    await assert.rejects(
+        adapter.loadMessages({ chatID: '491234@c.us', limit: 2 }),
+        (error) => error?.code === 'chat-identity-unresolved'
+    );
+    const page = await adapter.loadMessages({ chatID: '491234@c.us', limit: 2 });
+    assert.deepEqual(page.messages.map((message) => message.id), ['message-lid', 'message-1']);
+    assert.ok(page.messages.every((message) => message.chatID === '491234@c.us'));
+    assert.equal(page.nextCursor.beforeMessageID, 'message-lid');
+    assert.equal(attempts, 4);
+});
+test('treats unavailable phone/LID resolver as retryable unknown identity', async () => {
+    const { adapter, wpp, raw } = fixture();
+    raw.id.remote = { _serialized: '987654@lid' };
+    wpp.contact = {};
+    await assert.rejects(
+        adapter.loadMessages({ chatID: '491234@c.us', limit: 1 }),
+        (error) => error?.code === 'chat-identity-unresolved'
+            && error?.reason === 'alias-resolver-unavailable'
+    );
 });
 test('isolates malformed history rows and advances with the raw page boundary', async () => {
     const { adapter, wpp, raw } = fixture();
