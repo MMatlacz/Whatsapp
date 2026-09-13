@@ -3,6 +3,7 @@ import QwenMLXDiagnosticAdapter
 
 actor TranslateGemmaChatRetranslator: NativeRetranslator {
     nonisolated let isValidated = false
+    private static let manualRevisionPrefix = "Revise the Polish output according to the request below. If it asks about a term or comparison, include a brief Polish explanation after the translation."
     private static let sharedApplicationProvider: TranslateGemmaChatRetranslator = {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
@@ -24,7 +25,7 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
     }
 
     func preload() async throws {
-        try acquireInferenceSlot()
+        try await acquireInferenceSlot(waitIfBusy: false)
         defer { inferenceActive = false }
         try await engine.preload()
     }
@@ -33,19 +34,29 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
         // A fast scroll can create many translation cards at once. Do not
         // retain an unbounded queue of inference continuations: one request
         // runs and the remaining cards stay available for an explicit retry.
-        try acquireInferenceSlot()
+        try await acquireInferenceSlot(waitIfBusy: request.userInitiated)
         defer { inferenceActive = false }
+        let guidance = request.userInitiated
+            ? "\(Self.manualRevisionPrefix)\n\(request.comment)"
+            : request.comment
+        guard guidance.utf8.count <= TranslateGemmaPrompt.maximumGuidanceUTF8Bytes else {
+            throw ExperimentalTranslateGemma.Failure.invalidInput
+        }
         let output = try await engine.translate(
             request.original,
-            comment: request.comment,
+            comment: guidance,
             vocabularyHints: Self.vocabularyHints
         ).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !output.isEmpty else { throw ExperimentalTranslateGemma.Failure.incomplete }
         return [.init(id: "translategemma-\(request.revision)", source: nil, translation: output)]
     }
 
-    private func acquireInferenceSlot() throws {
-        guard !inferenceActive else { throw ExperimentalTranslateGemma.Failure.busy }
+    private func acquireInferenceSlot(waitIfBusy: Bool) async throws {
+        while inferenceActive {
+            guard waitIfBusy else { throw ExperimentalTranslateGemma.Failure.busy }
+            try Task.checkCancellation()
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
         inferenceActive = true
     }
 

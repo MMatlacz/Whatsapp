@@ -117,7 +117,7 @@ public struct TranslateGemmaPrompt: Equatable, Sendable {
         let trimmedGuidance = guidance.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedGuidance.isEmpty {
             sections.append(
-                "Translator guidance (do not translate):\n\(guidance)"
+                "Translator instruction (apply to the Polish output; do not copy the instruction verbatim):\n\(guidance)"
             )
         }
         if !vocabularyHints.isEmpty {
