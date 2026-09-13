@@ -1,6 +1,9 @@
 import SwiftUI
 import WebKit
 import ImageIO
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @MainActor
 struct WhatsAppRootView: View {
@@ -97,6 +100,29 @@ private struct HiddenTransportHost: NSViewRepresentable {
 }
 #endif
 
+@MainActor
+private final class PairingBackgroundLease {
+    #if canImport(UIKit)
+    private var identifier: UIBackgroundTaskIdentifier = .invalid
+
+    func begin() {
+        guard identifier == .invalid else { return }
+        identifier = UIApplication.shared.beginBackgroundTask(withName: "WhatsApp phone linking") { [weak self] in
+            Task { @MainActor in self?.end() }
+        }
+    }
+
+    func end() {
+        guard identifier != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(identifier)
+        identifier = .invalid
+    }
+    #else
+    func begin() {}
+    func end() {}
+    #endif
+}
+
 private struct NativePairingView: View {
     let runtime: WhatsAppWebKitBridgeRuntime
     let model: NativeChatModel
@@ -106,6 +132,7 @@ private struct NativePairingView: View {
     @State private var linkingCode: String?
     @State private var requestingCode = false
     @State private var notice = "Enter your WhatsApp number including country code."
+    @State private var backgroundLease = PairingBackgroundLease()
 
     var body: some View {
         NavigationStack {
@@ -139,6 +166,7 @@ private struct NativePairingView: View {
                                 .disabled(requestingCode)
                                 Button("Cancel code") {
                                     self.linkingCode = nil
+                                    backgroundLease.end()
                                     Task { await runtime.cancelPhoneNumberLinking() }
                                 }
                                 .disabled(requestingCode)
@@ -163,6 +191,7 @@ private struct NativePairingView: View {
             }
             .onDisappear {
                 linkingCode = nil
+                backgroundLease.end()
                 Task { await runtime.cancelPhoneNumberLinking() }
             }
         }
@@ -172,6 +201,7 @@ private struct NativePairingView: View {
         while !Task.isCancelled {
             if model.connectionState == .ready {
                 linkingCode = nil
+                backgroundLease.end()
                 dismiss()
                 return
             }
@@ -192,7 +222,8 @@ private struct NativePairingView: View {
                 : try await runtime.startPhoneNumberLinking(phone: phoneNumber)
             try Task.checkCancellation()
             linkingCode = code
-            notice = "Code ready. Approve linking on your primary phone."
+            backgroundLease.begin()
+            notice = "Code ready. Approve linking on your primary phone promptly; the app will keep the handshake active while you switch apps."
         } catch is CancellationError {
             return
         } catch let error as WhatsAppWebTransportError {
@@ -205,6 +236,7 @@ private struct NativePairingView: View {
                 notice = "WhatsApp could not create a linking code. Try again after reconnecting."
             }
         } catch {
+            backgroundLease.end()
             notice = "WhatsApp could not create a linking code. Try again after reconnecting."
         }
     }

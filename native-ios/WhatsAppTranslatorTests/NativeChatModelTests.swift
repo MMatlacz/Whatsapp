@@ -23,7 +23,7 @@ final class NativeChatModelTests: XCTestCase {
         XCTAssertNil(model.storageNotice)
     }
 
-    func testCachedGroupPreviewRestoresSenderName() throws {
+    func testCachedGroupPreviewRestoresSenderName() async throws {
         let store = try SQLiteWhatsAppStore(path: ":memory:")
         let chat = WhatsAppTransportChat(id: "family@g.us", title: "Keluarga Panjaitan", isGroup: true,
             unreadCount: 1, lastMessageTimestampMilliseconds: 1000)

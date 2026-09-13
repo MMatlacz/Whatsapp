@@ -50,7 +50,7 @@ public actor ExperimentalTranslateGemma {
             let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestURL)).model
             guard manifest.repository == "mlx-community/translategemma-4b-it-4bit",
                   manifest.revision == "5788ec08c047f3f2e17808101b8d9566ac930d58",
-                  manifest.artifacts.count > 0,
+                  !manifest.artifacts.isEmpty,
                   Set(manifest.artifacts.map(\.path)).isSuperset(of: ["config.json", "tokenizer.json", "model.safetensors"]),
                   manifest.artifacts.allSatisfy({ $0.bytes >= 0 && !$0.sha256.isEmpty }) else {
                 throw Failure.integrity
