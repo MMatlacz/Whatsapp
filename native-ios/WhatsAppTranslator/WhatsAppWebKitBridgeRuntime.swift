@@ -4,7 +4,6 @@ import WebKit
 @MainActor
 final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKNavigationDelegate, WKScriptMessageHandler, NativeContactIdentityProvider {
     private static let messageHandlerName = "whatsAppBridge"
-    private static let requestTimeout: Duration = .seconds(15)
 
     private let events: AsyncStream<Data>
     private let eventContinuation: AsyncStream<Data>.Continuation
@@ -14,7 +13,7 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
     private var activeNavigation: WKNavigation?
     private var navigationGeneration = UUID()
     private var connectWaiters: [CheckedContinuation<Void, Error>] = []
-    private var pendingRequests: [String: CheckedContinuation<Data, Error>] = [:]
+    private let pendingRequests = WhatsAppBridgePendingRequestStore()
 
     override init() {
         var continuation: AsyncStream<Data>.Continuation!
@@ -66,19 +65,21 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
             throw WhatsAppWebTransportError.bridgeUnavailable("request-encoding-failed")
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            pendingRequests[request.requestID] = continuation
+        let script = """
+        (() => {
+            const bridge = globalThis.__waTranslatorBridge;
+            if (!bridge || bridge.version !== \(WhatsAppBridgeWireDecoder.version) || typeof bridge.invoke !== 'function') {
+                return false;
+            }
+            return bridge.invoke(\(requestJSON));
+        })()
+        """
 
-            let script = """
-            (() => {
-                const bridge = globalThis.__waTranslatorBridge;
-                if (!bridge || bridge.version !== \(WhatsAppBridgeWireDecoder.version) || typeof bridge.invoke !== 'function') {
-                    return false;
-                }
-                return bridge.invoke(\(requestJSON));
-            })()
-            """
-
+        return try await pendingRequests.awaitResponse(
+            requestID: request.requestID,
+            timeout: WhatsAppBridgeRequestTimeouts.timeout(for: request.kind)
+        ) { [weak self, weak webView] in
+            guard let self, let webView else { return }
             webView.evaluateJavaScript(script) { [weak self] result, error in
                 guard let self else { return }
                 if error != nil {
@@ -95,14 +96,6 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
                     )
                     return
                 }
-            }
-
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(for: Self.requestTimeout)
-                self?.failPendingRequest(
-                    request.requestID,
-                    error: WhatsAppWebTransportError.requestTimedOut(request.requestID)
-                )
             }
         }
     }
@@ -426,19 +419,15 @@ final class WhatsAppWebKitBridgeRuntime: NSObject, WhatsAppWebBridgeRuntime, WKN
     }
 
     private func completePendingRequest(_ requestID: String, data: Data) {
-        guard let continuation = pendingRequests.removeValue(forKey: requestID) else { return }
-        continuation.resume(returning: data)
+        pendingRequests.complete(requestID, data: data)
     }
 
     private func failPendingRequest(_ requestID: String, error: Error) {
-        guard let continuation = pendingRequests.removeValue(forKey: requestID) else { return }
-        continuation.resume(throwing: error)
+        pendingRequests.fail(requestID, error: error)
     }
 
     private func failAllPendingRequests(with error: Error) {
-        let continuations = pendingRequests.values
-        pendingRequests.removeAll()
-        continuations.forEach { $0.resume(throwing: error) }
+        pendingRequests.failAll(with: error)
     }
 
     private func resumeConnectWaiters() {
