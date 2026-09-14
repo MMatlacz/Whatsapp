@@ -71,3 +71,14 @@ paths = [
 regexes = [
   '''^73e3e38d981303bc594367cd910ea6eb48349da8$''',
 ]
+
+[[rules.allowlists]]
+description = "Public Qwen snapshot revision in physical-device evidence"
+condition = "AND"
+regexTarget = "secret"
+paths = [
+  '''^docs/native/qwen3-physical-evidence/7f24e65/(summary\.md|report\.json)$''',
+]
+regexes = [
+  '''^73e3e38d981303bc594367cd910ea6eb48349da8$''',
+]
