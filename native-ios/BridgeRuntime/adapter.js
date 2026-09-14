@@ -358,10 +358,13 @@
             }
             throw new Error('send-confirmation-unavailable');
         };
-        const mediaPreview = async ({ chatID, messageID, maxPixelSize }) => {
+        const mediaPreview = async ({ chatID, messageID, purpose, maxPixelSize }) => {
             requireReady();
             if (!Number.isInteger(maxPixelSize) || maxPixelSize < 64 || maxPixelSize > 1280) {
                 throw new Error('invalid-preview-size');
+            }
+            if (purpose !== 'attachment' && purpose !== 'linkPreview') {
+                throw new Error('invalid-preview-purpose');
             }
             const raw = await wpp.chat.getMessageById(messageID);
             if (!raw) throw new Error('preview-message-not-found');
@@ -372,9 +375,15 @@
             }
             if (read(raw, 'isViewOnce') === true) throw new Error('view-once-media');
 
-            const preview = read(raw, 'linkPreview');
-            const inline = inlineThumbnail(read(preview, 'thumbnail'))
-                || inlineThumbnail(read(raw, 'thumbnailHQ'))
+            if (purpose === 'linkPreview') {
+                const preview = read(raw, 'linkPreview');
+                const inline = inlineThumbnail(read(preview, 'thumbnail'));
+                if (!inline) throw new Error('preview-unavailable');
+                return { ...inline, width: null, height: null };
+            }
+
+            const kind = mediaKinds[read(raw, 'type')];
+            const inline = inlineThumbnail(read(raw, 'thumbnailHQ'))
                 || inlineThumbnail(read(raw, 'thumbnail'));
             if (inline) {
                 return {
@@ -384,7 +393,7 @@
                 };
             }
 
-            const kind = mediaKinds[read(raw, 'type')];
+            // Conversation thumbnails must never trigger full video/audio/document downloads.
             if (kind !== 'image' && kind !== 'sticker') throw new Error('preview-unavailable');
             const blob = await wpp.chat.downloadMedia(messageID);
             return downsampleImage(blob, maxPixelSize, kind === 'sticker' ? 'image/webp' : 'image/jpeg');

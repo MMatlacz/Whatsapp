@@ -73,6 +73,7 @@ final class NativeChatModel {
                 try await transport.mediaPreview(
                     chatID: key.chatID,
                     messageID: key.messageID,
+                    purpose: key.purpose,
                     maxPixelSize: key.requestedPixelSize
                 )
             }

@@ -7,6 +7,7 @@
     const GLOBAL_ADAPTER = '__waTranslatorRuntimeAdapter';
     const VALID_STATES = new Set(['disconnected', 'connecting', 'authenticating', 'syncing', 'ready']);
     const VALID_MEDIA_KINDS = new Set(['image', 'video', 'audio', 'document', 'sticker', 'other']);
+    const VALID_PREVIEW_PURPOSES = new Set(['attachment', 'linkPreview']);
     const VALID_DELIVERY_STATES = new Set(['pending', 'sent', 'delivered', 'read', 'played', 'failed']);
     const VALID_CONTENT_KINDS = new Set(['text', 'media', 'linkPreview', 'location', 'contact', 'poll', 'revoked', 'system', 'unsupported']);
 
@@ -423,7 +424,11 @@
             if (maxPixelSize < 64 || maxPixelSize > 1280) {
                 throw new BridgeError('invalid-request', 'payload.maxPixelSize');
             }
-            const preview = await adapter.mediaPreview({ chatID, messageID, maxPixelSize });
+            const purpose = payload.previewPurpose;
+            if (typeof purpose !== 'string' || !VALID_PREVIEW_PURPOSES.has(purpose)) {
+                throw new BridgeError('invalid-request', 'payload.previewPurpose');
+            }
+            const preview = await adapter.mediaPreview({ chatID, messageID, purpose, maxPixelSize });
             response(request.requestID, 'mediaPreview', normalizeMediaPreview(preview));
             return;
         }
