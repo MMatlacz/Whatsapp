@@ -40,7 +40,7 @@ public struct StoredPendingSend: Equatable, Sendable {
 }
 
 public final class SQLiteWhatsAppStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 4
+    public static let schemaVersion: Int32 = 5
 
     private let lock = NSLock()
     private var db: OpaquePointer?
@@ -293,6 +293,7 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         guard message.translation == nil else {
             throw SQLitePersistenceError.unsupportedTranslationMetadata
         }
+        try validateMessageContent(message)
 
         try locked {
             guard try chatExists(message.chatID) else {
@@ -329,8 +330,10 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                 link_preview_matched_text,
                 link_preview_canonical_url,
                 link_preview_title,
-                link_preview_description
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                link_preview_description,
+                content_kind,
+                content_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(chat_id, whatsapp_message_id) DO UPDATE SET
                 sender_id = excluded.sender_id,
                 timestamp_ms = excluded.timestamp_ms,
@@ -351,7 +354,9 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                 link_preview_matched_text = excluded.link_preview_matched_text,
                 link_preview_canonical_url = excluded.link_preview_canonical_url,
                 link_preview_title = excluded.link_preview_title,
-                link_preview_description = excluded.link_preview_description
+                link_preview_description = excluded.link_preview_description,
+                content_kind = excluded.content_kind,
+                content_json = excluded.content_json
             """
 
             let statement = try prepare(sql)
@@ -379,6 +384,9 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             try bindOptionalText(message.linkPreview?.canonicalURL, at: 20, to: statement)
             try bindOptionalText(message.linkPreview?.title, at: 21, to: statement)
             try bindOptionalText(message.linkPreview?.description, at: 22, to: statement)
+            let storedContent = try encodeMessageContent(message.content)
+            try bindText(storedContent.kind, at: 23, to: statement)
+            try bindOptionalText(storedContent.json, at: 24, to: statement)
             try stepDone(statement)
         }
     }
@@ -393,7 +401,7 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     media_kind, media_mime_type, media_filename, media_size_bytes,
                     media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
                     link_preview_matched_text, link_preview_canonical_url,
-                    link_preview_title, link_preview_description
+                    link_preview_title, link_preview_description, content_kind, content_json
                 FROM messages
                 WHERE chat_id = ? AND whatsapp_message_id = ?
                 """
@@ -429,7 +437,7 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     media_kind, media_mime_type, media_filename, media_size_bytes,
                     media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
                     link_preview_matched_text, link_preview_canonical_url,
-                    link_preview_title, link_preview_description
+                    link_preview_title, link_preview_description, content_kind, content_json
                 FROM messages
                 WHERE chat_id = ?
                 ORDER BY timestamp_ms DESC, whatsapp_message_id DESC
@@ -443,7 +451,7 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     media_kind, media_mime_type, media_filename, media_size_bytes,
                     media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
                     link_preview_matched_text, link_preview_canonical_url,
-                    link_preview_title, link_preview_description
+                    link_preview_title, link_preview_description, content_kind, content_json
                 FROM messages
                 WHERE chat_id = ?
                   AND (timestamp_ms < ? OR (timestamp_ms = ? AND whatsapp_message_id < ?))
@@ -544,6 +552,15 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                         ALTER TABLE messages ADD COLUMN link_preview_canonical_url TEXT NULL;
                         ALTER TABLE messages ADD COLUMN link_preview_title TEXT NULL;
                         ALTER TABLE messages ADD COLUMN link_preview_description TEXT NULL;
+                        """)
+                }
+                if version < 5, try tableExists("messages") {
+                    try executeUnlocked("""
+                        ALTER TABLE messages ADD COLUMN content_kind TEXT NULL
+                            CHECK(content_kind IS NULL OR content_kind IN
+                                ('text', 'media', 'linkPreview', 'location', 'contact', 'poll',
+                                 'revoked', 'system', 'unsupported'));
+                        ALTER TABLE messages ADD COLUMN content_json TEXT NULL;
                         """)
                 }
                 try executeUnlocked("PRAGMA user_version = \(Self.schemaVersion)")
@@ -805,16 +822,26 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             linkPreview = nil
         }
 
+        let body = columnText(statement, at: 4)
+        let content = try decodeMessageContent(
+            kind: columnText(statement, at: 22),
+            json: columnText(statement, at: 23),
+            body: body,
+            media: media,
+            linkPreview: linkPreview
+        )
+
         return WhatsAppMessage(
             id: messageID,
             chatID: chatID,
             senderID: senderID,
             timestamp: timestamp,
-            body: columnText(statement, at: 4),
+            body: body,
             fromMe: fromMeValue == 1,
             quote: quote,
             media: media,
             linkPreview: linkPreview,
+            content: content,
             deliveryState: deliveryState,
             translation: nil
         )
@@ -847,6 +874,279 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         guard let value = try optionalNonNegativeInt64(statement, at: index, field: field) else { return nil }
         guard value <= Int64(Int.max) else { throw SQLitePersistenceError.invalidStoredValue(field) }
         return Int(value)
+    }
+
+    private struct StoredLocationContent: Codable {
+        let latitude: Double
+        let longitude: Double
+        let name: String?
+        let address: String?
+    }
+
+    private struct StoredContactCard: Codable {
+        let displayName: String?
+        let vCard: String
+    }
+
+    private struct StoredPollContent: Codable {
+        let question: String
+        let options: [String]
+    }
+
+    private struct StoredSystemContent: Codable {
+        let type: String
+        let text: String?
+    }
+
+    private struct StoredMessageContentPayload: Codable {
+        let version: Int
+        let location: StoredLocationContent?
+        let contacts: [StoredContactCard]?
+        let poll: StoredPollContent?
+        let system: StoredSystemContent?
+        let rawType: String?
+
+        init(
+            location: StoredLocationContent? = nil,
+            contacts: [StoredContactCard]? = nil,
+            poll: StoredPollContent? = nil,
+            system: StoredSystemContent? = nil,
+            rawType: String? = nil
+        ) {
+            version = 1
+            self.location = location
+            self.contacts = contacts
+            self.poll = poll
+            self.system = system
+            self.rawType = rawType
+        }
+    }
+
+    private func validateMessageContent(_ message: WhatsAppMessage) throws {
+        switch message.content {
+        case .text:
+            guard message.media == nil, message.linkPreview == nil else {
+                throw SQLitePersistenceError.invalidArgument("message.content")
+            }
+        case .media:
+            guard message.media != nil else {
+                throw SQLitePersistenceError.invalidArgument("message.content")
+            }
+        case .linkPreview:
+            guard message.media == nil, message.linkPreview != nil else {
+                throw SQLitePersistenceError.invalidArgument("message.content")
+            }
+        case .location(let value):
+            try validateLocation(value, stored: false)
+            try requireSpecialContentEnvelope(message)
+        case .contact(let values):
+            try validateContacts(values, stored: false)
+            try requireSpecialContentEnvelope(message)
+        case .poll(let value):
+            try validatePoll(value, stored: false)
+            try requireSpecialContentEnvelope(message)
+        case .revoked:
+            try requireSpecialContentEnvelope(message)
+        case .system(let value):
+            try validateSystem(value, stored: false)
+            try requireSpecialContentEnvelope(message)
+        case .unsupported(let rawType):
+            try validateRawType(rawType, stored: false)
+            try requireSpecialContentEnvelope(message)
+        }
+    }
+
+    private func requireSpecialContentEnvelope(_ message: WhatsAppMessage) throws {
+        guard message.body == nil, message.media == nil, message.linkPreview == nil else {
+            throw SQLitePersistenceError.invalidArgument("message.content")
+        }
+    }
+
+    private func encodeMessageContent(_ content: WhatsAppMessageContent) throws -> (kind: String, json: String?) {
+        switch content {
+        case .text:
+            return ("text", nil)
+        case .media:
+            return ("media", nil)
+        case .linkPreview:
+            return ("linkPreview", nil)
+        case .revoked:
+            return ("revoked", nil)
+        case .location(let value):
+            let payload = StoredMessageContentPayload(location: .init(
+                latitude: value.latitude, longitude: value.longitude, name: value.name, address: value.address
+            ))
+            return ("location", try encodeContentPayload(payload))
+        case .contact(let values):
+            let payload = StoredMessageContentPayload(contacts: values.map {
+                StoredContactCard(displayName: $0.displayName, vCard: $0.vCard)
+            })
+            return ("contact", try encodeContentPayload(payload))
+        case .poll(let value):
+            return ("poll", try encodeContentPayload(.init(poll: .init(
+                question: value.question, options: value.options
+            ))))
+        case .system(let value):
+            return ("system", try encodeContentPayload(.init(system: .init(type: value.type, text: value.text))))
+        case .unsupported(let rawType):
+            return ("unsupported", try encodeContentPayload(.init(rawType: rawType)))
+        }
+    }
+
+    private func encodeContentPayload(_ payload: StoredMessageContentPayload) throws -> String {
+        do {
+            let data = try JSONEncoder().encode(payload)
+            guard data.count <= 40_000, let string = String(data: data, encoding: .utf8) else {
+                throw SQLitePersistenceError.invalidArgument("message.content")
+            }
+            return string
+        } catch let error as SQLitePersistenceError {
+            throw error
+        } catch {
+            throw SQLitePersistenceError.invalidArgument("message.content")
+        }
+    }
+
+    private func decodeMessageContent(
+        kind: String?,
+        json: String?,
+        body: String?,
+        media: WhatsAppMediaMetadata?,
+        linkPreview: WhatsAppLinkPreview?
+    ) throws -> WhatsAppMessageContent {
+        guard let kind else {
+            guard json == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            if media != nil { return .media }
+            if linkPreview != nil { return .linkPreview }
+            return .text
+        }
+
+        switch kind {
+        case "text":
+            guard json == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            return .text
+        case "media":
+            guard json == nil, media != nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            return .media
+        case "linkPreview":
+            guard json == nil, media == nil, linkPreview != nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            return .linkPreview
+        case "revoked":
+            guard json == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            return .revoked
+        case "location":
+            let payload = try decodeContentPayload(json)
+            guard let value = payload.location, payload.contacts == nil, payload.poll == nil,
+                  payload.system == nil, payload.rawType == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            let result = WhatsAppLocationContent(
+                latitude: value.latitude, longitude: value.longitude, name: value.name, address: value.address
+            )
+            try validateLocation(result, stored: true)
+            return .location(result)
+        case "contact":
+            let payload = try decodeContentPayload(json)
+            guard let values = payload.contacts, payload.location == nil, payload.poll == nil,
+                  payload.system == nil, payload.rawType == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            let cards = values.map { WhatsAppContactCard(displayName: $0.displayName, vCard: $0.vCard) }
+            try validateContacts(cards, stored: true)
+            return .contact(cards)
+        case "poll":
+            let payload = try decodeContentPayload(json)
+            guard let value = payload.poll, payload.location == nil, payload.contacts == nil,
+                  payload.system == nil, payload.rawType == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            let poll = WhatsAppPollContent(question: value.question, options: value.options)
+            try validatePoll(poll, stored: true)
+            return .poll(poll)
+        case "system":
+            let payload = try decodeContentPayload(json)
+            guard let value = payload.system, payload.location == nil, payload.contacts == nil,
+                  payload.poll == nil, payload.rawType == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            let system = WhatsAppSystemContent(type: value.type, text: value.text)
+            try validateSystem(system, stored: true)
+            return .system(system)
+        case "unsupported":
+            let payload = try decodeContentPayload(json)
+            guard let rawType = payload.rawType, payload.location == nil, payload.contacts == nil,
+                  payload.poll == nil, payload.system == nil, body == nil, media == nil, linkPreview == nil else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content")
+            }
+            try validateRawType(rawType, stored: true)
+            return .unsupported(rawType: rawType)
+        default:
+            throw SQLitePersistenceError.invalidStoredValue("messages.content_kind")
+        }
+    }
+
+    private func decodeContentPayload(_ json: String?) throws -> StoredMessageContentPayload {
+        guard let json, let data = json.data(using: .utf8), data.count <= 40_000 else {
+            throw SQLitePersistenceError.invalidStoredValue("messages.content_json")
+        }
+        do {
+            let payload = try JSONDecoder().decode(StoredMessageContentPayload.self, from: data)
+            guard payload.version == 1 else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.content_json")
+            }
+            return payload
+        } catch let error as SQLitePersistenceError {
+            throw error
+        } catch {
+            throw SQLitePersistenceError.invalidStoredValue("messages.content_json")
+        }
+    }
+
+    private func validateLocation(_ value: WhatsAppLocationContent, stored: Bool) throws {
+        let valid = value.latitude.isFinite && (-90...90).contains(value.latitude)
+            && value.longitude.isFinite && (-180...180).contains(value.longitude)
+            && (value.name?.count ?? 0) <= 512 && (value.address?.count ?? 0) <= 1_024
+        try requireContent(valid, stored: stored)
+    }
+
+    private func validateContacts(_ values: [WhatsAppContactCard], stored: Bool) throws {
+        let valid = !values.isEmpty && values.count <= 8 && values.allSatisfy {
+            !$0.vCard.isEmpty && $0.vCard.count <= 4_096 && ($0.displayName?.count ?? 0) <= 256
+        }
+        try requireContent(valid, stored: stored)
+    }
+
+    private func validatePoll(_ value: WhatsAppPollContent, stored: Bool) throws {
+        let valid = !value.question.isEmpty && value.question.count <= 2_048
+            && !value.options.isEmpty && value.options.count <= 20
+            && value.options.allSatisfy { !$0.isEmpty && $0.count <= 512 }
+        try requireContent(valid, stored: stored)
+    }
+
+    private func validateSystem(_ value: WhatsAppSystemContent, stored: Bool) throws {
+        let valid = !value.type.isEmpty && value.type.count <= 128 && (value.text?.count ?? 0) <= 2_048
+        try requireContent(valid, stored: stored)
+    }
+
+    private func validateRawType(_ value: String, stored: Bool) throws {
+        try requireContent(!value.isEmpty && value.count <= 64, stored: stored)
+    }
+
+    private func requireContent(_ condition: Bool, stored: Bool) throws {
+        guard condition else {
+            if stored { throw SQLitePersistenceError.invalidStoredValue("messages.content") }
+            throw SQLitePersistenceError.invalidArgument("message.content")
+        }
     }
 
     private func encode(_ kind: WhatsAppChatKind) -> String {

@@ -30,7 +30,7 @@ final class DraftPersistenceTests: XCTestCase {
         XCTAssertEqual(sqlite3_exec(db, "PRAGMA user_version = 1", nil, nil, nil), SQLITE_OK)
         sqlite3_close(db)
         let store = try SQLiteWhatsAppStore(path: url.path)
-        XCTAssertEqual(try store.currentSchemaVersion(), 4)
+        XCTAssertEqual(try store.currentSchemaVersion(), 5)
         let chatID = try XCTUnwrap(WhatsAppChatID("offline@c.us"))
         try store.saveDraft("kept", chatID: chatID)
         XCTAssertEqual(try store.drafts(), [chatID.rawValue: "kept"])
