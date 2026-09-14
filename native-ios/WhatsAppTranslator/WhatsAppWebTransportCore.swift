@@ -70,7 +70,6 @@ enum WhatsAppWebTransportError: Error, Equatable, Sendable {
     case unexpectedResponse(expected: String, actual: String)
 }
 
-
 enum WhatsAppBridgeRequestTimeouts {
     static let standard: Duration = .seconds(15)
     static let mediaPreview: Duration = .seconds(30)
