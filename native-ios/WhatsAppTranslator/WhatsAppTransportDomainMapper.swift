@@ -11,6 +11,7 @@ enum WhatsAppDomainMappingError: Error, Equatable, Sendable {
     case invalidTimestamp(Int64)
     case invalidChat
     case invalidMedia
+    case invalidContent
     case invalidCursor
 }
 
@@ -36,7 +37,70 @@ enum WhatsAppTransportDomainMapper {
               }, linkPreview: value.linkPreview.map {
                   .init(matchedText: $0.matchedText, canonicalURL: $0.canonicalURL,
                         title: $0.title, description: $0.description)
-              }, deliveryState: value.deliveryState.map(transportDeliveryState))
+              }, content: transportContent(value.content),
+              deliveryState: value.deliveryState.map(transportDeliveryState))
+    }
+
+    private static func transportContent(_ value: WhatsAppMessageContent) -> WhatsAppTransportMessageContent {
+        switch value {
+        case .text: return .init(kind: .text)
+        case .media: return .init(kind: .media)
+        case .linkPreview: return .init(kind: .linkPreview)
+        case .location(let location):
+            return .init(kind: .location, location: .init(
+                latitude: location.latitude, longitude: location.longitude, name: location.name, address: location.address))
+        case .contact(let cards):
+            return .init(kind: .contact, contacts: cards.map { .init(displayName: $0.displayName, vCard: $0.vCard) })
+        case .poll(let poll):
+            return .init(kind: .poll, poll: .init(question: poll.question, options: poll.options))
+        case .revoked: return .init(kind: .revoked)
+        case .system(let system):
+            return .init(kind: .system, system: .init(type: system.type, text: system.text))
+        case .unsupported(let rawType):
+            return .init(kind: .unsupported, rawType: rawType)
+        }
+    }
+
+    private static func content(_ value: WhatsAppTransportMessageContent) throws -> WhatsAppMessageContent {
+        switch value.kind {
+        case .text: return .text
+        case .media: return .media
+        case .linkPreview: return .linkPreview
+        case .revoked: return .revoked
+        case .location:
+            guard let location = value.location, location.latitude.isFinite, location.longitude.isFinite,
+                  (-90...90).contains(location.latitude), (-180...180).contains(location.longitude),
+                  (location.name?.count ?? 0) <= 512, (location.address?.count ?? 0) <= 1_024 else {
+                throw WhatsAppDomainMappingError.invalidContent
+            }
+            return .location(.init(latitude: location.latitude, longitude: location.longitude,
+                                   name: location.name, address: location.address))
+        case .contact:
+            guard let cards = value.contacts, !cards.isEmpty, cards.count <= 8,
+                  cards.allSatisfy({ !$0.vCard.isEmpty && $0.vCard.count <= 4_096
+                      && ($0.displayName?.count ?? 0) <= 256 }) else {
+                throw WhatsAppDomainMappingError.invalidContent
+            }
+            return .contact(cards.map { .init(displayName: $0.displayName, vCard: $0.vCard) })
+        case .poll:
+            guard let poll = value.poll, !poll.question.isEmpty, poll.question.count <= 2_048,
+                  !poll.options.isEmpty, poll.options.count <= 20,
+                  poll.options.allSatisfy({ !$0.isEmpty && $0.count <= 512 }) else {
+                throw WhatsAppDomainMappingError.invalidContent
+            }
+            return .poll(.init(question: poll.question, options: poll.options))
+        case .system:
+            guard let system = value.system, !system.type.isEmpty, system.type.count <= 128,
+                  (system.text?.count ?? 0) <= 2_048 else {
+                throw WhatsAppDomainMappingError.invalidContent
+            }
+            return .system(.init(type: system.type, text: system.text))
+        case .unsupported:
+            guard let rawType = value.rawType, !rawType.isEmpty, rawType.count <= 64 else {
+                throw WhatsAppDomainMappingError.invalidContent
+            }
+            return .unsupported(rawType: rawType)
+        }
     }
 
     private static func transportMediaKind(_ value: WhatsAppMediaKind) -> WhatsAppTransportMediaKind {
@@ -76,6 +140,7 @@ enum WhatsAppTransportDomainMapper {
             quote: try value.quote.map(quote),
             media: try value.media.map(media),
             linkPreview: try value.linkPreview.map(linkPreview),
+            content: try content(value.content),
             deliveryState: value.deliveryState.map(deliveryState),
             translation: nil
         )

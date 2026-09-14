@@ -58,6 +58,46 @@ final class WhatsAppTransportDomainMapperTests: XCTestCase {
         XCTAssertNil(mapped.translation)
     }
 
+    func testSemanticContentMapsIntoStableDomainCases() throws {
+        func mapped(_ content: WhatsAppTransportMessageContent) throws -> WhatsAppMessageContent {
+            try WhatsAppTransportDomainMapper.message(WhatsAppTransportMessage(
+                id: "m-semantic", chatID: "chat-1", senderID: nil,
+                timestampMilliseconds: 1, body: nil, fromMe: false, quote: nil, media: nil,
+                content: content
+            )).content
+        }
+
+        XCTAssertEqual(try mapped(.init(
+            kind: .location,
+            location: .init(latitude: 52.23, longitude: 21.01, name: "Warsaw", address: "Center")
+        )), .location(.init(latitude: 52.23, longitude: 21.01, name: "Warsaw", address: "Center")))
+        XCTAssertEqual(try mapped(.init(
+            kind: .contact, contacts: [.init(displayName: "Ada", vCard: "BEGIN:VCARD\nEND:VCARD")]
+        )), .contact([.init(displayName: "Ada", vCard: "BEGIN:VCARD\nEND:VCARD")]))
+        XCTAssertEqual(try mapped(.init(
+            kind: .poll, poll: .init(question: "Dinner?", options: ["Yes", "No"])
+        )), .poll(.init(question: "Dinner?", options: ["Yes", "No"])))
+        XCTAssertEqual(try mapped(.init(kind: .revoked)), .revoked)
+        XCTAssertEqual(try mapped(.init(
+            kind: .system, system: .init(type: "notification", text: "Alice joined")
+        )), .system(.init(type: "notification", text: "Alice joined")))
+        XCTAssertEqual(try mapped(.init(kind: .unsupported, rawType: "future_magic")),
+                       .unsupported(rawType: "future_magic"))
+    }
+
+    func testSemanticContentMappingRejectsOversizedVCard() {
+        let message = WhatsAppTransportMessage(
+            id: "m-bad", chatID: "chat-1", senderID: nil, timestampMilliseconds: 1,
+            body: nil, fromMe: false, quote: nil, media: nil,
+            content: .init(kind: .contact, contacts: [
+                .init(displayName: "Ada", vCard: String(repeating: "x", count: 4_097))
+            ])
+        )
+        XCTAssertThrowsError(try WhatsAppTransportDomainMapper.message(message)) { error in
+            XCTAssertEqual(error as? WhatsAppDomainMappingError, .invalidContent)
+        }
+    }
+
     func testMessagePageAndCursorAreStronglyTyped() throws {
         let page = try WhatsAppTransportDomainMapper.page(
             WhatsAppTransportMessagePage(

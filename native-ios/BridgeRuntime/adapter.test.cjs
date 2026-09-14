@@ -27,6 +27,7 @@ test('maps chat and message values without leaking raw runtime objects', async (
     assert.equal(page.messages[0].timestampMilliseconds, 100000);
     assert.equal(page.nextCursor.beforeMessageID, 'message-1');
     assert.equal(page.messages[0].media, null);
+    assert.deepEqual(page.messages[0].content, { kind: 'text' });
 });
 test('does not read the throwing quoted-message getter for ordinary messages', async () => {
     const { adapter, raw } = fixture();
@@ -168,6 +169,7 @@ test('maps quote and safe media metadata without copying thumbnail bodies or med
     assert.equal(mapped.body, 'Photo caption');
     assert.equal(mapped.quote.body, 'Original quote');
     assert.equal(mapped.media.kind, 'image');
+    assert.deepEqual(mapped.content, { kind: 'media' });
     assert.equal(mapped.media.sizeBytes, 512);
     assert.equal(mapped.media.width, 100);
     assert.ok(!JSON.stringify(mapped).includes('fixture-private-key'));
@@ -193,6 +195,7 @@ test('maps WhatsApp link preview metadata without embedding thumbnail bytes in h
         title: 'Example video',
         description: 'Preview from WhatsApp'
     });
+    assert.deepEqual(page.messages[0].content, { kind: 'linkPreview' });
     assert.ok(!JSON.stringify(page.messages[0]).includes(raw.linkPreview.thumbnail));
     const preview = await adapter.mediaPreview({
         chatID: 'test@c.us', messageID: 'message-1', maxPixelSize: 320
@@ -287,4 +290,47 @@ test('rejects cross-chat history, invalid limits and unready sends', async () =>
     await assert.rejects(adapter.loadMessages({ chatID: 'test@c.us', limit: 0 }), /invalid-limit/);
     wpp.conn.isOnline = () => false;
     await assert.rejects(adapter.sendText({ chatID: 'test@c.us', text: 'Test' }), /not-ready/);
+});
+
+test('maps special WhatsApp rows into bounded semantic content without leaking raw bodies', async () => {
+    const { adapter, wpp } = fixture();
+    const row = (id, type, t, extra = {}) => ({
+        id: { _serialized: id, remote: { _serialized: 'test@c.us' }, fromMe: false },
+        type, t, from: { _serialized: 'test@c.us' }, ...extra
+    });
+    wpp.chat.getMessages = async () => [
+        row('location-1', 'location', 10, { lat: 52.23, lng: 21.01, loc: 'Warsaw', address: 'Center' }),
+        row('contact-1', 'vcard', 11, { body: 'BEGIN:VCARD\nFN:Ada\nEND:VCARD', formattedTitle: 'Ada' }),
+        row('poll-1', 'poll_creation', 12, { body: 'Dinner?', pollOptions: [{ name: 'Yes' }, { name: 'No' }] }),
+        row('revoked-1', 'revoked', 13, { body: 'deleted payload' }),
+        row('system-1', 'notification', 14, { body: 'Alice joined' }),
+        row('future-1', 'future_magic', 15, { body: 'opaque future payload' })
+    ];
+    const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 6 });
+    const byID = Object.fromEntries(page.messages.map((message) => [message.id, message]));
+    assert.deepEqual(byID['location-1'].content, {
+        kind: 'location', location: { latitude: 52.23, longitude: 21.01, name: 'Warsaw', address: 'Center' }
+    });
+    assert.deepEqual(byID['contact-1'].content, {
+        kind: 'contact', contacts: [{ displayName: 'Ada', vCard: 'BEGIN:VCARD\nFN:Ada\nEND:VCARD' }]
+    });
+    assert.deepEqual(byID['poll-1'].content, { kind: 'poll', poll: { question: 'Dinner?', options: ['Yes', 'No'] } });
+    assert.deepEqual(byID['revoked-1'].content, { kind: 'revoked' });
+    assert.deepEqual(byID['system-1'].content, { kind: 'system', system: { type: 'notification', text: 'Alice joined' } });
+    assert.deepEqual(byID['future-1'].content, { kind: 'unsupported', rawType: 'future_magic' });
+    for (const id of ['location-1', 'contact-1', 'poll-1', 'revoked-1', 'system-1', 'future-1']) {
+        assert.equal(byID[id].body, null);
+    }
+});
+
+test('isolates oversized special metadata while preserving valid neighbors', async () => {
+    const { adapter, wpp, raw } = fixture();
+    const oversized = {
+        id: { _serialized: 'oversized-vcard', remote: { _serialized: 'test@c.us' }, fromMe: false },
+        type: 'vcard', t: 50, from: { _serialized: 'test@c.us' }, body: 'x'.repeat(4097)
+    };
+    wpp.chat.getMessages = async () => [raw, oversized];
+    const page = await adapter.loadMessages({ chatID: 'test@c.us', limit: 2 });
+    assert.deepEqual(page.messages.map((message) => message.id), ['message-1']);
+    assert.equal(page.nextCursor.beforeMessageID, 'oversized-vcard');
 });

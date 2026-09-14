@@ -4,7 +4,7 @@
   "private": true,
   "description": "Pinned, locally bundled runtime for the hidden WebKit transport",
   "scripts": {
-    "test": "node --test adapter.test.cjs",
+    "test": "node --test *.test.cjs",
     "bundle": "node bundle.cjs"
   },
   "dependencies": {
