@@ -47,8 +47,8 @@ final class NativeChatModel {
     @ObservationIgnored private var loadingIdentities: Set<String> = []
     @ObservationIgnored private var loadedIdentityIDs: Set<String> = []
     @ObservationIgnored private var identityOrder: [String] = []
-    @ObservationIgnored private var loadingMediaPreviews: Set<String> = []
     @ObservationIgnored private var mediaPreviewOrder: [String] = []
+    @ObservationIgnored private var mediaPreviewLoader: MediaPreviewLoader?
     var drafts: [String: String] = [:]
     var quotes: [String: WhatsAppTransportMessage] = [:]
     var errors: [String: String] = [:]
@@ -69,6 +69,17 @@ final class NativeChatModel {
         self.translations = translations ?? NativeTranslationModel()
         self.store = store
         self.identityProvider = identityProvider
+        if let transport {
+            self.mediaPreviewLoader = MediaPreviewLoader { key in
+                try await transport.mediaPreview(
+                    chatID: key.chatID,
+                    messageID: key.messageID,
+                    maxPixelSize: key.requestedPixelSize
+                )
+            }
+        } else {
+            self.mediaPreviewLoader = nil
+        }
         do {
             drafts = try store?.drafts() ?? [:]
             chats = try store?.chats().map(WhatsAppTransportDomainMapper.transportChat) ?? []
@@ -176,17 +187,36 @@ final class NativeChatModel {
 
     func loadMediaPreview(for message: WhatsAppTransportMessage) async {
         guard connectionState == .ready, mediaPreviews[message.id] == nil,
-              !loadingMediaPreviews.contains(message.id), let transport else { return }
-        let canPreviewMedia = message.media.map {
-            !$0.isViewOnce && ($0.kind == .image || $0.kind == .sticker)
+              let mediaPreviewLoader else { return }
+
+        let previewableAttachment = message.media.map {
+            $0.kind == .image || $0.kind == .sticker
         } ?? false
-        guard canPreviewMedia || message.linkPreview != nil else { return }
-        loadingMediaPreviews.insert(message.id)
-        defer { loadingMediaPreviews.remove(message.id) }
-        let maxPixelSize = canPreviewMedia ? 768 : 320
-        guard let preview = try? await transport.mediaPreview(
-            chatID: message.chatID, messageID: message.id, maxPixelSize: maxPixelSize
-        ) else { return }
+        let purpose: MediaPreviewPurpose
+        let maxPixelSize: Int
+        if previewableAttachment {
+            purpose = .attachment
+            maxPixelSize = 768
+        } else if message.linkPreview != nil {
+            purpose = .linkPreview
+            maxPixelSize = 320
+        } else {
+            return
+        }
+
+        let key = MediaPreviewKey(
+            chatID: message.chatID,
+            messageID: message.id,
+            purpose: purpose,
+            requestedPixelSize: maxPixelSize
+        )
+        let state = await mediaPreviewLoader.load(
+            key,
+            isViewOnce: message.media?.isViewOnce == true,
+            priority: .visible
+        )
+        guard !Task.isCancelled, case .ready(let preview) = state else { return }
+
         mediaPreviews[message.id] = preview
         mediaPreviewOrder.removeAll { $0 == message.id }
         mediaPreviewOrder.append(message.id)
