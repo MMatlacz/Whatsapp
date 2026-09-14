@@ -592,6 +592,7 @@ public enum TranslationBenchmarkExporter {
             "- Temperature: \(report.model.generation.temperature)",
             "- Top-p: \(report.model.generation.topP)",
             "- Top-k: \(report.model.generation.topK)",
+            "- Sampling seed: \(report.model.generation.seed.map(String.init) ?? "unseeded")",
             "- Thinking enabled: \(report.model.generation.thinkingEnabled)",
             "- Per-case timeout seconds: \(report.timeoutSeconds.map(String.init) ?? "unknown")",
             "- Evaluation contract: \(report.evaluationContract.version)",

@@ -29,6 +29,10 @@ let package = Package(
             exact: "3.31.3"
         ),
         .package(
+            url: "https://github.com/ml-explore/mlx-swift",
+            exact: "0.31.6"
+        ),
+        .package(
             url: "https://github.com/huggingface/swift-transformers",
             exact: "1.3.4"
         ),
@@ -41,6 +45,7 @@ let package = Package(
                     name: "TranslationCore",
                     package: "WhatsAppTranslatorCore"
                 ),
+                .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
