@@ -246,6 +246,74 @@ final class WhatsAppTransportCoreTests: XCTestCase {
         XCTAssertTrue(sent.fromMe)
     }
 
+    func testSemanticMessageContentDecodesAllStableKinds() throws {
+        func decodeContent(_ content: [String: Any]) throws -> WhatsAppTransportMessageContent {
+            let payload: [String: Any] = [
+                "id": "m1", "chatID": "chat-1", "senderID": NSNull(),
+                "timestampMilliseconds": 1, "body": NSNull(), "fromMe": false,
+                "quote": NSNull(), "media": NSNull(), "linkPreview": NSNull(),
+                "content": content
+            ]
+            let data = try JSONSerialization.data(withJSONObject: [
+                "version": 1, "kind": "message", "payload": payload
+            ])
+            let event = try WhatsAppBridgeDecoder.decodeEvent(from: data)
+            guard case .message(let message) = event else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("test")
+            }
+            return message.content
+        }
+
+        let location = try decodeContent([
+            "kind": "location",
+            "location": ["latitude": 52.23, "longitude": 21.01, "name": "Warsaw", "address": "Center"]
+        ])
+        XCTAssertEqual(location.kind, .location)
+        XCTAssertEqual(location.location?.latitude, 52.23)
+
+        let contact = try decodeContent([
+            "kind": "contact",
+            "contacts": [["displayName": "Ada", "vCard": "BEGIN:VCARD\nFN:Ada\nEND:VCARD"]]
+        ])
+        XCTAssertEqual(contact.kind, .contact)
+        XCTAssertEqual(contact.contacts?.first?.displayName, "Ada")
+
+        let poll = try decodeContent([
+            "kind": "poll", "poll": ["question": "Dinner?", "options": ["Yes", "No"]]
+        ])
+        XCTAssertEqual(poll.kind, .poll)
+        XCTAssertEqual(poll.poll?.options, ["Yes", "No"])
+
+        XCTAssertEqual(try decodeContent(["kind": "revoked"]).kind, .revoked)
+
+        let system = try decodeContent([
+            "kind": "system", "system": ["type": "notification", "text": "Alice joined"]
+        ])
+        XCTAssertEqual(system.kind, .system)
+        XCTAssertEqual(system.system?.text, "Alice joined")
+
+        let unsupported = try decodeContent(["kind": "unsupported", "rawType": "future_magic"])
+        XCTAssertEqual(unsupported.kind, .unsupported)
+        XCTAssertEqual(unsupported.rawType, "future_magic")
+    }
+
+    func testSemanticContentRejectsOversizedBoundedFields() throws {
+        let oversized = String(repeating: "x", count: 4_097)
+        let payload: [String: Any] = [
+            "id": "m1", "chatID": "chat-1", "senderID": NSNull(),
+            "timestampMilliseconds": 1, "body": NSNull(), "fromMe": false,
+            "quote": NSNull(), "media": NSNull(), "linkPreview": NSNull(),
+            "content": ["kind": "contact", "contacts": [["displayName": "Ada", "vCard": oversized]]]
+        ]
+        let data = try JSONSerialization.data(withJSONObject: [
+            "version": 1, "kind": "message", "payload": payload
+        ])
+        XCTAssertThrowsError(try WhatsAppBridgeDecoder.decodeEvent(from: data)) { error in
+            XCTAssertEqual(error as? WhatsAppBridgeDecodingError,
+                           .invalidPayload("messageContent.contact"))
+        }
+    }
+
     private func json(_ value: String) -> Data {
         Data(value.utf8)
     }

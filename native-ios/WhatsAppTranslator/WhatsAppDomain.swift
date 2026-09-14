@@ -189,6 +189,46 @@ public struct WhatsAppMediaMetadata: Equatable, Sendable {
     }
 }
 
+public struct WhatsAppLocationContent: Equatable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    public let name: String?
+    public let address: String?
+    public init(latitude: Double, longitude: Double, name: String?, address: String?) {
+        self.latitude = latitude; self.longitude = longitude; self.name = name; self.address = address
+    }
+}
+
+public struct WhatsAppContactCard: Equatable, Sendable {
+    public let displayName: String?
+    public let vCard: String
+    public init(displayName: String?, vCard: String) { self.displayName = displayName; self.vCard = vCard }
+}
+
+public struct WhatsAppPollContent: Equatable, Sendable {
+    public let question: String
+    public let options: [String]
+    public init(question: String, options: [String]) { self.question = question; self.options = options }
+}
+
+public struct WhatsAppSystemContent: Equatable, Sendable {
+    public let type: String
+    public let text: String?
+    public init(type: String, text: String?) { self.type = type; self.text = text }
+}
+
+public enum WhatsAppMessageContent: Equatable, Sendable {
+    case text
+    case media
+    case linkPreview
+    case location(WhatsAppLocationContent)
+    case contact([WhatsAppContactCard])
+    case poll(WhatsAppPollContent)
+    case revoked
+    case system(WhatsAppSystemContent)
+    case unsupported(rawType: String)
+}
+
 public struct WhatsAppTranslationMetadata: Equatable, Sendable {
     public let sourceLanguage: String?
     public let targetLanguage: String
@@ -231,6 +271,7 @@ public struct WhatsAppMessage: Equatable, Sendable {
     public let quote: WhatsAppQuote?
     public let media: WhatsAppMediaMetadata?
     public let linkPreview: WhatsAppLinkPreview?
+    public let content: WhatsAppMessageContent
     public let deliveryState: WhatsAppDeliveryState?
     public let translation: WhatsAppTranslationMetadata?
 
@@ -244,6 +285,7 @@ public struct WhatsAppMessage: Equatable, Sendable {
         quote: WhatsAppQuote?,
         media: WhatsAppMediaMetadata?,
         linkPreview: WhatsAppLinkPreview? = nil,
+        content: WhatsAppMessageContent? = nil,
         deliveryState: WhatsAppDeliveryState? = nil,
         translation: WhatsAppTranslationMetadata?
     ) {
@@ -256,6 +298,7 @@ public struct WhatsAppMessage: Equatable, Sendable {
         self.quote = quote
         self.media = media
         self.linkPreview = linkPreview
+        self.content = content ?? (media != nil ? .media : (linkPreview != nil ? .linkPreview : .text))
         self.deliveryState = deliveryState
         self.translation = translation
     }

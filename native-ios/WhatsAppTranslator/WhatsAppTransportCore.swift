@@ -113,6 +113,65 @@ struct WhatsAppTransportLinkPreview: Codable, Equatable, Sendable {
     let description: String?
 }
 
+enum WhatsAppTransportMessageContentKind: String, Codable, Equatable, Sendable {
+    case text
+    case media
+    case linkPreview
+    case location
+    case contact
+    case poll
+    case revoked
+    case system
+    case unsupported
+}
+
+struct WhatsAppTransportLocationContent: Codable, Equatable, Sendable {
+    let latitude: Double
+    let longitude: Double
+    let name: String?
+    let address: String?
+}
+
+struct WhatsAppTransportContactCard: Codable, Equatable, Sendable {
+    let displayName: String?
+    let vCard: String
+}
+
+struct WhatsAppTransportPollContent: Codable, Equatable, Sendable {
+    let question: String
+    let options: [String]
+}
+
+struct WhatsAppTransportSystemContent: Codable, Equatable, Sendable {
+    let type: String
+    let text: String?
+}
+
+struct WhatsAppTransportMessageContent: Codable, Equatable, Sendable {
+    let kind: WhatsAppTransportMessageContentKind
+    let location: WhatsAppTransportLocationContent?
+    let contacts: [WhatsAppTransportContactCard]?
+    let poll: WhatsAppTransportPollContent?
+    let system: WhatsAppTransportSystemContent?
+    let rawType: String?
+
+    init(
+        kind: WhatsAppTransportMessageContentKind,
+        location: WhatsAppTransportLocationContent? = nil,
+        contacts: [WhatsAppTransportContactCard]? = nil,
+        poll: WhatsAppTransportPollContent? = nil,
+        system: WhatsAppTransportSystemContent? = nil,
+        rawType: String? = nil
+    ) {
+        self.kind = kind
+        self.location = location
+        self.contacts = contacts
+        self.poll = poll
+        self.system = system
+        self.rawType = rawType
+    }
+}
+
 struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
     let mimeType: String
     let data: Data
@@ -357,6 +416,7 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
     let quote: WhatsAppTransportQuote?
     let media: WhatsAppTransportMediaMetadata?
     let linkPreview: WhatsAppTransportLinkPreview?
+    let content: WhatsAppTransportMessageContent
     let deliveryState: WhatsAppTransportDeliveryState?
 
     init(
@@ -369,6 +429,7 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
         quote: WhatsAppTransportQuote?,
         media: WhatsAppTransportMediaMetadata?,
         linkPreview: WhatsAppTransportLinkPreview? = nil,
+        content: WhatsAppTransportMessageContent? = nil,
         deliveryState: WhatsAppTransportDeliveryState? = nil
     ) {
         self.id = id
@@ -380,7 +441,38 @@ struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
         self.quote = quote
         self.media = media
         self.linkPreview = linkPreview
+        self.content = content ?? Self.inferredContent(body: body, media: media, linkPreview: linkPreview)
         self.deliveryState = deliveryState
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, chatID, senderID, timestampMilliseconds, body, fromMe, quote, media, linkPreview, content, deliveryState
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        chatID = try values.decode(String.self, forKey: .chatID)
+        senderID = try values.decodeIfPresent(String.self, forKey: .senderID)
+        timestampMilliseconds = try values.decode(Int64.self, forKey: .timestampMilliseconds)
+        body = try values.decodeIfPresent(String.self, forKey: .body)
+        fromMe = try values.decode(Bool.self, forKey: .fromMe)
+        quote = try values.decodeIfPresent(WhatsAppTransportQuote.self, forKey: .quote)
+        media = try values.decodeIfPresent(WhatsAppTransportMediaMetadata.self, forKey: .media)
+        linkPreview = try values.decodeIfPresent(WhatsAppTransportLinkPreview.self, forKey: .linkPreview)
+        content = try values.decodeIfPresent(WhatsAppTransportMessageContent.self, forKey: .content)
+            ?? Self.inferredContent(body: body, media: media, linkPreview: linkPreview)
+        deliveryState = try values.decodeIfPresent(WhatsAppTransportDeliveryState.self, forKey: .deliveryState)
+    }
+
+    private static func inferredContent(
+        body: String?,
+        media: WhatsAppTransportMediaMetadata?,
+        linkPreview: WhatsAppTransportLinkPreview?
+    ) -> WhatsAppTransportMessageContent {
+        if media != nil { return .init(kind: .media) }
+        if linkPreview != nil { return .init(kind: .linkPreview) }
+        return .init(kind: .text)
     }
 }
 
@@ -587,6 +679,67 @@ enum WhatsAppBridgeDecoder {
         if let preview = message.linkPreview {
             guard !preview.matchedText.isEmpty else {
                 throw WhatsAppBridgeDecodingError.invalidPayload("linkPreview")
+            }
+        }
+        try validate(message.content)
+        switch message.content.kind {
+        case .text:
+            guard message.media == nil, message.linkPreview == nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent")
+            }
+        case .media:
+            guard message.media != nil else { throw WhatsAppBridgeDecodingError.invalidPayload("messageContent") }
+        case .linkPreview:
+            guard message.media == nil, message.linkPreview != nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent")
+            }
+        case .location, .contact, .poll, .revoked, .system, .unsupported:
+            guard message.body == nil, message.media == nil, message.linkPreview == nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent")
+            }
+        }
+    }
+
+    private static func validate(_ content: WhatsAppTransportMessageContent) throws {
+        let noSpecialPayload = content.location == nil && content.contacts == nil && content.poll == nil
+            && content.system == nil && content.rawType == nil
+        switch content.kind {
+        case .text, .media, .linkPreview, .revoked:
+            guard noSpecialPayload else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent")
+            }
+        case .location:
+            guard let location = content.location, content.contacts == nil, content.poll == nil,
+                  content.system == nil, content.rawType == nil,
+                  location.latitude.isFinite, (-90...90).contains(location.latitude),
+                  location.longitude.isFinite, (-180...180).contains(location.longitude),
+                  (location.name?.count ?? 0) <= 512, (location.address?.count ?? 0) <= 1_024 else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent.location")
+            }
+        case .contact:
+            guard let contacts = content.contacts, !contacts.isEmpty, contacts.count <= 8,
+                  content.location == nil, content.poll == nil, content.system == nil, content.rawType == nil,
+                  contacts.allSatisfy({ !$0.vCard.isEmpty && $0.vCard.count <= 4_096
+                      && ($0.displayName?.count ?? 0) <= 256 }) else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent.contact")
+            }
+        case .poll:
+            guard let poll = content.poll, !poll.question.isEmpty, poll.question.count <= 2_048,
+                  !poll.options.isEmpty, poll.options.count <= 20,
+                  poll.options.allSatisfy({ !$0.isEmpty && $0.count <= 512 }),
+                  content.location == nil, content.contacts == nil, content.system == nil, content.rawType == nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent.poll")
+            }
+        case .system:
+            guard let system = content.system, !system.type.isEmpty, system.type.count <= 128,
+                  (system.text?.count ?? 0) <= 2_048, content.location == nil, content.contacts == nil,
+                  content.poll == nil, content.rawType == nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent.system")
+            }
+        case .unsupported:
+            guard let rawType = content.rawType, !rawType.isEmpty, rawType.count <= 64,
+                  content.location == nil, content.contacts == nil, content.poll == nil, content.system == nil else {
+                throw WhatsAppBridgeDecodingError.invalidPayload("messageContent.unsupported")
             }
         }
     }
