@@ -42,9 +42,13 @@ final class NativeChatModel {
     private(set) var historyCheckedAfterUncertainSends: Set<String> = []
     private(set) var storageNotice: String?
     private(set) var identities: [String: NativeContactIdentity] = [:]
+    private(set) var mediaPreviews: [String: WhatsAppTransportMediaPreview] = [:]
     @ObservationIgnored private var identityProvider: (any NativeContactIdentityProvider)?
     @ObservationIgnored private var loadingIdentities: Set<String> = []
     @ObservationIgnored private var loadedIdentityIDs: Set<String> = []
+    @ObservationIgnored private var identityOrder: [String] = []
+    @ObservationIgnored private var loadingMediaPreviews: Set<String> = []
+    @ObservationIgnored private var mediaPreviewOrder: [String] = []
     var drafts: [String: String] = [:]
     var quotes: [String: WhatsAppTransportMessage] = [:]
     var errors: [String: String] = [:]
@@ -56,6 +60,7 @@ final class NativeChatModel {
     @ObservationIgnored private var store: SQLiteWhatsAppStore?
     @ObservationIgnored private var pendingSends: [String: PendingSend] = [:]
     @ObservationIgnored private var loadedCachedHistory: Set<String> = []
+    @ObservationIgnored private var draftSaveTasks: [String: Task<Void, Never>] = [:]
 
     init(transport: (any WhatsAppTransport)? = nil, translations: NativeTranslationModel? = nil,
          store: SQLiteWhatsAppStore? = nil,
@@ -145,19 +150,51 @@ final class NativeChatModel {
         guard connectionState == .ready, !loadedIdentityIDs.contains(id),
               !loadingIdentities.contains(id), let identityProvider else { return }
         loadingIdentities.insert(id)
-        loadedIdentityIDs.insert(id)
         defer { loadingIdentities.remove(id) }
-        if let identity = try? await identityProvider.identity(for: id) {
-            // Bound the in-memory photo cache; photos and temporary URLs are not persisted.
-            if identities.count >= 100 { identities.removeAll() }
-            identities[id] = identity
-            if let store, let participantID = WhatsAppParticipantID(id) {
-                do {
-                    try store.upsert(participant: .init(id: participantID, displayName: identity.name))
-                } catch {
-                    storageNotice = "Contact details could not be cached. Live messages remain available."
-                }
+        guard let identity = try? await identityProvider.identity(for: id) else { return }
+        loadedIdentityIDs.insert(id)
+        identityOrder.removeAll { $0 == id }
+        identityOrder.append(id)
+        if identityOrder.count > 100 {
+            let overflow = identityOrder.count - 100
+            let evicted = Array(identityOrder.prefix(overflow))
+            identityOrder.removeFirst(overflow)
+            for oldID in evicted {
+                identities.removeValue(forKey: oldID)
+                loadedIdentityIDs.remove(oldID)
             }
+        }
+        identities[id] = identity
+        if let store, let participantID = WhatsAppParticipantID(id) {
+            do {
+                try store.upsert(participant: .init(id: participantID, displayName: identity.name))
+            } catch {
+                storageNotice = "Contact details could not be cached. Live messages remain available."
+            }
+        }
+    }
+
+    func loadMediaPreview(for message: WhatsAppTransportMessage) async {
+        guard connectionState == .ready, mediaPreviews[message.id] == nil,
+              !loadingMediaPreviews.contains(message.id), let transport else { return }
+        let canPreviewMedia = message.media.map {
+            !$0.isViewOnce && ($0.kind == .image || $0.kind == .sticker)
+        } ?? false
+        guard canPreviewMedia || message.linkPreview != nil else { return }
+        loadingMediaPreviews.insert(message.id)
+        defer { loadingMediaPreviews.remove(message.id) }
+        let maxPixelSize = canPreviewMedia ? 768 : 320
+        guard let preview = try? await transport.mediaPreview(
+            chatID: message.chatID, messageID: message.id, maxPixelSize: maxPixelSize
+        ) else { return }
+        mediaPreviews[message.id] = preview
+        mediaPreviewOrder.removeAll { $0 == message.id }
+        mediaPreviewOrder.append(message.id)
+        if mediaPreviewOrder.count > 48 {
+            let overflow = mediaPreviewOrder.count - 48
+            let evicted = Array(mediaPreviewOrder.prefix(overflow))
+            mediaPreviewOrder.removeFirst(overflow)
+            for messageID in evicted { mediaPreviews.removeValue(forKey: messageID) }
         }
     }
 
@@ -165,14 +202,32 @@ final class NativeChatModel {
         get { drafts[chatID] ?? "" }
         set {
             drafts[chatID] = newValue
-            guard let store else { return }
-            do {
-                guard let id = WhatsAppChatID(chatID) else { return }
-                try store.saveDraft(newValue, chatID: id)
-                storageNotice = nil
-            } catch {
-                storageNotice = "Draft could not be saved. Keep the app open and copy your text before closing."
+            if draftSaveTasks[chatID] == nil {
+                persistDraftNow(chatID: chatID, body: newValue)
             }
+            scheduleDraftSave(chatID: chatID, body: newValue)
+        }
+    }
+
+    private func scheduleDraftSave(chatID: String, body: String) {
+        draftSaveTasks[chatID]?.cancel()
+        guard store != nil else { return }
+        draftSaveTasks[chatID] = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            self?.persistDraftNow(chatID: chatID, body: body)
+        }
+    }
+
+    private func persistDraftNow(chatID: String, body: String) {
+        draftSaveTasks[chatID]?.cancel()
+        draftSaveTasks.removeValue(forKey: chatID)
+        guard let store, let id = WhatsAppChatID(chatID) else { return }
+        do {
+            try store.saveDraft(body, chatID: id)
+            storageNotice = nil
+        } catch {
+            storageNotice = "Draft could not be saved. Keep the app open and copy your text before closing."
         }
     }
 
@@ -376,6 +431,7 @@ final class NativeChatModel {
     func send(chatID: String) async {
         guard canSend(chatID: chatID) else { return }
         let draft = drafts[chatID] ?? ""
+        persistDraftNow(chatID: chatID, body: draft)
         let quote = quotes[chatID]
         let knownMessageIDs = Set(messages[chatID, default: []].map(\.id))
         let attemptStartedMilliseconds = Int64(Date().timeIntervalSince1970 * 1_000)
@@ -462,6 +518,12 @@ final class NativeChatModel {
         catch { storageNotice = "The send recovery record could not be cleared." }
     }
 
+    private func cacheChat(_ chat: WhatsAppTransportChat) {
+        guard let store, !isSample else { return }
+        do { try store.upsert(chat: WhatsAppTransportDomainMapper.chat(chat)) }
+        catch { storageNotice = "Chat cache could not be saved. Live content remains available." }
+    }
+
     private func cacheChats() {
         guard let store, !isSample else { return }
         do {
@@ -491,10 +553,13 @@ final class NativeChatModel {
         guard let index = chats.firstIndex(where: { $0.id == message.chatID }) else { return }
         let chat = chats[index]
         guard chat.lastMessageTimestampMilliseconds ?? 0 < message.timestampMilliseconds else { return }
-        chats[index] = .init(id: chat.id, title: chat.title, isGroup: chat.isGroup,
-                             unreadCount: chat.unreadCount,
-                             lastMessageTimestampMilliseconds: message.timestampMilliseconds)
-        cacheChats()
+        let updated = WhatsAppTransportChat(
+            id: chat.id, title: chat.title, isGroup: chat.isGroup,
+            unreadCount: chat.unreadCount,
+            lastMessageTimestampMilliseconds: message.timestampMilliseconds
+        )
+        chats[index] = updated
+        cacheChat(updated)
         updateFilter()
     }
 
@@ -523,6 +588,17 @@ final class NativeChatModel {
         if persist, !isSample, let store {
             do {
                 for message in incoming where message.chatID == chatID {
+                    if let id = WhatsAppChatID(chatID), try store.chat(id: id) == nil,
+                       let timestamp = WhatsAppTimestamp(millisecondsSince1970: message.timestampMilliseconds),
+                       let placeholder = WhatsAppChat(
+                           id: id,
+                           title: chats.first(where: { $0.id == chatID })?.title ?? "Chat",
+                           kind: chatID.hasSuffix("@g.us") ? .group : .direct,
+                           unreadCount: 0,
+                           lastMessageAt: timestamp
+                       ) {
+                        try store.upsert(chat: placeholder)
+                    }
                     try store.upsert(message: WhatsAppTransportDomainMapper.message(message))
                 }
             } catch { storageNotice = "Some messages could not be cached. Keep the app connected to reload them." }

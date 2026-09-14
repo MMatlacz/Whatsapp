@@ -38,6 +38,15 @@ struct NativeRetranslationRequest: Equatable, Sendable {
     let userInitiated: Bool
 }
 
+enum NativeRetranslationFailure: Error, Equatable, Sendable {
+    case busy
+    case invalidInput
+    case unavailable
+    case integrity
+    case incomplete
+    case cancelled
+}
+
 protocol NativeRetranslator: Sendable {
     /// Translation quality has to be reviewed against the shared benchmark
     /// before this capability can affect a chat. Implementations are
@@ -75,8 +84,27 @@ final class NativeTranslationModel {
         var loadedDatabase = false
         if let contextStore {
             do {
-                let saved = try contextStore.allTranslations()
+                let saved = try contextStore.latestTranslations()
                 records = Self.records(from: saved)
+                for intent in try contextStore.allTranslationIntents() {
+                    let key = NativeTranslationKey(
+                        chatID: intent.chatID.rawValue,
+                        messageID: intent.messageID.rawValue,
+                        sourceLanguage: intent.sourceLanguage,
+                        targetLanguage: intent.targetLanguage
+                    )
+                    if var existing = records[key], existing.original == intent.sourceText {
+                        existing.comment = intent.correctionComment
+                        records[key] = existing
+                    } else if records[key] == nil {
+                        records[key] = NativeTranslationRecord(
+                            original: intent.sourceText,
+                            parts: [],
+                            revision: 0,
+                            comment: intent.correctionComment
+                        )
+                    }
+                }
                 knownWords = try contextStore.allKnownWords().reduce(into: Set<String>()) { result, word in
                     result.insert(Self.wordKey(word.normalizedText, language: word.language))
                 }
@@ -249,43 +277,46 @@ final class NativeTranslationModel {
               !running.contains(key) else { return }
         var current = record(for: key, original: original)
             ?? NativeTranslationRecord(original: original, parts: [], revision: 0)
-        current.comment = trimmed
-        // Increment even for a saved request so an older in-flight result cannot overwrite it.
-        current.revision += 1
-        var updated = records
-        updated[key] = current
-        // A comment-only save must keep the manual-correction provenance. If
-        // an engine later succeeds, the resulting revision is recorded as a
-        // retranslation and clears that flag.
-        let pendingKind: TranslationRevisionKind = current.manuallyEdited ? .manualEdit : .retranslation
-        guard commit(records: updated, words: knownWords, changedKey: key, revisionKind: pendingKind) else {
-            return
+        let baselineRevision = current.revision
+        let requestRevision = max(1, baselineRevision + 1)
+
+        if userInitiated {
+            current.comment = trimmed
+            guard persistCorrectionIntent(key: key, record: current) else { return }
         }
+
         guard let retranslator, retranslator.isValidated || ownerApprovedExperimentalProvider else {
-            notices[key] = "Comment saved. Retranslation is blocked until a validated translation engine is enabled. No model was run."
+            notices[key] = userInitiated
+                ? "Comment saved. Retranslation is blocked until a validated translation engine is enabled. No model was run."
+                : "No validated local translation model is installed and configured. No model was run."
             return
         }
-        let revision = current.revision
+
         running.insert(key)
         defer { running.remove(key) }
         do {
             let parts = try await retranslator.retranslate(.init(
-                key: key, original: original, previousTranslation: current.translatedText,
-                comment: trimmed, revision: revision, userInitiated: userInitiated
+                key: key,
+                original: original,
+                previousTranslation: current.translatedText,
+                comment: trimmed,
+                revision: requestRevision,
+                userInitiated: userInitiated
             ))
-            guard records[key]?.revision == revision, records[key]?.original == original else { return }
+            let latest = record(for: key, original: original)
+            guard (latest?.revision ?? 0) == baselineRevision else { return }
             guard Self.validParts(parts, original: original) else {
                 notices[key] = "The translation result was invalid. Your previous translation is kept."
                 return
             }
             let translationChanged = current.translatedText != parts.map(\.translation).joined()
+            let hadTranslation = !current.parts.isEmpty
             current.parts = parts
             current.manuallyEdited = false
-            current.revision += 1
-            updated = records
+            current.revision = requestRevision
+            var updated = records
             updated[key] = current
-            let kind: TranslationRevisionKind = current.parts.isEmpty ? .retranslation :
-                (records[key]?.parts.isEmpty == true ? .model : .retranslation)
+            let kind: TranslationRevisionKind = hadTranslation ? .retranslation : .model
             if commit(records: updated, words: knownWords, changedKey: key, revisionKind: kind) {
                 if userInitiated {
                     notices[key] = translationChanged
@@ -295,11 +326,71 @@ final class NativeTranslationModel {
                     notices[key] = "Translation updated."
                 }
             }
+        } catch is CancellationError {
+            notices[key] = userInitiated
+                ? "Retranslation was cancelled. Your previous translation and comment are kept."
+                : "Translation was cancelled before completion."
+        } catch let failure as NativeRetranslationFailure {
+            notices[key] = failureNotice(failure, userInitiated: userInitiated)
         } catch {
-            guard records[key]?.revision == revision else { return }
             notices[key] = userInitiated
                 ? "Retranslation failed. Your previous translation and comment are kept."
+                : "Translation failed. Tap Translate now to retry."
+        }
+    }
+
+    private func persistCorrectionIntent(key: NativeTranslationKey, record: NativeTranslationRecord) -> Bool {
+        var updated = records
+        updated[key] = record
+        guard storageError == nil else { return false }
+        if let contextStore, !record.isSample {
+            do {
+                guard let chatID = WhatsAppChatID(key.chatID),
+                      let messageID = WhatsAppMessageID(key.messageID),
+                      let intent = StoredTranslationIntent(
+                        chatID: chatID,
+                        messageID: messageID,
+                        sourceLanguage: key.sourceLanguage,
+                        targetLanguage: key.targetLanguage,
+                        sourceText: record.original,
+                        correctionComment: record.comment,
+                        updatedAt: Self.currentTimestamp()
+                      ) else {
+                    throw SQLiteContextPersistenceError.invalidStoredValue("translation_intent")
+                }
+                try contextStore.upsert(translationIntent: intent)
+                records = updated
+                return true
+            } catch {
+                storageError = "Could not save the retranslation comment. Your previous saved data is kept."
+                return false
+            }
+        }
+        return commit(records: updated, words: knownWords)
+    }
+
+    private func failureNotice(_ failure: NativeRetranslationFailure, userInitiated: Bool) -> String {
+        switch failure {
+        case .busy:
+            return userInitiated
+                ? "Retranslation is waiting on another local inference. Your comment is saved; retry if it does not start."
                 : "Translation was deferred while the local model was busy. Tap Translate now to retry."
+        case .invalidInput:
+            return userInitiated
+                ? "The retranslation request is too large or unsupported. Your previous translation and comment are kept."
+                : "This message could not be processed by the local translation model."
+        case .unavailable:
+            return "The local translation model is unavailable. Your saved content is unchanged."
+        case .integrity:
+            return "The local translation model failed integrity verification. No translation was changed."
+        case .incomplete:
+            return userInitiated
+                ? "The model did not return a complete revision. Your previous translation and comment are kept."
+                : "The model did not return a complete translation. Tap Translate now to retry."
+        case .cancelled:
+            return userInitiated
+                ? "Retranslation was cancelled. Your previous translation and comment are kept."
+                : "Translation was cancelled before completion."
         }
     }
 

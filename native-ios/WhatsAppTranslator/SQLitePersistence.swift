@@ -40,7 +40,7 @@ public struct StoredPendingSend: Equatable, Sendable {
 }
 
 public final class SQLiteWhatsAppStore: @unchecked Sendable {
-    public static let schemaVersion: Int32 = 3
+    public static let schemaVersion: Int32 = 4
 
     private let lock = NSLock()
     private var db: OpaquePointer?
@@ -323,8 +323,14 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                 media_size_bytes,
                 media_duration_ms,
                 media_width,
-                media_height
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                media_height,
+                delivery_state,
+                media_is_view_once,
+                link_preview_matched_text,
+                link_preview_canonical_url,
+                link_preview_title,
+                link_preview_description
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(chat_id, whatsapp_message_id) DO UPDATE SET
                 sender_id = excluded.sender_id,
                 timestamp_ms = excluded.timestamp_ms,
@@ -339,7 +345,13 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                 media_size_bytes = excluded.media_size_bytes,
                 media_duration_ms = excluded.media_duration_ms,
                 media_width = excluded.media_width,
-                media_height = excluded.media_height
+                media_height = excluded.media_height,
+                delivery_state = excluded.delivery_state,
+                media_is_view_once = excluded.media_is_view_once,
+                link_preview_matched_text = excluded.link_preview_matched_text,
+                link_preview_canonical_url = excluded.link_preview_canonical_url,
+                link_preview_title = excluded.link_preview_title,
+                link_preview_description = excluded.link_preview_description
             """
 
             let statement = try prepare(sql)
@@ -361,6 +373,12 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             try bindOptionalInt64(message.media?.durationMilliseconds, at: 14, to: statement)
             try bindOptionalInt64(message.media?.width.map(Int64.init), at: 15, to: statement)
             try bindOptionalInt64(message.media?.height.map(Int64.init), at: 16, to: statement)
+            try bindOptionalText(message.deliveryState?.rawValue, at: 17, to: statement)
+            try bindInt64(message.media?.isViewOnce == true ? 1 : 0, at: 18, to: statement)
+            try bindOptionalText(message.linkPreview?.matchedText, at: 19, to: statement)
+            try bindOptionalText(message.linkPreview?.canonicalURL, at: 20, to: statement)
+            try bindOptionalText(message.linkPreview?.title, at: 21, to: statement)
+            try bindOptionalText(message.linkPreview?.description, at: 22, to: statement)
             try stepDone(statement)
         }
     }
@@ -373,7 +391,9 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     whatsapp_message_id, chat_id, sender_id, timestamp_ms, body, from_me,
                     quote_message_id, quote_sender_id, quote_body,
                     media_kind, media_mime_type, media_filename, media_size_bytes,
-                    media_duration_ms, media_width, media_height
+                    media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
+                    link_preview_matched_text, link_preview_canonical_url,
+                    link_preview_title, link_preview_description
                 FROM messages
                 WHERE chat_id = ? AND whatsapp_message_id = ?
                 """
@@ -407,7 +427,9 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     whatsapp_message_id, chat_id, sender_id, timestamp_ms, body, from_me,
                     quote_message_id, quote_sender_id, quote_body,
                     media_kind, media_mime_type, media_filename, media_size_bytes,
-                    media_duration_ms, media_width, media_height
+                    media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
+                    link_preview_matched_text, link_preview_canonical_url,
+                    link_preview_title, link_preview_description
                 FROM messages
                 WHERE chat_id = ?
                 ORDER BY timestamp_ms DESC, whatsapp_message_id DESC
@@ -419,7 +441,9 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                     whatsapp_message_id, chat_id, sender_id, timestamp_ms, body, from_me,
                     quote_message_id, quote_sender_id, quote_body,
                     media_kind, media_mime_type, media_filename, media_size_bytes,
-                    media_duration_ms, media_width, media_height
+                    media_duration_ms, media_width, media_height, delivery_state, media_is_view_once,
+                    link_preview_matched_text, link_preview_canonical_url,
+                    link_preview_title, link_preview_description
                 FROM messages
                 WHERE chat_id = ?
                   AND (timestamp_ms < ? OR (timestamp_ms = ? AND whatsapp_message_id < ?))
@@ -507,6 +531,19 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                             attempt_started_ms INTEGER NOT NULL CHECK(attempt_started_ms >= 0),
                             history_checked INTEGER NOT NULL CHECK(history_checked IN (0, 1))
                         );
+                        """)
+                }
+                if version < 4, try tableExists("messages") {
+                    try executeUnlocked("""
+                        ALTER TABLE messages ADD COLUMN delivery_state TEXT NULL
+                            CHECK(delivery_state IS NULL OR delivery_state IN
+                                ('pending', 'sent', 'delivered', 'read', 'played', 'failed'));
+                        ALTER TABLE messages ADD COLUMN media_is_view_once INTEGER NOT NULL DEFAULT 0
+                            CHECK(media_is_view_once IN (0, 1));
+                        ALTER TABLE messages ADD COLUMN link_preview_matched_text TEXT NULL;
+                        ALTER TABLE messages ADD COLUMN link_preview_canonical_url TEXT NULL;
+                        ALTER TABLE messages ADD COLUMN link_preview_title TEXT NULL;
+                        ALTER TABLE messages ADD COLUMN link_preview_description TEXT NULL;
                         """)
                 }
                 try executeUnlocked("PRAGMA user_version = \(Self.schemaVersion)")
@@ -701,6 +738,10 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             quote = nil
         }
 
+        let viewOnceValue = sqlite3_column_int64(statement, 17)
+        guard viewOnceValue == 0 || viewOnceValue == 1 else {
+            throw SQLitePersistenceError.invalidStoredValue("messages.media_is_view_once")
+        }
         let media: WhatsAppMediaMetadata?
         if let rawMediaKind = columnText(statement, at: 9) {
             guard let mediaKind = decodeMediaKind(rawMediaKind) else {
@@ -717,7 +758,8 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
                 sizeBytes: sizeBytes,
                 durationMilliseconds: duration,
                 width: width,
-                height: height
+                height: height,
+                isViewOnce: viewOnceValue == 1
             ) else {
                 throw SQLitePersistenceError.invalidStoredValue("messages.media")
             }
@@ -726,10 +768,41 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             let hasOrphanedMediaMetadata = (10...15).contains {
                 sqlite3_column_type(statement, Int32($0)) != SQLITE_NULL
             }
-            guard !hasOrphanedMediaMetadata else {
+            guard !hasOrphanedMediaMetadata, viewOnceValue == 0 else {
                 throw SQLitePersistenceError.invalidStoredValue("messages.media")
             }
             media = nil
+        }
+
+        let deliveryState: WhatsAppDeliveryState?
+        if let rawDelivery = columnText(statement, at: 16) {
+            guard let decoded = WhatsAppDeliveryState(rawValue: rawDelivery) else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.delivery_state")
+            }
+            deliveryState = decoded
+        } else {
+            deliveryState = nil
+        }
+
+        let linkPreview: WhatsAppLinkPreview?
+        if let matchedText = columnText(statement, at: 18) {
+            guard let decoded = WhatsAppLinkPreview(
+                matchedText: matchedText,
+                canonicalURL: columnText(statement, at: 19),
+                title: columnText(statement, at: 20),
+                description: columnText(statement, at: 21)
+            ) else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.link_preview")
+            }
+            linkPreview = decoded
+        } else {
+            let hasOrphanedPreview = (19...21).contains {
+                sqlite3_column_type(statement, Int32($0)) != SQLITE_NULL
+            }
+            guard !hasOrphanedPreview else {
+                throw SQLitePersistenceError.invalidStoredValue("messages.link_preview")
+            }
+            linkPreview = nil
         }
 
         return WhatsAppMessage(
@@ -741,6 +814,8 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
             fromMe: fromMeValue == 1,
             quote: quote,
             media: media,
+            linkPreview: linkPreview,
+            deliveryState: deliveryState,
             translation: nil
         )
     }
@@ -810,6 +885,18 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         case "other": .other
         default: nil
         }
+    }
+
+    private func tableExists(_ name: String) throws -> Bool {
+        let statement = try prepare(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
+        )
+        defer { sqlite3_finalize(statement) }
+        try bindText(name, at: 1, to: statement)
+        let result = sqlite3_step(statement)
+        if result == SQLITE_ROW { return true }
+        if result == SQLITE_DONE { return false }
+        throw sqliteError(code: result)
     }
 
     private func pragmaUserVersion() throws -> Int32 {
