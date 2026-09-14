@@ -63,6 +63,91 @@
                     || boundedText(read(raw, 'description'), 2048)
             };
         };
+        const semanticText = (value, maxLength, field, { required = false } = {}) => {
+            if (value === null || value === undefined) {
+                if (required) throw new Error(`missing-${field}`);
+                return null;
+            }
+            if (typeof value !== 'string') throw new Error(`invalid-${field}`);
+            const result = value.trim();
+            if (result.length > maxLength || (required && result.length === 0)) {
+                throw new Error(`invalid-${field}`);
+            }
+            return result || null;
+        };
+        const semanticType = (raw) => semanticText(read(raw, 'type'), 64, 'message-type')
+            || (typeof read(raw, 'body') === 'string' ? 'chat' : 'unknown');
+        const firstFinite = (...values) => values.find((value) => Number.isFinite(value));
+        const semanticLocation = (raw) => {
+            const nested = read(raw, 'location');
+            const latitude = firstFinite(read(raw, 'lat'), read(raw, 'latitude'), read(nested, 'lat'), read(nested, 'latitude'));
+            const longitude = firstFinite(read(raw, 'lng'), read(raw, 'longitude'), read(nested, 'lng'), read(nested, 'longitude'));
+            if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+                !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+                throw new Error('invalid-location');
+            }
+            return {
+                latitude, longitude,
+                name: semanticText(read(raw, 'loc') ?? read(raw, 'name') ?? read(nested, 'name'), 512, 'location-name'),
+                address: semanticText(read(raw, 'address') ?? read(nested, 'address'), 1024, 'location-address')
+            };
+        };
+        const semanticContacts = (raw) => {
+            const list = read(raw, 'vCards') ?? read(raw, 'vcards') ?? read(raw, 'vcardList');
+            const values = Array.isArray(list) ? list : [read(raw, 'vcard') ?? read(raw, 'body')];
+            if (values.length < 1 || values.length > 8) throw new Error('invalid-contact-count');
+            return values.map((value) => {
+                const objectValue = value && typeof value === 'object' ? value : null;
+                const vCard = semanticText(
+                    objectValue ? (read(objectValue, 'vCard') ?? read(objectValue, 'vcard') ?? read(objectValue, 'body')) : value,
+                    4096, 'contact-vcard', { required: true }
+                );
+                const displayName = semanticText(
+                    objectValue ? (read(objectValue, 'displayName') ?? read(objectValue, 'name')) : read(raw, 'formattedTitle'),
+                    256, 'contact-name'
+                );
+                return { displayName, vCard };
+            });
+        };
+        const semanticPoll = (raw) => {
+            const question = semanticText(
+                read(raw, 'pollName') ?? read(raw, 'pollQuestion') ?? read(raw, 'body'),
+                2048, 'poll-question', { required: true }
+            );
+            const rawOptions = read(raw, 'pollOptions') ?? read(raw, 'options');
+            if (!Array.isArray(rawOptions) || rawOptions.length < 1 || rawOptions.length > 20) {
+                throw new Error('invalid-poll-options');
+            }
+            const options = rawOptions.map((option) => semanticText(
+                typeof option === 'string' ? option : (read(option, 'name') ?? read(option, 'text') ?? read(option, 'body')),
+                512, 'poll-option', { required: true }
+            ));
+            return { question, options };
+        };
+        const revokedTypes = new Set(['revoked', 'deleted']);
+        const systemTypes = new Set(['notification', 'gp2', 'e2e_notification', 'call_log', 'protocol']);
+        const contactTypes = new Set(['vcard', 'multi_vcard', 'contact_card']);
+        const pollTypes = new Set(['poll', 'poll_creation']);
+        const locationTypes = new Set(['location', 'live_location']);
+        const semanticContent = (raw, preview) => {
+            const rawType = semanticType(raw);
+            if (mediaKinds[rawType]) return { kind: 'media' };
+            if ((rawType === 'chat' || rawType === 'text') && preview) return { kind: 'linkPreview' };
+            if (rawType === 'chat' || rawType === 'text') return { kind: 'text' };
+            if (locationTypes.has(rawType)) return { kind: 'location', location: semanticLocation(raw) };
+            if (contactTypes.has(rawType)) return { kind: 'contact', contacts: semanticContacts(raw) };
+            if (pollTypes.has(rawType)) return { kind: 'poll', poll: semanticPoll(raw) };
+            if (revokedTypes.has(rawType) || (rawType === 'protocol' && read(raw, 'isRevoked') === true)) {
+                return { kind: 'revoked' };
+            }
+            if (systemTypes.has(rawType)) {
+                return { kind: 'system', system: {
+                    type: semanticText(rawType, 128, 'system-type', { required: true }),
+                    text: semanticText(read(raw, 'body'), 2048, 'system-text')
+                } };
+            }
+            return { kind: 'unsupported', rawType };
+        };
         const inlineThumbnail = (value) => {
             const encoded = text(value);
             if (!encoded || encoded.length > 2_000_000) return null;
@@ -195,16 +280,22 @@
             // the bridge and only an actual quote is mapped.
             const quoted = read(raw, 'quotedMsg');
             const quoteID = id(read(raw, 'quotedMsgId')) || id(read(raw, 'quotedMsgKey')) || id(read(quoted, 'id'));
+            const quotedType = quoted ? semanticType(quoted) : null;
+            const quotedBody = quoted && (mediaKinds[quotedType] || quotedType === 'chat' || quotedType === 'text')
+                ? body(quoted) : null;
             const kind = mediaKinds[read(raw, 'type')];
+            const preview = linkPreview(raw);
+            const content = semanticContent(raw, preview);
+            const mappedBody = ['text', 'media', 'linkPreview'].includes(content.kind) ? body(raw) : null;
             return {
                 id: requiredID(key), chatID: requiredID(rawMessageChatID(raw)),
                 senderID: id(read(raw, 'author')) || id(read(raw, 'from')) || null,
                 timestampMilliseconds: timestampMilliseconds(read(raw, 't')),
-                body: body(raw), fromMe,
+                body: mappedBody, fromMe,
                 deliveryState: deliveryState(read(raw, 'ack')),
                 quote: quoteID ? { messageID: quoteID,
                     senderID: id(read(raw, 'quotedParticipant')) || id(read(quoted, 'author')) || null,
-                    body: quoted ? body(quoted) : null } : null,
+                    body: quotedBody } : null,
                 media: kind ? { kind, mimeType: text(read(raw, 'mimetype')),
                     filename: read(raw, 'isViewOnce') ? null : text(read(raw, 'filename')),
                     sizeBytes: nonnegativeInteger(read(raw, 'size')),
@@ -212,7 +303,8 @@
                         Number.isFinite(read(raw, 'duration')) ? Math.trunc(read(raw, 'duration') * 1000) : null),
                     width: nonnegativeInteger(read(raw, 'width')), height: nonnegativeInteger(read(raw, 'height')),
                     isViewOnce: Boolean(read(raw, 'isViewOnce')) } : null,
-                linkPreview: linkPreview(raw)
+                linkPreview: preview,
+                content
             };
         };
         const chat = (raw, unreadCount) => {
