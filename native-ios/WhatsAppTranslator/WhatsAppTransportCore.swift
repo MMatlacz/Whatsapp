@@ -120,6 +120,233 @@ struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
     let height: Int?
 }
 
+enum MediaPreviewPurpose: String, Hashable, Sendable {
+    case attachment
+    case linkPreview
+}
+
+struct MediaPreviewKey: Hashable, Sendable {
+    let chatID: String
+    let messageID: String
+    let purpose: MediaPreviewPurpose
+    let requestedPixelSize: Int
+}
+
+enum MediaPreviewPriority: Int, Comparable, Sendable {
+    case visible = 0
+    case prefetch = 1
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
+enum MediaPreviewLoaderFailure: Error, Equatable, Sendable {
+    case transport
+}
+
+enum MediaPreviewState: Equatable, Sendable {
+    case idle
+    case queued
+    case loading
+    case ready(WhatsAppTransportMediaPreview)
+    case unavailable
+    case failed(MediaPreviewLoaderFailure)
+}
+
+actor MediaPreviewLoader {
+    typealias Fetch = @Sendable (MediaPreviewKey) async throws -> WhatsAppTransportMediaPreview
+
+    private struct Waiter {
+        let continuation: CheckedContinuation<MediaPreviewState, Never>
+    }
+
+    private struct Request {
+        var priority: MediaPreviewPriority
+        let sequence: UInt64
+        var waiters: [UUID: Waiter]
+        var task: Task<Void, Never>?
+    }
+
+    private struct QueueEntry {
+        let key: MediaPreviewKey
+        var priority: MediaPreviewPriority
+        let sequence: UInt64
+    }
+
+    private let maximumConcurrentRequests: Int
+    private let fetch: Fetch
+    private var sequence: UInt64 = 0
+    private var requests: [MediaPreviewKey: Request] = [:]
+    private var queue: [QueueEntry] = []
+    private var running: Set<MediaPreviewKey> = []
+    private var states: [MediaPreviewKey: MediaPreviewState] = [:]
+
+    init(maximumConcurrentRequests: Int = 2, fetch: @escaping Fetch) {
+        self.maximumConcurrentRequests = max(1, maximumConcurrentRequests)
+        self.fetch = fetch
+    }
+
+    func state(for key: MediaPreviewKey) -> MediaPreviewState {
+        states[key] ?? .idle
+    }
+
+    func load(
+        _ key: MediaPreviewKey,
+        isViewOnce: Bool,
+        priority: MediaPreviewPriority = .visible
+    ) async -> MediaPreviewState {
+        if isViewOnce {
+            states[key] = .unavailable
+            return .unavailable
+        }
+        if case .ready(let preview) = states[key] {
+            return .ready(preview)
+        }
+
+        let waiterID = UUID()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume(returning: .idle)
+                    return
+                }
+                enqueue(
+                    key: key,
+                    priority: priority,
+                    waiterID: waiterID,
+                    continuation: continuation
+                )
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(key: key, waiterID: waiterID) }
+        }
+    }
+
+    func cancel(_ key: MediaPreviewKey) {
+        cancelRequest(key)
+    }
+
+    var activeRequestCount: Int { running.count }
+    var queuedRequestCount: Int { queue.count }
+
+    private func enqueue(
+        key: MediaPreviewKey,
+        priority: MediaPreviewPriority,
+        waiterID: UUID,
+        continuation: CheckedContinuation<MediaPreviewState, Never>
+    ) {
+        if var request = requests[key] {
+            request.waiters[waiterID] = Waiter(continuation: continuation)
+            if priority < request.priority, request.task == nil {
+                request.priority = priority
+                if let index = queue.firstIndex(where: { $0.key == key }) {
+                    queue[index].priority = priority
+                }
+            }
+            requests[key] = request
+            startAvailableRequests()
+            return
+        }
+
+        sequence &+= 1
+        let request = Request(
+            priority: priority,
+            sequence: sequence,
+            waiters: [waiterID: Waiter(continuation: continuation)],
+            task: nil
+        )
+        requests[key] = request
+        queue.append(QueueEntry(key: key, priority: priority, sequence: sequence))
+        states[key] = .queued
+        sortQueue()
+        startAvailableRequests()
+    }
+
+    private func sortQueue() {
+        queue.sort {
+            if $0.priority != $1.priority { return $0.priority < $1.priority }
+            return $0.sequence < $1.sequence
+        }
+    }
+
+    private func startAvailableRequests() {
+        while running.count < maximumConcurrentRequests, !queue.isEmpty {
+            let entry = queue.removeFirst()
+            guard var request = requests[entry.key], request.task == nil, !request.waiters.isEmpty else {
+                continue
+            }
+            running.insert(entry.key)
+            states[entry.key] = .loading
+            let key = entry.key
+            let fetch = self.fetch
+            let task = Task { [weak self] in
+                do {
+                    let preview = try await fetch(key)
+                    guard !Task.isCancelled else {
+                        await self?.finishCancelled(key)
+                        return
+                    }
+                    await self?.finish(key, state: .ready(preview))
+                } catch is CancellationError {
+                    await self?.finishCancelled(key)
+                } catch let error as WhatsAppTransportMediaPreviewFailure where error == .unavailable {
+                    await self?.finish(key, state: .unavailable)
+                } catch {
+                    guard !Task.isCancelled else {
+                        await self?.finishCancelled(key)
+                        return
+                    }
+                    await self?.finish(key, state: .failed(.transport))
+                }
+            }
+            request.task = task
+            requests[key] = request
+        }
+    }
+
+    private func finish(_ key: MediaPreviewKey, state: MediaPreviewState) {
+        guard let request = requests.removeValue(forKey: key) else { return }
+        running.remove(key)
+        states[key] = state
+        request.waiters.values.forEach { $0.continuation.resume(returning: state) }
+        startAvailableRequests()
+    }
+
+    private func finishCancelled(_ key: MediaPreviewKey) {
+        guard let request = requests.removeValue(forKey: key) else { return }
+        running.remove(key)
+        queue.removeAll { $0.key == key }
+        states[key] = .idle
+        request.waiters.values.forEach { $0.continuation.resume(returning: .idle) }
+        startAvailableRequests()
+    }
+
+    private func cancelWaiter(key: MediaPreviewKey, waiterID: UUID) {
+        guard var request = requests[key], let waiter = request.waiters.removeValue(forKey: waiterID) else { return }
+        waiter.continuation.resume(returning: .idle)
+        if request.waiters.isEmpty {
+            requests[key] = request
+            cancelRequest(key)
+        } else {
+            requests[key] = request
+        }
+    }
+
+    private func cancelRequest(_ key: MediaPreviewKey) {
+        guard let request = requests.removeValue(forKey: key) else {
+            states[key] = .idle
+            return
+        }
+        queue.removeAll { $0.key == key }
+        running.remove(key)
+        request.task?.cancel()
+        states[key] = .idle
+        request.waiters.values.forEach { $0.continuation.resume(returning: .idle) }
+        startAvailableRequests()
+    }
+}
+
 struct WhatsAppTransportMessage: Codable, Equatable, Sendable {
     let id: String
     let chatID: String
