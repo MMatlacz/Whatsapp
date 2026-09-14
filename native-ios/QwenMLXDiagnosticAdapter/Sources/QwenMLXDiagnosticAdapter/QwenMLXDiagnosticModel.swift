@@ -1,4 +1,5 @@
 import Foundation
+import MLX
 import MLXHuggingFace
 import MLXLLM
 import MLXLMCommon
@@ -12,6 +13,7 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
     public let generationTemperature: Double
     public let generationTopP: Double
     public let generationTopK: Int
+    public let generationSeed: UInt64?
     public let thinkingEnabled: Bool
 
     public init?(
@@ -21,6 +23,7 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         generationTemperature: Double = 0,
         generationTopP: Double = 1,
         generationTopK: Int = 0,
+        generationSeed: UInt64? = nil,
         thinkingEnabled: Bool = false
     ) {
         guard
@@ -43,6 +46,7 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         self.generationTemperature = generationTemperature
         self.generationTopP = generationTopP
         self.generationTopK = generationTopK
+        self.generationSeed = generationSeed
         self.thinkingEnabled = thinkingEnabled
     }
 
@@ -62,6 +66,7 @@ public struct QwenMLXDiagnosticLimits: Equatable, Sendable {
         generationTemperature: 0.7,
         generationTopP: 0.8,
         generationTopK: 20,
+        generationSeed: 0x51A7_2026,
         thinkingEnabled: false
     )!
 }
@@ -71,6 +76,7 @@ public struct QwenMLXGenerationSettings: Codable, Equatable, Sendable {
     public let temperature: Double
     public let topP: Double
     public let topK: Int
+    public let seed: UInt64?
     public let thinkingEnabled: Bool
 
     public init(limits: QwenMLXDiagnosticLimits) {
@@ -78,6 +84,7 @@ public struct QwenMLXGenerationSettings: Codable, Equatable, Sendable {
         self.temperature = limits.generationTemperature
         self.topP = limits.generationTopP
         self.topK = limits.generationTopK
+        self.seed = limits.generationSeed
         self.thinkingEnabled = limits.thinkingEnabled
     }
 }
@@ -299,6 +306,12 @@ private actor MLXQwenGenerator: QwenMLXGenerating {
         let loaded = try await loadContainerMeasured()
         guard !Task.isCancelled else {
             throw TranslationEngineFailure.cancelled
+        }
+
+        // Keep required functional evidence reproducible while preserving the
+        // published sampling parameters. The seed is recorded in provenance.
+        if let seed = limits.generationSeed {
+            MLXRandom.seed(seed)
         }
 
         // A new session is created for every translation. ChatSession retains

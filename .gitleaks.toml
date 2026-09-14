@@ -6,27 +6,68 @@ useDefault = true
 [[rules]]
 id = "generic-api-key"
 
-# Rule scope avoids global path prefiltering and works with CI's Gitleaks 8.24.3.
+# These are public Hugging Face snapshot revisions archived as provenance.
+# Keep every allowlist scoped to the exact hash and exact evidence files that contain it.
 [[rules.allowlists]]
 condition = "AND"
-description = "Public Hugging Face snapshot revisions in P0.2d3 bake-off evidence"
+description = "Public Gemma 3 1B snapshot revision in archived bake-off evidence"
 regexTarget = "secret"
 paths = [
-  '''^docs/native/p0\.2d3-bakeoff/.*$''',
+  '''^docs/native/p0\.2d3-bakeoff/bakeoff\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/gemma-3-1b-it-qat-4bit/report\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/gemma-3-1b-it-qat-4bit/summary\.md$''',
 ]
 regexes = [
   '''^15fed4eafb456c6fcb2a1165f19ac609670ed14b$''',
+]
+
+[[rules.allowlists]]
+condition = "AND"
+description = "Public Qwen 3.5 snapshot revision in archived benchmark/context evidence"
+regexTarget = "secret"
+paths = [
+  '''^docs/native/p0\.2d3-bakeoff/bakeoff\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/qwen3\.5-0\.8b-4bit/report\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/qwen3\.5-0\.8b-4bit/summary\.md$''',
+  '''^docs/native/p0\.2d4-reference-controls/context-corpus\.json$''',
+  '''^docs/native/p0\.2d4-reference-controls/qwen-mlx-context\.json$''',
+  '''^docs/native/p0\.2d4-reference-controls/qwen-mlx-source-only\.json$''',
+]
+regexes = [
   '''^5d894f8cc4ef3e6c88537bf3746ed262f549da6a$''',
+]
+
+[[rules.allowlists]]
+condition = "AND"
+description = "Public Gemma 3 270M snapshot revision in archived bake-off evidence"
+regexTarget = "secret"
+paths = [
+  '''^docs/native/p0\.2d3-bakeoff/bakeoff\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/gemma-3-270m-it-4bit/report\.json$''',
+  '''^docs/native/p0\.2d3-bakeoff/candidates/gemma-3-270m-it-4bit/summary\.md$''',
+]
+regexes = [
   '''^ff1143e3a10547c9f2129e94ca37059b096b23f4$''',
 ]
 
 [[rules.allowlists]]
-description = "Public Qwen snapshot revision in the derived context corpus"
 condition = "AND"
+description = "Public pinned Qwen3 0.6B snapshot revision in source and archived evidence"
 regexTarget = "secret"
 paths = [
-  '''^docs/native/p0\.2d4-reference-controls/context-corpus\.json$''',
+  '''^docs/native/p0\.2-physical-device-evaluation-plan\.md$''',
+  '''^docs/native/p0\.2-qwen3-local-model\.md$''',
+  '''^docs/native/p0\.2d4-reference-controls/local-validation/summary\.json$''',
+  '''^docs/native/qwen3-functional-ci-quality-review\.md$''',
+  '''^docs/native/qwen3-physical-device-evaluation\.md$''',
+  '''^docs/native/qwen3-physical-evidence/7f24e65/report\.json$''',
+  '''^docs/native/qwen3-physical-evidence/7f24e65/summary\.md$''',
+  '''^native-ios/QwenDeviceBenchmarkHarness/README\.md$''',
+  '''^native-ios/QwenMLXDiagnosticAdapter/README\.md$''',
+  '''^native-ios/QwenMLXDiagnosticAdapter/Sources/QwenMLXDiagnosticAdapter/QwenMLXArtifacts\.swift$''',
+  '''^native-ios/QwenMLXDiagnosticAdapter/THIRD_PARTY_NOTICES\.md$''',
+  '''^native-ios/QwenMLXDiagnosticAdapter/Tests/QwenMLXDiagnosticAdapterTests/QwenMLXDiagnosticAdapterTests\.swift$''',
 ]
 regexes = [
-  '''^5d894f8cc4ef3e6c88537bf3746ed262f549da6a$''',
+  '''^73e3e38d981303bc594367cd910ea6eb48349da8$''',
 ]

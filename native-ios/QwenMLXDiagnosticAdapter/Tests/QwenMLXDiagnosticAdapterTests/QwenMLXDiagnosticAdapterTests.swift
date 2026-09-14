@@ -33,11 +33,13 @@ final class QwenMLXDiagnosticAdapterTests: XCTestCase {
         XCTAssertEqual(limits.generationTemperature, 0.7)
         XCTAssertEqual(limits.generationTopP, 0.8)
         XCTAssertEqual(limits.generationTopK, 20)
+        XCTAssertEqual(limits.generationSeed, 0x51A7_2026)
         XCTAssertFalse(limits.thinkingEnabled)
 
         let settings = QwenMLXGenerationSettings(limits: limits)
         XCTAssertEqual(settings.topP, 0.8)
         XCTAssertEqual(settings.topK, 20)
+        XCTAssertEqual(settings.seed, 0x51A7_2026)
     }
 
     func testVerifierAcceptsCompleteMatchingFixture() throws {
