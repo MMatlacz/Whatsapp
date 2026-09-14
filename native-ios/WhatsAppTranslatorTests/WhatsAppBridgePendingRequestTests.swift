@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class WhatsAppBridgePendingRequestTests: XCTestCase {
-    func testRequestSpecificTimeoutPolicy() {
+    func testRequestSpecificTimeoutPolicy() async {
         XCTAssertEqual(WhatsAppBridgeRequestTimeouts.timeout(for: .connectionState), .seconds(15))
         XCTAssertEqual(WhatsAppBridgeRequestTimeouts.timeout(for: .loadMessages), .seconds(15))
         XCTAssertEqual(WhatsAppBridgeRequestTimeouts.timeout(for: .sendText), .seconds(15))
