@@ -121,7 +121,7 @@ struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
 }
 
 
-enum MediaPreviewPurpose: String, Hashable, Sendable {
+enum MediaPreviewPurpose: String, Codable, Hashable, Sendable {
     case attachment
     case linkPreview
 }
@@ -520,12 +520,27 @@ protocol WhatsAppTransport: Sendable {
         in chatID: String
     ) async throws -> WhatsAppTransportMessage
     func mediaPreview(chatID: String, messageID: String, maxPixelSize: Int) async throws -> WhatsAppTransportMediaPreview
+    func mediaPreview(
+        chatID: String,
+        messageID: String,
+        purpose: MediaPreviewPurpose,
+        maxPixelSize: Int
+    ) async throws -> WhatsAppTransportMediaPreview
     func eventStream() async -> AsyncStream<WhatsAppTransportEvent>
 }
 
 extension WhatsAppTransport {
     func mediaPreview(chatID: String, messageID: String, maxPixelSize: Int) async throws -> WhatsAppTransportMediaPreview {
         throw WhatsAppTransportMediaPreviewFailure.unavailable
+    }
+
+    func mediaPreview(
+        chatID: String,
+        messageID: String,
+        purpose: MediaPreviewPurpose,
+        maxPixelSize: Int
+    ) async throws -> WhatsAppTransportMediaPreview {
+        try await mediaPreview(chatID: chatID, messageID: messageID, maxPixelSize: maxPixelSize)
     }
 }
 

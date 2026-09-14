@@ -60,7 +60,7 @@ final class MediaPreviewLoaderTests: XCTestCase {
     }
 
     func testVisibleRequestRunsBeforeQueuedPrefetchAndFIFOWithinPriority() async {
-        let probe = MediaFetchProbe(delay: .milliseconds(45))
+        let probe = MediaFetchProbe(delay: .milliseconds(200))
         let loader = MediaPreviewLoader(maximumConcurrentRequests: 1) { key in
             try await probe.fetch(key)
         }
@@ -72,8 +72,11 @@ final class MediaPreviewLoaderTests: XCTestCase {
         let first = Task { await loader.load(blocker, isViewOnce: false, priority: .visible) }
         await waitForCalls(probe, count: 1)
         let second = Task { await loader.load(prefetch1, isViewOnce: false, priority: .prefetch) }
+        await waitForQueued(loader, count: 1)
         let third = Task { await loader.load(prefetch2, isViewOnce: false, priority: .prefetch) }
+        await waitForQueued(loader, count: 2)
         let fourth = Task { await loader.load(visible, isViewOnce: false, priority: .visible) }
+        await waitForQueued(loader, count: 3)
         _ = await (first.value, second.value, third.value, fourth.value)
 
         let started = await probe.startedMessageIDs

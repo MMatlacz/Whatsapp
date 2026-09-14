@@ -16,6 +16,7 @@ struct WhatsAppBridgeRequestPayload: Codable, Equatable, Sendable {
     let text: String?
     let messageID: String?
     let maxPixelSize: Int?
+    let previewPurpose: MediaPreviewPurpose?
 
     init(
         chatID: String? = nil,
@@ -23,7 +24,8 @@ struct WhatsAppBridgeRequestPayload: Codable, Equatable, Sendable {
         limit: Int? = nil,
         text: String? = nil,
         messageID: String? = nil,
-        maxPixelSize: Int? = nil
+        maxPixelSize: Int? = nil,
+        previewPurpose: MediaPreviewPurpose? = nil
     ) {
         self.chatID = chatID
         self.cursor = cursor
@@ -31,6 +33,7 @@ struct WhatsAppBridgeRequestPayload: Codable, Equatable, Sendable {
         self.text = text
         self.messageID = messageID
         self.maxPixelSize = maxPixelSize
+        self.previewPurpose = previewPurpose
     }
 }
 
@@ -231,6 +234,17 @@ actor WhatsAppWebTransport: WhatsAppTransport {
         messageID: String,
         maxPixelSize: Int
     ) async throws -> WhatsAppTransportMediaPreview {
+        try await mediaPreview(
+            chatID: chatID, messageID: messageID, purpose: .attachment, maxPixelSize: maxPixelSize
+        )
+    }
+
+    func mediaPreview(
+        chatID: String,
+        messageID: String,
+        purpose: MediaPreviewPurpose,
+        maxPixelSize: Int
+    ) async throws -> WhatsAppTransportMediaPreview {
         try requireIdentifier(chatID, field: "chatID")
         try requireIdentifier(messageID, field: "messageID")
         guard (64...1_280).contains(maxPixelSize) else {
@@ -239,7 +253,7 @@ actor WhatsAppWebTransport: WhatsAppTransport {
         let response = try await perform(
             kind: .mediaPreview,
             payload: WhatsAppBridgeRequestPayload(
-                chatID: chatID, messageID: messageID, maxPixelSize: maxPixelSize
+                chatID: chatID, messageID: messageID, maxPixelSize: maxPixelSize, previewPurpose: purpose
             )
         )
         guard case .mediaPreview(let preview) = response else {

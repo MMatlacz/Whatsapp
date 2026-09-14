@@ -103,7 +103,10 @@ final class WhatsAppWebTransportTests: XCTestCase {
         }
         let transport = WhatsAppWebTransport(runtime: runtime)
         let preview = try await transport.mediaPreview(
-            chatID: "group@g.us", messageID: "message-1", maxPixelSize: 768
+            chatID: "group@g.us",
+            messageID: "message-1",
+            purpose: .linkPreview,
+            maxPixelSize: 768
         )
         XCTAssertEqual(preview.mimeType, "image/jpeg")
         XCTAssertEqual(preview.data, Data([1, 2, 3, 4]))
@@ -112,6 +115,7 @@ final class WhatsAppWebTransportTests: XCTestCase {
         let requests = await runtime.capturedRequests()
         XCTAssertEqual(requests.first?.kind, .mediaPreview)
         XCTAssertEqual(requests.first?.payload.maxPixelSize, 768)
+        XCTAssertEqual(requests.first?.payload.previewPurpose, .linkPreview)
     }
 
     func testTransportRejectsInvalidArgumentsWithoutInvokingRuntime() async throws {

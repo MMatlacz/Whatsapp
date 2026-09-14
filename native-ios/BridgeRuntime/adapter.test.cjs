@@ -195,11 +195,86 @@ test('maps WhatsApp link preview metadata without embedding thumbnail bytes in h
     });
     assert.ok(!JSON.stringify(page.messages[0]).includes(raw.linkPreview.thumbnail));
     const preview = await adapter.mediaPreview({
-        chatID: 'test@c.us', messageID: 'message-1', maxPixelSize: 320
+        chatID: 'test@c.us', messageID: 'message-1', purpose: 'linkPreview', maxPixelSize: 320
     });
     assert.equal(preview.data, raw.linkPreview.thumbnail);
     assert.equal(preview.mimeType, 'image/jpeg');
 });
+test('link preview purpose never falls back to attachment download', async () => {
+    const { adapter, wpp, raw } = fixture();
+    let downloads = 0;
+    raw.body = 'https://example.com/no-thumb';
+    raw.linkPreview = { matchedText: raw.body };
+    Object.assign(raw, { type: 'image', thumbnail: Buffer.from('attachment-thumb').toString('base64') });
+    wpp.chat.downloadMedia = async () => { downloads += 1; throw new Error('forbidden-download'); };
+    await assert.rejects(
+        adapter.mediaPreview({
+            chatID: 'test@c.us', messageID: 'message-1', purpose: 'linkPreview', maxPixelSize: 320
+        }),
+        /preview-unavailable/
+    );
+    assert.equal(downloads, 0);
+});
+
+test('video attachment preview uses inline thumbnail and never downloads full video', async () => {
+    const { adapter, wpp, raw } = fixture();
+    let downloads = 0;
+    Object.assign(raw, {
+        type: 'video',
+        thumbnailHQ: Buffer.from('video-thumb').toString('base64'),
+        thumbnailWidth: 160,
+        thumbnailHeight: 90
+    });
+    wpp.chat.downloadMedia = async () => { downloads += 1; throw new Error('forbidden-download'); };
+    const preview = await adapter.mediaPreview({
+        chatID: 'test@c.us', messageID: 'message-1', purpose: 'attachment', maxPixelSize: 320
+    });
+    assert.equal(preview.data, raw.thumbnailHQ);
+    assert.equal(preview.width, 160);
+    assert.equal(preview.height, 90);
+    assert.equal(downloads, 0);
+
+    delete raw.thumbnailHQ;
+    await assert.rejects(
+        adapter.mediaPreview({
+            chatID: 'test@c.us', messageID: 'message-1', purpose: 'attachment', maxPixelSize: 320
+        }),
+        /preview-unavailable/
+    );
+    assert.equal(downloads, 0);
+});
+
+test('image attachment fallback download remains bounded and MIME-validated', async () => {
+    const { adapter, wpp, raw } = fixture();
+    let downloads = 0;
+    Object.assign(raw, { type: 'image', mimetype: 'image/jpeg' });
+    delete raw.thumbnailHQ;
+    delete raw.thumbnail;
+    wpp.chat.downloadMedia = async () => {
+        downloads += 1;
+        return new Blob([new Uint8Array(12 * 1024 * 1024 + 1)], { type: 'image/jpeg' });
+    };
+    await assert.rejects(
+        adapter.mediaPreview({
+            chatID: 'test@c.us', messageID: 'message-1', purpose: 'attachment', maxPixelSize: 768
+        }),
+        /preview-source-too-large/
+    );
+    assert.equal(downloads, 1);
+
+    wpp.chat.downloadMedia = async () => {
+        downloads += 1;
+        return new Blob(['not-an-image'], { type: 'application/octet-stream' });
+    };
+    await assert.rejects(
+        adapter.mediaPreview({
+            chatID: 'test@c.us', messageID: 'message-1', purpose: 'attachment', maxPixelSize: 768
+        }),
+        /preview-downsample-unavailable/
+    );
+    assert.equal(downloads, 2);
+});
+
 test('refuses view-once media previews before download', async () => {
     const { adapter, wpp, raw } = fixture();
     let downloads = 0;
@@ -209,7 +284,7 @@ test('refuses view-once media previews before download', async () => {
         return new Blob(['secret'], { type: 'image/jpeg' });
     };
     await assert.rejects(
-        adapter.mediaPreview({ chatID: 'test@c.us', messageID: 'message-1', maxPixelSize: 768 }),
+        adapter.mediaPreview({ chatID: 'test@c.us', messageID: 'message-1', purpose: 'attachment', maxPixelSize: 768 }),
         /view-once-media/
     );
     assert.equal(downloads, 0);
