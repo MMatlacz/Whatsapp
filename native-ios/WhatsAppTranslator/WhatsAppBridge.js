@@ -8,6 +8,7 @@
     const VALID_STATES = new Set(['disconnected', 'connecting', 'authenticating', 'syncing', 'ready']);
     const VALID_MEDIA_KINDS = new Set(['image', 'video', 'audio', 'document', 'sticker', 'other']);
     const VALID_DELIVERY_STATES = new Set(['pending', 'sent', 'delivered', 'read', 'played', 'failed']);
+    const VALID_CONTENT_KINDS = new Set(['text', 'media', 'linkPreview', 'location', 'contact', 'poll', 'revoked', 'system', 'unsupported']);
 
     if (globalThis[GLOBAL_BRIDGE]?.version === BRIDGE_VERSION) {
         return;
@@ -30,6 +31,17 @@
     const optionalString = (value, field) => {
         if (value === null || value === undefined) return null;
         if (typeof value !== 'string') {
+            throw new BridgeError('invalid-adapter-payload', field);
+        }
+        return value;
+    };
+
+    const boundedString = (value, field, maxLength, { required = false } = {}) => {
+        if (value === null || value === undefined) {
+            if (required) throw new BridgeError('invalid-adapter-payload', field);
+            return null;
+        }
+        if (typeof value !== 'string' || value.length > maxLength || (required && value.length === 0)) {
             throw new BridgeError('invalid-adapter-payload', field);
         }
         return value;
@@ -144,6 +156,74 @@
         return { matchedText, canonicalURL, title, description };
     };
 
+    const normalizeMessageContent = (value) => {
+        if (!value || typeof value !== 'object' || typeof value.kind !== 'string' ||
+            !VALID_CONTENT_KINDS.has(value.kind)) {
+            throw new BridgeError('invalid-adapter-payload', 'message.content');
+        }
+        switch (value.kind) {
+        case 'text':
+        case 'media':
+        case 'linkPreview':
+        case 'revoked':
+            return { kind: value.kind };
+        case 'location': {
+            const location = value.location;
+            if (!location || typeof location !== 'object' || !Number.isFinite(location.latitude) ||
+                location.latitude < -90 || location.latitude > 90 || !Number.isFinite(location.longitude) ||
+                location.longitude < -180 || location.longitude > 180) {
+                throw new BridgeError('invalid-adapter-payload', 'message.content.location');
+            }
+            return { kind: 'location', location: {
+                latitude: location.latitude, longitude: location.longitude,
+                name: boundedString(location.name, 'message.content.location.name', 512),
+                address: boundedString(location.address, 'message.content.location.address', 1024)
+            } };
+        }
+        case 'contact': {
+            if (!Array.isArray(value.contacts) || value.contacts.length < 1 || value.contacts.length > 8) {
+                throw new BridgeError('invalid-adapter-payload', 'message.content.contacts');
+            }
+            return { kind: 'contact', contacts: value.contacts.map((card) => {
+                if (!card || typeof card !== 'object') {
+                    throw new BridgeError('invalid-adapter-payload', 'message.content.contact');
+                }
+                return {
+                    displayName: boundedString(card.displayName, 'message.content.contact.displayName', 256),
+                    vCard: boundedString(card.vCard, 'message.content.contact.vCard', 4096, { required: true })
+                };
+            }) };
+        }
+        case 'poll': {
+            const poll = value.poll;
+            if (!poll || typeof poll !== 'object' || !Array.isArray(poll.options) ||
+                poll.options.length < 1 || poll.options.length > 20) {
+                throw new BridgeError('invalid-adapter-payload', 'message.content.poll');
+            }
+            return { kind: 'poll', poll: {
+                question: boundedString(poll.question, 'message.content.poll.question', 2048, { required: true }),
+                options: poll.options.map((option) =>
+                    boundedString(option, 'message.content.poll.option', 512, { required: true }))
+            } };
+        }
+        case 'system': {
+            const system = value.system;
+            if (!system || typeof system !== 'object') {
+                throw new BridgeError('invalid-adapter-payload', 'message.content.system');
+            }
+            return { kind: 'system', system: {
+                type: boundedString(system.type, 'message.content.system.type', 128, { required: true }),
+                text: boundedString(system.text, 'message.content.system.text', 2048)
+            } };
+        }
+        case 'unsupported':
+            return { kind: 'unsupported',
+                rawType: boundedString(value.rawType, 'message.content.rawType', 64, { required: true }) };
+        default:
+            throw new BridgeError('invalid-adapter-payload', 'message.content.kind');
+        }
+    };
+
     const normalizeMediaPreview = (value) => {
         if (!value || typeof value !== 'object') throw new BridgeError('invalid-adapter-payload', 'mediaPreview');
         const mimeType = requireNonEmptyString(value.mimeType, 'mediaPreview.mimeType');
@@ -165,20 +245,28 @@
         if (!value || typeof value !== 'object') {
             throw new BridgeError('invalid-adapter-payload', 'message');
         }
+        const body = optionalString(value.body, 'message.body');
+        const media = normalizeMedia(value.media);
+        const linkPreview = normalizeLinkPreview(value.linkPreview);
+        const fallbackContent = media ? { kind: 'media' } : (linkPreview ? { kind: 'linkPreview' } : { kind: 'text' });
+        const content = normalizeMessageContent(value.content ?? fallbackContent);
+        if (!['text', 'media', 'linkPreview'].includes(content.kind) && body !== null) {
+            throw new BridgeError('invalid-adapter-payload', 'message.body');
+        }
+        if (content.kind === 'media' && !media) {
+            throw new BridgeError('invalid-adapter-payload', 'message.content.media');
+        }
+        if (content.kind === 'linkPreview' && !linkPreview) {
+            throw new BridgeError('invalid-adapter-payload', 'message.content.linkPreview');
+        }
         return {
             id: requireNonEmptyString(value.id, 'message.id'),
             chatID: requireNonEmptyString(value.chatID, 'message.chatID'),
             senderID: optionalIdentifier(value.senderID, 'message.senderID'),
-            timestampMilliseconds: nonNegativeInteger(
-                value.timestampMilliseconds,
-                'message.timestampMilliseconds'
-            ),
-            body: optionalString(value.body, 'message.body'),
-            fromMe: Boolean(value.fromMe),
+            timestampMilliseconds: nonNegativeInteger(value.timestampMilliseconds, 'message.timestampMilliseconds'),
+            body, fromMe: Boolean(value.fromMe),
             deliveryState: optionalDeliveryState(value.deliveryState, 'message.deliveryState'),
-            quote: normalizeQuote(value.quote),
-            media: normalizeMedia(value.media),
-            linkPreview: normalizeLinkPreview(value.linkPreview)
+            quote: normalizeQuote(value.quote), media, linkPreview, content
         };
     };
 
