@@ -397,7 +397,6 @@ final class PersistenceCoreTests: XCTestCase {
         }
     }
 
-
     private func createVersionFourDatabase(_ path: String) throws {
         try executeRaw(path, sql: """
             CREATE TABLE chats(
