@@ -35,6 +35,7 @@ struct NativeRetranslationRequest: Equatable, Sendable {
     let previousTranslation: String
     let comment: String
     let revision: Int
+    let userInitiated: Bool
 }
 
 protocol NativeRetranslator: Sendable {
@@ -234,6 +235,15 @@ final class NativeTranslationModel {
     }
 
     func retranslate(key: NativeTranslationKey, original: String, comment: String) async {
+        await performRetranslation(key: key, original: original, comment: comment, userInitiated: true)
+    }
+
+    private func performRetranslation(
+        key: NativeTranslationKey,
+        original: String,
+        comment: String,
+        userInitiated: Bool
+    ) async {
         let trimmed = comment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !running.contains(key) else { return }
@@ -261,13 +271,14 @@ final class NativeTranslationModel {
         do {
             let parts = try await retranslator.retranslate(.init(
                 key: key, original: original, previousTranslation: current.translatedText,
-                comment: trimmed, revision: revision
+                comment: trimmed, revision: revision, userInitiated: userInitiated
             ))
             guard records[key]?.revision == revision, records[key]?.original == original else { return }
             guard Self.validParts(parts, original: original) else {
                 notices[key] = "The translation result was invalid. Your previous translation is kept."
                 return
             }
+            let translationChanged = current.translatedText != parts.map(\.translation).joined()
             current.parts = parts
             current.manuallyEdited = false
             current.revision += 1
@@ -276,11 +287,19 @@ final class NativeTranslationModel {
             let kind: TranslationRevisionKind = current.parts.isEmpty ? .retranslation :
                 (records[key]?.parts.isEmpty == true ? .model : .retranslation)
             if commit(records: updated, words: knownWords, changedKey: key, revisionKind: kind) {
-                notices[key] = "Retranslation updated."
+                if userInitiated {
+                    notices[key] = translationChanged
+                        ? "Retranslation updated using your comment."
+                        : "The model returned the same translation. Your comment was saved; try a more specific instruction."
+                } else {
+                    notices[key] = "Translation updated."
+                }
             }
         } catch {
             guard records[key]?.revision == revision else { return }
-            notices[key] = "Retranslation failed. Your previous translation and comment are kept."
+            notices[key] = userInitiated
+                ? "Retranslation failed. Your previous translation and comment are kept."
+                : "Translation was deferred while the local model was busy. Tap Translate now to retry."
         }
     }
 
@@ -295,8 +314,12 @@ final class NativeTranslationModel {
         }
         guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               record(for: key, original: original)?.parts.isEmpty != false else { return }
-        await retranslate(key: key, original: original,
-                          comment: "Translate faithfully. Preserve meaning, tone and quoted references.")
+        await performRetranslation(
+            key: key,
+            original: original,
+            comment: "Translate faithfully. Preserve meaning, tone and quoted references.",
+            userInitiated: false
+        )
     }
 
     private static func wordKey(_ word: String, language: String) -> String {

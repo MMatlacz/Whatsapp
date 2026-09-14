@@ -30,7 +30,7 @@ final class TranslateGemmaPromptTests: XCTestCase {
 
         XCTAssertEqual(
             prompt.contentText,
-            "Translator guidance (do not translate):\nKeep the reassuring, teasing register.\nTarget text (translate only this):\nJangan baper, aku cuma bercanda."
+            "Translator instruction (apply to the Polish output; do not copy the instruction verbatim):\nKeep the reassuring, teasing register.\nTarget text (translate only this):\nJangan baper, aku cuma bercanda."
         )
         XCTAssertTrue(prompt.content.text.contains("Target text (translate only this):"))
     }
