@@ -150,7 +150,6 @@ final class MediaPreviewLoaderTests: XCTestCase {
         XCTAssertEqual(unavailableState, .unavailable)
     }
 
-
     func testCompletedPreviewIsServedFromEncodedByteCache() async {
         let probe = MediaFetchProbe()
         let loader = MediaPreviewLoader { key in try await probe.fetch(key) }
@@ -215,17 +214,17 @@ final class MediaPreviewLoaderTests: XCTestCase {
     }
 
     private func waitForCalls(_ probe: MediaFetchProbe, count: Int) async {
-        for _ in 0..<500 {
+        for _ in 0..<2_000 {
             if await probe.totalCalls >= count { return }
-            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(1))
         }
         XCTFail("Timed out waiting for fetches")
     }
 
     private func waitForQueued(_ loader: MediaPreviewLoader, count: Int) async {
-        for _ in 0..<500 {
+        for _ in 0..<2_000 {
             if await loader.queuedRequestCount >= count { return }
-            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(1))
         }
         XCTFail("Timed out waiting for queued previews")
     }

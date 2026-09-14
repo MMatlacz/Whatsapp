@@ -179,7 +179,6 @@ struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
     let height: Int?
 }
 
-
 enum MediaPreviewPurpose: String, Hashable, Sendable {
     case attachment
     case linkPreview
