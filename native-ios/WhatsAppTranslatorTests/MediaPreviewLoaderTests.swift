@@ -150,6 +150,62 @@ final class MediaPreviewLoaderTests: XCTestCase {
         XCTAssertEqual(unavailableState, .unavailable)
     }
 
+
+    func testCompletedPreviewIsServedFromEncodedByteCache() async {
+        let probe = MediaFetchProbe()
+        let loader = MediaPreviewLoader { key in try await probe.fetch(key) }
+        let key = makeKey(messageID: "cached")
+
+        _ = await loader.load(key, isViewOnce: false)
+        _ = await loader.load(key, isViewOnce: false)
+
+        let calls = await probe.callCount(for: key)
+        let stats = await loader.encodedCacheStats()
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(stats.entryCount, 1)
+        XCTAssertEqual(stats.totalCostBytes, Data("cached".utf8).count)
+        XCTAssertEqual(MediaPreviewLoader.encodedCacheSoftLimitBytes, 32 * 1_024 * 1_024)
+        XCTAssertEqual(MediaPreviewLoader.encodedCacheHardLimitBytes, 48 * 1_024 * 1_024)
+        XCTAssertEqual(MediaPreviewCacheBudget.decodedBytes, 24 * 1_024 * 1_024)
+    }
+
+    func testViewOnceDoesNotEnterEncodedCache() async {
+        let probe = MediaFetchProbe()
+        let loader = MediaPreviewLoader { key in try await probe.fetch(key) }
+        let key = makeKey(messageID: "view-once")
+
+        _ = await loader.load(key, isViewOnce: true)
+        let stats = await loader.encodedCacheStats()
+        XCTAssertEqual(stats, .init(entryCount: 0, totalCostBytes: 0))
+        let totalCalls = await probe.totalCalls
+        XCTAssertEqual(totalCalls, 0)
+    }
+
+    func testByteCostCacheEvictsToSoftLimitWhenHardLimitIsExceeded() {
+        var cache = ByteCostLRUCache<String, String>(softLimitBytes: 10, hardLimitBytes: 15)
+        XCTAssertEqual(cache.insert("A", for: "a", costBytes: 5), [])
+        XCTAssertEqual(cache.insert("B", for: "b", costBytes: 5), [])
+        XCTAssertEqual(cache.insert("C", for: "c", costBytes: 4), [])
+        _ = cache.value(for: "a") // a becomes most recent; b is oldest.
+
+        let evicted = cache.insert("D", for: "d", costBytes: 5)
+        XCTAssertEqual(evicted, ["b", "c"])
+        XCTAssertEqual(cache.stats, .init(entryCount: 2, totalCostBytes: 10))
+        XCTAssertEqual(cache.value(for: "a"), "A")
+        XCTAssertEqual(cache.value(for: "d"), "D")
+    }
+
+    func testByteCostCacheRejectsOversizedSingleItemAndPurgesSynchronously() {
+        var cache = ByteCostLRUCache<String, String>(softLimitBytes: 8, hardLimitBytes: 12)
+        _ = cache.insert("small", for: "small", costBytes: 6)
+        _ = cache.insert("oversized", for: "oversized", costBytes: 13)
+        XCTAssertFalse(cache.contains("oversized"))
+        XCTAssertEqual(cache.stats, .init(entryCount: 1, totalCostBytes: 6))
+
+        cache.removeAll()
+        XCTAssertEqual(cache.stats, .init(entryCount: 0, totalCostBytes: 0))
+    }
+
     private func makeKey(
         messageID: String,
         purpose: MediaPreviewPurpose = .attachment,

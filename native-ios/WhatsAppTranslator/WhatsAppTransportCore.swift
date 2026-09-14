@@ -179,6 +179,7 @@ struct WhatsAppTransportMediaPreview: Codable, Equatable, Sendable {
     let height: Int?
 }
 
+
 enum MediaPreviewPurpose: String, Hashable, Sendable {
     case attachment
     case linkPreview
@@ -200,6 +201,78 @@ enum MediaPreviewPriority: Int, Comparable, Sendable {
     }
 }
 
+struct ByteCostLRUCacheStats: Equatable, Sendable {
+    let entryCount: Int
+    let totalCostBytes: Int
+}
+
+struct ByteCostLRUCache<Key: Hashable, Value> {
+    private struct Entry {
+        var value: Value
+        var cost: Int
+        var recency: UInt64
+    }
+
+    let softLimitBytes: Int
+    let hardLimitBytes: Int
+    private var entries: [Key: Entry] = [:]
+    private var totalCost = 0
+    private var recency: UInt64 = 0
+
+    init(softLimitBytes: Int, hardLimitBytes: Int) {
+        precondition(softLimitBytes >= 0 && hardLimitBytes >= softLimitBytes)
+        self.softLimitBytes = softLimitBytes
+        self.hardLimitBytes = hardLimitBytes
+    }
+
+    mutating func value(for key: Key) -> Value? {
+        guard var entry = entries[key] else { return nil }
+        recency &+= 1
+        entry.recency = recency
+        entries[key] = entry
+        return entry.value
+    }
+
+    @discardableResult
+    mutating func insert(_ value: Value, for key: Key, costBytes: Int) -> [Key] {
+        guard costBytes >= 0, costBytes <= hardLimitBytes else { return [] }
+        if let previous = entries.removeValue(forKey: key) {
+            totalCost -= previous.cost
+        }
+        recency &+= 1
+        entries[key] = Entry(value: value, cost: costBytes, recency: recency)
+        totalCost += costBytes
+
+        guard totalCost > hardLimitBytes else { return [] }
+        var evicted: [Key] = []
+        while totalCost > softLimitBytes,
+              let oldest = entries.min(by: { $0.value.recency < $1.value.recency }) {
+            entries.removeValue(forKey: oldest.key)
+            totalCost -= oldest.value.cost
+            evicted.append(oldest.key)
+        }
+        return evicted
+    }
+
+    @discardableResult
+    mutating func removeValue(for key: Key) -> Value? {
+        guard let entry = entries.removeValue(forKey: key) else { return nil }
+        totalCost -= entry.cost
+        return entry.value
+    }
+
+    mutating func removeAll() {
+        entries.removeAll(keepingCapacity: true)
+        totalCost = 0
+    }
+
+    func contains(_ key: Key) -> Bool { entries[key] != nil }
+
+    var stats: ByteCostLRUCacheStats {
+        .init(entryCount: entries.count, totalCostBytes: totalCost)
+    }
+}
+
 enum MediaPreviewLoaderFailure: Error, Equatable, Sendable {
     case transport
 }
@@ -213,7 +286,16 @@ enum MediaPreviewState: Equatable, Sendable {
     case failed(MediaPreviewLoaderFailure)
 }
 
+enum MediaPreviewCacheBudget {
+    static let encodedSoftBytes = 32 * 1_024 * 1_024
+    static let encodedHardBytes = 48 * 1_024 * 1_024
+    static let decodedBytes = 24 * 1_024 * 1_024
+}
+
 actor MediaPreviewLoader {
+    static let encodedCacheSoftLimitBytes = MediaPreviewCacheBudget.encodedSoftBytes
+    static let encodedCacheHardLimitBytes = MediaPreviewCacheBudget.encodedHardBytes
+
     typealias Fetch = @Sendable (MediaPreviewKey) async throws -> WhatsAppTransportMediaPreview
 
     private struct Waiter {
@@ -240,6 +322,10 @@ actor MediaPreviewLoader {
     private var queue: [QueueEntry] = []
     private var running: Set<MediaPreviewKey> = []
     private var states: [MediaPreviewKey: MediaPreviewState] = [:]
+    private var encodedCache = ByteCostLRUCache<MediaPreviewKey, WhatsAppTransportMediaPreview>(
+        softLimitBytes: MediaPreviewLoader.encodedCacheSoftLimitBytes,
+        hardLimitBytes: MediaPreviewLoader.encodedCacheHardLimitBytes
+    )
 
     init(maximumConcurrentRequests: Int = 2, fetch: @escaping Fetch) {
         self.maximumConcurrentRequests = max(1, maximumConcurrentRequests)
@@ -247,8 +333,13 @@ actor MediaPreviewLoader {
     }
 
     func state(for key: MediaPreviewKey) -> MediaPreviewState {
-        states[key] ?? .idle
+        if let preview = encodedCache.value(for: key) { return .ready(preview) }
+        return states[key] ?? .idle
     }
+
+    func encodedCacheStats() -> ByteCostLRUCacheStats { encodedCache.stats }
+
+    func purgeEncodedCache() { encodedCache.removeAll() }
 
     func load(
         _ key: MediaPreviewKey,
@@ -256,10 +347,11 @@ actor MediaPreviewLoader {
         priority: MediaPreviewPriority = .visible
     ) async -> MediaPreviewState {
         if isViewOnce {
+            encodedCache.removeValue(for: key)
             states[key] = .unavailable
             return .unavailable
         }
-        if case .ready(let preview) = states[key] {
+        if let preview = encodedCache.value(for: key) {
             return .ready(preview)
         }
 
@@ -367,7 +459,12 @@ actor MediaPreviewLoader {
     private func finish(_ key: MediaPreviewKey, state: MediaPreviewState) {
         guard let request = requests.removeValue(forKey: key) else { return }
         running.remove(key)
-        states[key] = state
+        if case .ready(let preview) = state {
+            _ = encodedCache.insert(preview, for: key, costBytes: preview.data.count)
+            states.removeValue(forKey: key)
+        } else {
+            states[key] = state
+        }
         request.waiters.values.forEach { $0.continuation.resume(returning: state) }
         startAvailableRequests()
     }
