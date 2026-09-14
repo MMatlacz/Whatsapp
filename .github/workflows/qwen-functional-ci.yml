@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Record runner and Apple toolchain
         run: |
@@ -373,7 +373,7 @@ jobs:
 
       - name: Upload Qwen functional evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: qwen-functional-evidence-${{ github.run_id }}
           path: |
