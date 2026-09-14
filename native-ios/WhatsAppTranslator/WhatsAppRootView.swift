@@ -34,6 +34,7 @@ private enum NativeAutomaticTranslationEligibility {
 
 @MainActor
 struct WhatsAppRootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("translation.enabled") private var translationEnabled = true
     @AppStorage("translation.ownerApprovedTranslateGemma") private var ownerApprovedTranslateGemma = false
     @State private var runtime: WhatsAppWebKitBridgeRuntime
@@ -128,6 +129,14 @@ struct WhatsAppRootView: View {
             model.translations.ownerApprovedExperimentalProvider = enabled
             Task { await updateTranslateGemmaState() }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { NativeDecodedPreviewCache.shared.removeAll() }
+        }
+        #if canImport(UIKit)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            NativeDecodedPreviewCache.shared.removeAll()
+        }
+        #endif
         .sheet(isPresented: $showingSamples) { NativeSampleBrowser() }
         .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
     }
@@ -481,12 +490,14 @@ private struct NativeConversation: View {
                             : "Translation disabled")
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in
+                        let previewKey = model.mediaPreviewKey(for: message)
                         NativeMessageBubble(message: message, translations: model.translations,
                                             translationKey: model.translationKey(chatID: chatID, messageID: message.id),
                                             senderName: senderName(for: message),
                                             senderIdentity: senderIdentity(for: message),
                                             quoteSenderName: quoteSenderName(for: message),
-                                            mediaPreview: model.mediaPreviews[message.id])
+                                            mediaPreviewKey: previewKey,
+                                            mediaPreview: previewKey.flatMap { model.mediaPreviews[$0] })
                             .task(id: model.connectionState) {
                                 if !message.fromMe, let senderID = message.senderID,
                                    model.chats.first(where: { $0.id == chatID })?.isGroup == true {
@@ -497,6 +508,7 @@ private struct NativeConversation: View {
                                 }
                                 await model.loadMediaPreview(for: message)
                             }
+                            .onDisappear { model.releaseMediaPreview(for: message) }
                             .contextMenu {
                                 Button("Reply", systemImage: "arrowshape.turn.up.left") {
                                     model.setReply(message, chatID: chatID)
@@ -545,6 +557,7 @@ private struct NativeMessageBubble: View {
     let senderName: String?
     let senderIdentity: NativeContactIdentity?
     let quoteSenderName: String?
+    let mediaPreviewKey: MediaPreviewKey?
     let mediaPreview: WhatsAppTransportMediaPreview?
 
     var body: some View {
@@ -579,10 +592,10 @@ private struct NativeMessageBubble: View {
                     )
                 }
                 if let linkPreview = message.linkPreview {
-                    NativeLinkPreviewCard(preview: linkPreview, thumbnail: mediaPreview)
+                    NativeLinkPreviewCard(preview: linkPreview, thumbnailKey: mediaPreviewKey, thumbnail: mediaPreview)
                 }
                 if let media = message.media {
-                    NativeMediaAttachmentView(media: media, preview: mediaPreview)
+                    NativeMediaAttachmentView(media: media, previewKey: mediaPreviewKey, preview: mediaPreview)
                 } else if message.body == nil, message.linkPreview == nil {
                     Text("Message content is unavailable")
                 }
@@ -608,6 +621,7 @@ private struct NativeMessageBubble: View {
 
 private struct NativeLinkPreviewCard: View {
     let preview: WhatsAppTransportLinkPreview
+    let thumbnailKey: MediaPreviewKey?
     let thumbnail: WhatsAppTransportMediaPreview?
 
     var body: some View {
@@ -623,7 +637,9 @@ private struct NativeLinkPreviewCard: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let thumbnail { NativePreviewImage(preview: thumbnail, height: 120) }
+            if let thumbnailKey, let thumbnail {
+                NativePreviewImage(key: thumbnailKey, preview: thumbnail, height: 120)
+            }
             if let title = preview.title, !title.isEmpty {
                 Text(title).font(.subheadline.bold()).lineLimit(2)
             }
@@ -651,6 +667,7 @@ private struct NativeLinkPreviewCard: View {
 
 private struct NativeMediaAttachmentView: View {
     let media: WhatsAppTransportMediaMetadata
+    let previewKey: MediaPreviewKey?
     let preview: WhatsAppTransportMediaPreview?
 
     var body: some View {
@@ -659,8 +676,9 @@ private struct NativeMediaAttachmentView: View {
             if media.isViewOnce {
                 Text("View-once attachment is not previewed or cached.")
                     .font(.caption).foregroundStyle(.secondary)
-            } else if (media.kind == .image || media.kind == .sticker), let preview {
-                NativePreviewImage(preview: preview, height: media.kind == .sticker ? 140 : 240)
+            } else if (media.kind == .image || media.kind == .sticker),
+                      let previewKey, let preview {
+                NativePreviewImage(key: previewKey, preview: preview, height: media.kind == .sticker ? 140 : 240)
             } else if media.kind == .image || media.kind == .sticker {
                 ProgressView("Loading attachment preview…").font(.caption)
             } else if let size = media.sizeBytes {
@@ -689,18 +707,39 @@ private struct NativeMediaAttachmentView: View {
     }
 }
 
+@MainActor
+final class NativeDecodedPreviewCache {
+    static let shared = NativeDecodedPreviewCache()
+    static let budgetBytes = MediaPreviewCacheBudget.decodedBytes
+
+    private var cache = ByteCostLRUCache<MediaPreviewKey, CGImage>(
+        softLimitBytes: budgetBytes,
+        hardLimitBytes: budgetBytes
+    )
+
+    func image(for key: MediaPreviewKey) -> CGImage? {
+        cache.value(for: key)
+    }
+
+    func insert(_ image: CGImage, for key: MediaPreviewKey) {
+        let cost = image.bytesPerRow.multipliedReportingOverflow(by: image.height)
+        guard !cost.overflow else { return }
+        _ = cache.insert(image, for: key, costBytes: cost.partialValue)
+    }
+
+    func removeAll() { cache.removeAll() }
+
+    var stats: ByteCostLRUCacheStats { cache.stats }
+}
+
 private struct NativePreviewImage: View {
+    let key: MediaPreviewKey
     let preview: WhatsAppTransportMediaPreview
     let height: CGFloat
 
     var body: some View {
         Group {
-            if let source = CGImageSourceCreateWithData(preview.data as CFData, nil),
-               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceThumbnailMaxPixelSize: 768,
-                kCGImageSourceCreateThumbnailWithTransform: true
-               ] as CFDictionary) {
+            if let image = decodedImage {
                 Image(decorative: image, scale: 1)
                     .resizable()
                     .scaledToFill()
@@ -714,6 +753,19 @@ private struct NativePreviewImage: View {
         .frame(height: height)
         .clipShape(.rect(cornerRadius: 10))
         .accessibilityHidden(true)
+    }
+
+    private var decodedImage: CGImage? {
+        let cache = NativeDecodedPreviewCache.shared
+        if let cached = cache.image(for: key) { return cached }
+        guard let source = CGImageSourceCreateWithData(preview.data as CFData, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: key.requestedPixelSize,
+                kCGImageSourceCreateThumbnailWithTransform: true
+              ] as CFDictionary) else { return nil }
+        cache.insert(image, for: key)
+        return image
     }
 }
 
