@@ -70,6 +70,108 @@ enum WhatsAppWebTransportError: Error, Equatable, Sendable {
     case unexpectedResponse(expected: String, actual: String)
 }
 
+
+enum WhatsAppBridgeRequestTimeouts {
+    static let standard: Duration = .seconds(15)
+    static let mediaPreview: Duration = .seconds(30)
+
+    static func timeout(for kind: WhatsAppBridgeRequestKind) -> Duration {
+        kind == .mediaPreview ? mediaPreview : standard
+    }
+}
+
+@MainActor
+final class WhatsAppBridgePendingRequestStore {
+    private struct PendingRequest {
+        let continuation: CheckedContinuation<Data, Error>
+        let timeoutTask: Task<Void, Never>
+    }
+
+    private var requests: [String: PendingRequest] = [:]
+
+    var pendingCount: Int { requests.count }
+
+    func awaitResponse(
+        requestID: String,
+        timeout: Duration,
+        start: @MainActor () -> Void
+    ) async throws -> Data {
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                register(requestID: requestID, timeout: timeout, continuation: continuation)
+                start()
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in
+                self?.cancel(requestID)
+            }
+        }
+    }
+
+    @discardableResult
+    func complete(_ requestID: String, data: Data) -> Bool {
+        guard let pending = requests.removeValue(forKey: requestID) else { return false }
+        pending.timeoutTask.cancel()
+        pending.continuation.resume(returning: data)
+        return true
+    }
+
+    @discardableResult
+    func fail(_ requestID: String, error: Error) -> Bool {
+        guard let pending = requests.removeValue(forKey: requestID) else { return false }
+        pending.timeoutTask.cancel()
+        pending.continuation.resume(throwing: error)
+        return true
+    }
+
+    @discardableResult
+    func cancel(_ requestID: String) -> Bool {
+        fail(requestID, error: CancellationError())
+    }
+
+    func failAll(with error: Error) {
+        let pending = Array(requests.values)
+        requests.removeAll(keepingCapacity: true)
+        for request in pending {
+            request.timeoutTask.cancel()
+            request.continuation.resume(throwing: error)
+        }
+    }
+
+    private func register(
+        requestID: String,
+        timeout: Duration,
+        continuation: CheckedContinuation<Data, Error>
+    ) {
+        if let previous = requests.removeValue(forKey: requestID) {
+            previous.timeoutTask.cancel()
+            previous.continuation.resume(
+                throwing: WhatsAppWebTransportError.bridgeUnavailable("duplicate-request-id")
+            )
+        }
+
+        let timeoutTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: timeout)
+            } catch {
+                return
+            }
+            self?.fail(
+                requestID,
+                error: WhatsAppWebTransportError.requestTimedOut(requestID)
+            )
+        }
+        requests[requestID] = PendingRequest(
+            continuation: continuation,
+            timeoutTask: timeoutTask
+        )
+    }
+}
+
 enum WhatsAppBridgeWireDecoder {
     static let version = 1
 
