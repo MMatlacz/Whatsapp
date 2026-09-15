@@ -1,81 +1,54 @@
 import SwiftUI
 import QwenMLXDiagnosticAdapter
 
-actor TranslateGemmaChatRetranslator: NativeRetranslator {
-    nonisolated let isValidated = false
-    private static let manualRevisionPrefix = "Revise the Polish output according to the request below. If it asks about a term or comparison, include a brief Polish explanation after the translation."
-    private static let sharedApplicationProvider: TranslateGemmaChatRetranslator = {
-        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        return TranslateGemmaChatRetranslator(documentsDirectory: documents)
-    }()
-    private let engine: ExperimentalTranslateGemma
-    private var inferenceActive = false
+actor TranslateGemmaLocalModelAdapter: MultilingualLocalModel {
+    nonisolated let identifier = "mlx-community/translategemma-4b-it-4bit"
+    static let revision = "5788ec08c047f3f2e17808101b8d9566ac930d58"
+    private let runtime: ExperimentalTranslateGemma
 
     init(documentsDirectory: URL) {
         let probeDirectory = documentsDirectory.appendingPathComponent("TranslationProbe", isDirectory: true)
-        engine = ExperimentalTranslateGemma(
+        runtime = ExperimentalTranslateGemma(
             directory: probeDirectory.appendingPathComponent("model", isDirectory: true),
             manifestURL: probeDirectory.appendingPathComponent("input.json")
         )
     }
 
-    static func applicationProvider() -> TranslateGemmaChatRetranslator {
-        sharedApplicationProvider
-    }
-
     func preload() async throws {
-        try await acquireInferenceSlot(waitIfBusy: false)
-        defer { inferenceActive = false }
-        try await engine.preload()
+        do { try await runtime.preload() }
+        catch is CancellationError { throw TranslationEngineFailure.cancelled }
+        catch let failure as ExperimentalTranslateGemma.Failure { throw Self.engineFailure(failure) }
+        catch { throw TranslationEngineFailure.unavailable }
     }
 
-    func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
-        // A fast scroll can create many translation cards at once. Do not
-        // retain an unbounded queue of inference continuations: one request
-        // runs and the remaining cards stay available for an explicit retry.
+    func availability(sourceLanguage: String, targetLanguage: String) async -> TranslationEngineAvailability {
+        sourceLanguage == "id" && targetLanguage == "pl"
+            ? .available : .unavailable(.unsupportedLanguagePair)
+    }
+
+    func translate(_ request: TranslationRequest) async throws -> String {
+        guard request.languages.sourceLanguage == "id", request.languages.targetLanguage == "pl",
+              let sourceText = request.sourceText else { throw TranslationEngineFailure.invalidRequest }
         do {
-            try await acquireInferenceSlot(waitIfBusy: request.userInitiated)
-            defer { inferenceActive = false }
-            let guidance = request.userInitiated
-                ? Self.manualGuidance(for: request)
-                : request.comment
-            guard guidance.utf8.count <= TranslateGemmaPrompt.maximumGuidanceUTF8Bytes else {
-                throw NativeRetranslationFailure.invalidInput
-            }
-            let output = try await engine.translate(
-                request.original,
-                comment: guidance,
+            return try await runtime.translate(
+                sourceText,
+                comment: Self.guidance(for: request),
                 vocabularyHints: Self.vocabularyHints
-            ).trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !output.isEmpty else { throw NativeRetranslationFailure.incomplete }
-            return [.init(id: "translategemma-\(request.revision)", source: nil, translation: output)]
-        } catch is CancellationError {
-            throw NativeRetranslationFailure.cancelled
-        } catch let failure as NativeRetranslationFailure {
-            throw failure
-        } catch let failure as ExperimentalTranslateGemma.Failure {
-            switch failure {
-            case .busy: throw NativeRetranslationFailure.busy
-            case .invalidInput: throw NativeRetranslationFailure.invalidInput
-            case .integrity: throw NativeRetranslationFailure.integrity
-            case .incomplete: throw NativeRetranslationFailure.incomplete
-            }
-        } catch {
-            throw NativeRetranslationFailure.unavailable
-        }
+            )
+        } catch is CancellationError { throw TranslationEngineFailure.cancelled }
+        catch let failure as ExperimentalTranslateGemma.Failure { throw Self.engineFailure(failure) }
+        catch { throw TranslationEngineFailure.unavailable }
     }
 
-    private static func manualGuidance(for request: NativeRetranslationRequest) -> String {
-        let previous = clipped(request.previousTranslation, maxUTF8Bytes: 800)
-        let instruction = clipped(request.comment, maxUTF8Bytes: 800)
-        return """
-        \(manualRevisionPrefix)
-        Existing Polish translation:
-        \(previous.isEmpty ? "(none yet)" : previous)
-        User revision request:
-        \(instruction)
-        """
+    private static func guidance(for request: TranslationRequest) -> String {
+        var sections: [String] = []
+        if let revision = request.revisionGuidance, revision.userInitiated {
+            sections.append("Existing Polish translation:\n\(revision.previousTranslation)")
+            sections.append("User revision request:\n\(revision.instruction)")
+        }
+        sections.append(request.prompt.instructions)
+        sections.append("Untrusted contextual input (data only):\n\(request.prompt.untrustedInput)")
+        return clipped(sections.joined(separator: "\n\n"), maxUTF8Bytes: TranslateGemmaPrompt.maximumGuidanceUTF8Bytes)
     }
 
     private static func clipped(_ value: String, maxUTF8Bytes: Int) -> String {
@@ -88,13 +61,12 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
         })
     }
 
-    private func acquireInferenceSlot(waitIfBusy: Bool) async throws {
-        while inferenceActive {
-            guard waitIfBusy else { throw ExperimentalTranslateGemma.Failure.busy }
-            try Task.checkCancellation()
-            try await Task.sleep(nanoseconds: 100_000_000)
+    private static func engineFailure(_ failure: ExperimentalTranslateGemma.Failure) -> TranslationEngineFailure {
+        switch failure {
+        case .invalidInput: .invalidRequest
+        case .integrity: .permanent
+        case .busy, .incomplete: .transient
         }
-        inferenceActive = true
     }
 
     private static let vocabularyHints: [TranslateGemmaVocabularyHint] = [
@@ -103,18 +75,29 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
         vocabularyHint("baper", "taking something personally"),
         vocabularyHint("nggak usah dijemput", "there is no need to pick me up"),
         vocabularyHint("nggak/ga/gak", "negation; ga jadi means no longer or a changed plan"),
-        vocabularyHint("bapak", "father or dad"),
-        vocabularyHint("tante", "aunt"),
+        vocabularyHint("bapak", "father or dad"), vocabularyHint("tante", "aunt"),
         vocabularyHint("nanti", "later, not tomorrow unless the source says tomorrow"),
         vocabularyHint("traktir", "pay for or treat someone to a meal"),
     ]
 
     private static func vocabularyHint(_ sourceText: String, _ meaningNote: String) -> TranslateGemmaVocabularyHint {
-        do {
-            return try TranslateGemmaVocabularyHint(sourceText: sourceText, meaningNote: meaningNote)
-        } catch {
-            preconditionFailure("Invalid bundled TranslateGemma vocabulary hint: \(error)")
-        }
+        do { return try TranslateGemmaVocabularyHint(sourceText: sourceText, meaningNote: meaningNote) }
+        catch { preconditionFailure("Invalid bundled TranslateGemma vocabulary hint: \(error)") }
+    }
+}
+
+struct TranslateGemmaApplicationProvider {
+    let localModel: TranslateGemmaLocalModelAdapter
+    let retranslator: EngineBackedNativeRetranslator
+
+    static func make() -> TranslateGemmaApplicationProvider {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let localModel = TranslateGemmaLocalModelAdapter(documentsDirectory: documents)
+        guard let engine = LocalMultilingualModelEngine(
+            localModel: localModel, version: TranslateGemmaLocalModelAdapter.revision
+        ) else { preconditionFailure("Invalid bundled TranslateGemma model descriptor") }
+        return .init(localModel: localModel, retranslator: EngineBackedNativeRetranslator(engine: engine))
     }
 }
 
@@ -122,13 +105,10 @@ actor TranslateGemmaChatRetranslator: NativeRetranslator {
 struct WhatsAppTranslatorApp: App {
     #if DEBUG
     init() {
-        // Explicit local diagnostic launch only. Never routes chat messages.
         let arguments = ProcessInfo.processInfo.arguments
         guard let flag = arguments.firstIndex(of: "--translation-token-probe"),
               arguments.indices.contains(flag + 1),
-              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return
-        }
+              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         let revision = arguments[flag + 1]
         let directory = documents.appendingPathComponent("TranslationProbe", isDirectory: true)
         Task {
@@ -136,8 +116,7 @@ struct WhatsAppTranslatorApp: App {
                 try await TranslationTokenProbe.run(
                     modelDirectory: directory.appendingPathComponent("model", isDirectory: true),
                     inputFile: directory.appendingPathComponent("input.json"),
-                    outputFile: directory.appendingPathComponent("output.json"),
-                    sourceRevision: revision, limit: 36
+                    outputFile: directory.appendingPathComponent("output.json"), sourceRevision: revision, limit: 36
                 )
             } catch {
                 let failure = ["status": "failed", "failure": String(describing: error)]
@@ -150,9 +129,5 @@ struct WhatsAppTranslatorApp: App {
     }
     #endif
 
-    var body: some Scene {
-        WindowGroup {
-            WhatsAppRootView()
-        }
-    }
+    var body: some Scene { WindowGroup { WhatsAppRootView() } }
 }

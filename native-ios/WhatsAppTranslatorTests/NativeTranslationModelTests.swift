@@ -2,6 +2,7 @@ import XCTest
 @testable import WhatsAppBridgeCore
 import PersistenceCore
 import WhatsAppDomainCore
+import TranslationCore
 
 @available(macOS 14, iOS 17, *)
 @MainActor
@@ -62,6 +63,34 @@ final class NativeTranslationModelTests: XCTestCase {
         await model.translate(key: key, original: "Aku minum kopi.")
         XCTAssertTrue(model.notices[key]?.contains("No model was run") == true)
         XCTAssertNil(model.records[key])
+    }
+
+    func testEngineBackedRetranslatorUsesSharedTranslationRequestAndProvenance() async throws {
+        let engine = CapturingTranslationEngine()
+        let provider = EngineBackedNativeRetranslator(engine: engine, isValidated: true)
+        let model = NativeTranslationModel(retranslator: provider)
+        model.experimentalTranslationEnabled = true
+        await model.translate(key: key, original: "Aku minum kopi.")
+        let captured = await engine.request
+        let request = try XCTUnwrap(captured)
+        XCTAssertEqual(request.sourceText, "Aku minum kopi.")
+        XCTAssertEqual(request.languages.sourceLanguage, "id")
+        XCTAssertEqual(request.languages.targetLanguage, "pl")
+        XCTAssertEqual(request.revision, 1)
+        XCTAssertEqual(model.records[key]?.translatedText, "Piję kawę.")
+    }
+
+    func testEngineBackedRetranslatorPreservesManualRevisionGuidance() async throws {
+        let engine = CapturingTranslationEngine()
+        let provider = EngineBackedNativeRetranslator(engine: engine, isValidated: true)
+        let model = NativeTranslationModel(retranslator: provider)
+        model.seedSample(key: key, original: "Aku minum kopi.", parts: parts)
+        await model.retranslate(key: key, original: "Aku minum kopi.", comment: "Keep it informal")
+        let captured = await engine.request
+        let request = try XCTUnwrap(captured)
+        XCTAssertEqual(request.revisionGuidance?.previousTranslation, "Piję kawę.")
+        XCTAssertEqual(request.revisionGuidance?.instruction, "Keep it informal")
+        XCTAssertEqual(request.revisionGuidance?.userInitiated, true)
     }
 
     func testOwnerApprovedExperimentalProviderCanTranslate() async {
@@ -338,6 +367,19 @@ final class NativeTranslationModelTests: XCTestCase {
         ]
         XCTAssertFalse(model.saveCorrection(key: key, original: "Aku minum kopi.", parts: invalid, expectedRevision: 0))
         XCTAssertNil(model.records[key])
+    }
+}
+
+private actor CapturingTranslationEngine: TranslationEngine {
+    nonisolated let model = TranslationModelDescriptor(identifier: "test-engine", version: "1")!
+    private(set) var request: TranslationRequest?
+    func availability(for request: TranslationRequest) async -> TranslationEngineAvailability { .available }
+    func translate(_ request: TranslationRequest) async throws -> TranslationResult {
+        self.request = request
+        return TranslationResult(
+            requestID: request.id, revision: request.revision, translatedText: "Piję kawę.",
+            model: model, promptVersion: request.prompt.version
+        )!
     }
 }
 
