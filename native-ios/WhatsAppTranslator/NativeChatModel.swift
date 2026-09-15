@@ -42,12 +42,11 @@ final class NativeChatModel {
     private(set) var historyCheckedAfterUncertainSends: Set<String> = []
     private(set) var storageNotice: String?
     private(set) var identities: [String: NativeContactIdentity] = [:]
-    private(set) var mediaPreviews: [String: WhatsAppTransportMediaPreview] = [:]
+    private(set) var mediaPreviews: [MediaPreviewKey: WhatsAppTransportMediaPreview] = [:]
     @ObservationIgnored private var identityProvider: (any NativeContactIdentityProvider)?
     @ObservationIgnored private var loadingIdentities: Set<String> = []
     @ObservationIgnored private var loadedIdentityIDs: Set<String> = []
     @ObservationIgnored private var identityOrder: [String] = []
-    @ObservationIgnored private var mediaPreviewOrder: [String] = []
     @ObservationIgnored private var mediaPreviewLoader: MediaPreviewLoader?
     var drafts: [String: String] = [:]
     var quotes: [String: WhatsAppTransportMessage] = [:]
@@ -185,47 +184,56 @@ final class NativeChatModel {
         }
     }
 
-    func loadMediaPreview(for message: WhatsAppTransportMessage) async {
-        guard connectionState == .ready, mediaPreviews[message.id] == nil,
-              let mediaPreviewLoader else { return }
-
+    func mediaPreviewKey(for message: WhatsAppTransportMessage) -> MediaPreviewKey? {
         let previewableAttachment = message.media.map {
             $0.kind == .image || $0.kind == .sticker
         } ?? false
-        let purpose: MediaPreviewPurpose
-        let maxPixelSize: Int
         if previewableAttachment {
-            purpose = .attachment
-            maxPixelSize = 768
-        } else if message.linkPreview != nil {
-            purpose = .linkPreview
-            maxPixelSize = 320
-        } else {
-            return
+            return MediaPreviewKey(
+                chatID: message.chatID,
+                messageID: message.id,
+                purpose: .attachment,
+                requestedPixelSize: 768
+            )
         }
+        if message.linkPreview != nil {
+            return MediaPreviewKey(
+                chatID: message.chatID,
+                messageID: message.id,
+                purpose: .linkPreview,
+                requestedPixelSize: 320
+            )
+        }
+        return nil
+    }
 
-        let key = MediaPreviewKey(
-            chatID: message.chatID,
-            messageID: message.id,
-            purpose: purpose,
-            requestedPixelSize: maxPixelSize
-        )
+    func loadMediaPreview(for message: WhatsAppTransportMessage) async {
+        guard connectionState == .ready,
+              let key = mediaPreviewKey(for: message),
+              mediaPreviews[key] == nil,
+              let mediaPreviewLoader else { return }
+
         let state = await mediaPreviewLoader.load(
             key,
             isViewOnce: message.media?.isViewOnce == true,
             priority: .visible
         )
         guard !Task.isCancelled, case .ready(let preview) = state else { return }
+        mediaPreviews[key] = preview
+    }
 
-        mediaPreviews[message.id] = preview
-        mediaPreviewOrder.removeAll { $0 == message.id }
-        mediaPreviewOrder.append(message.id)
-        if mediaPreviewOrder.count > 48 {
-            let overflow = mediaPreviewOrder.count - 48
-            let evicted = Array(mediaPreviewOrder.prefix(overflow))
-            mediaPreviewOrder.removeFirst(overflow)
-            for messageID in evicted { mediaPreviews.removeValue(forKey: messageID) }
-        }
+    func releaseMediaPreview(for message: WhatsAppTransportMessage) {
+        guard let key = mediaPreviewKey(for: message) else { return }
+        mediaPreviews.removeValue(forKey: key)
+    }
+
+    func purgeEncodedMediaPreviewCache() async {
+        mediaPreviews.removeAll(keepingCapacity: true)
+        await mediaPreviewLoader?.purgeEncodedCache()
+    }
+
+    func encodedMediaPreviewCacheStats() async -> ByteCostLRUCacheStats {
+        await mediaPreviewLoader?.encodedCacheStats() ?? .init(entryCount: 0, totalCostBytes: 0)
     }
 
     subscript(draft chatID: String) -> String {
