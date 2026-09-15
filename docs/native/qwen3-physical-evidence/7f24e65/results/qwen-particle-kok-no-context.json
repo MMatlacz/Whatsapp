@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 7.1996112916385755,
+  "finishReason" : "cancelled",
+  "firstTokenSecondsAfterModelReady" : 0.39056098461151123,
+  "fixtureID" : "qwen-particle-kok-no-context",
+  "focus" : "kok as surprise or mild reproach",
+  "generatedTokenCount" : 512,
+  "generationSeconds" : 6.79893696308136,
+  "input" : "Kok kamu belum tidur?",
+  "intendedMeaning" : "Why are you still not asleep?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: Ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, ktoś, kto",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the concerned, mildly surprised chat tone.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-kok",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Kok surprised question",
+  "tokensPerSecond" : 75.30589013844238,
+  "unknownMeasurements" : [
+
+  ]
+}

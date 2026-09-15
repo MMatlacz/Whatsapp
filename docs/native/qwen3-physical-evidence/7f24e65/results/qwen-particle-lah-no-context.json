@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5393326249904931,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.38987696170806885,
+  "fixtureID" : "qwen-particle-lah-no-context",
+  "focus" : "lah softening resignation",
+  "generatedTokenCount" : 10,
+  "generationSeconds" : 0.14033102989196777,
+  "input" : "Ya sudah lah, besok saja.",
+  "intendedMeaning" : "All right then, tomorrow will do.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Pl: Ya sudah lah, besok saja.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the resigned, de-escalating tone.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-lah",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Lah acceptance particle",
+  "tokensPerSecond" : 71.2600770314191,
+  "unknownMeasurements" : [
+
+  ]
+}

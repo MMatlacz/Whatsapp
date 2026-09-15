@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5970484583522193,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.38615500926971436,
+  "fixtureID" : "qwen-straight-thanks-no-context",
+  "focus" : "natural conversational gratitude",
+  "generatedTokenCount" : 15,
+  "generationSeconds" : 0.20104897022247314,
+  "input" : "Makasih sudah bantu aku hari ini.",
+  "intendedMeaning" : "The speaker thanks the other person for helping today.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: \"Dziękuję, pomocy, hari ini.\"",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep it warm and conversational rather than formal.",
+  "promptTokenCount" : 349,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "straight-thanks",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Straightforward thanks",
+  "tokensPerSecond" : 74.6086885369349,
+  "unknownMeasurements" : [
+
+  ]
+}

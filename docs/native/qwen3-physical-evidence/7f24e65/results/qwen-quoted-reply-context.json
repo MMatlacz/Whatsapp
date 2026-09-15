@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 1,
+  "durationSeconds" : 0.6494790416909382,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.435546875,
+  "fixtureID" : "qwen-quoted-reply-context",
+  "focus" : "reply meaning supported by quoted message",
+  "generatedTokenCount" : 13,
+  "generationSeconds" : 0.20344698429107666,
+  "input" : "Aku nggak marah kok.",
+  "intendedMeaning" : "I am not angry, really.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish:  \nAku nggak marah kok.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Keep the reassuring denial and connect it to the quoted question without translating the quote as extra output.",
+  "promptTokenCount" : 384,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "quoted-reply",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "quotedTurn" : {
+      "body" : "Kamu marah sama aku?",
+      "speaker" : "P1"
+    },
+    "recentTurns" : [
+      {
+        "body" : "Tadi kamu diam saja setelah aku bercanda.",
+        "speaker" : "P1"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Quoted reply reference",
+  "tokensPerSecond" : 63.898710739307774,
+  "unknownMeasurements" : [
+
+  ]
+}

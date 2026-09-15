@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5623172500054352,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.3893059492111206,
+  "fixtureID" : "qwen-particle-dong-no-context",
+  "focus" : "dong as a soft, mildly pleading request",
+  "generatedTokenCount" : 12,
+  "generationSeconds" : 0.16356706619262695,
+  "input" : "Tunggu sebentar dong.",
+  "intendedMeaning" : "Please wait a moment.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: Wątki się znowaj.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the soft insistence; do not make it hostile or overly formal.",
+  "promptTokenCount" : 346,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "particle-dong",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dong request particle",
+  "tokensPerSecond" : 73.3644020115152,
+  "unknownMeasurements" : [
+
+  ]
+}

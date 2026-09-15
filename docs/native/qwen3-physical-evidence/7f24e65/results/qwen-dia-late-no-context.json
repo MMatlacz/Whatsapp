@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5306625833618455,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.37835395336151123,
+  "fixtureID" : "qwen-dia-late-no-context",
+  "focus" : "gender-neutral dia resolved from bounded context",
+  "generatedTokenCount" : 10,
+  "generationSeconds" : 0.142583966255188,
+  "input" : "Dia bilang akan datang nanti.",
+  "intendedMeaning" : "Rina said that she will come later.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: Dia bilang, nanti.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Use a feminine Polish reference only because the context identifies Rina; do not invent a new event.",
+  "promptTokenCount" : 347,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "dia-late",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Dia with contextual feminine referent",
+  "tokensPerSecond" : 70.13411299067538,
+  "unknownMeasurements" : [
+
+  ]
+}

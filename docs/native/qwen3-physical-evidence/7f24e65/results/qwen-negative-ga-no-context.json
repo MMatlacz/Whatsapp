@@ -1,0 +1,35 @@
+{
+  "contextMode" : "none",
+  "contextWindow" : 0,
+  "durationSeconds" : 0.5771657916484401,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.39662301540374756,
+  "fixtureID" : "qwen-negative-ga-no-context",
+  "focus" : "ga spelling variant and change of plan",
+  "generatedTokenCount" : 12,
+  "generationSeconds" : 0.1700129508972168,
+  "input" : "Kamu ga jadi berangkat?",
+  "intendedMeaning" : "Are you no longer going to leave/go?",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Polish: Kama ga jadi berangkat?",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Preserve the question about a changed plan, not a generic travel question.",
+  "promptTokenCount" : 348,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "negative-ga",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Ga question variant",
+  "tokensPerSecond" : 70.58285816857995,
+  "unknownMeasurements" : [
+
+  ]
+}

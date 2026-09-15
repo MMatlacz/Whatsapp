@@ -1,0 +1,42 @@
+{
+  "contextMode" : "bounded",
+  "contextWindow" : 2,
+  "durationSeconds" : 0.5814625833299942,
+  "finishReason" : "stop",
+  "firstTokenSecondsAfterModelReady" : 0.4187450408935547,
+  "fixtureID" : "qwen-omitted-subject-finished-context",
+  "focus" : "omitted subject and passive-like chat shorthand",
+  "generatedTokenCount" : 11,
+  "generationSeconds" : 0.1531059741973877,
+  "input" : "Udah selesai, tinggal dikirim.",
+  "intendedMeaning" : "The file/task is finished; it only needs to be sent.",
+  "modelLoadSeconds" : 0,
+  "modelLoadWasCold" : false,
+  "output" : "Udah selesai, tinggal dikirim.",
+  "outputValidity" : "validText",
+  "preservationNotes" : "Do not invent who finished or who will send it. Keep the omitted subject if natural in Polish.",
+  "promptTokenCount" : 384,
+  "promptVersion" : "contextual-translation-v3",
+  "route" : "Indonesian -> Polish",
+  "semanticCaseID" : "omitted-subject-finished",
+  "sourceLanguage" : "id",
+  "suppliedContext" : {
+    "recentTurns" : [
+      {
+        "body" : "Kamu sudah periksa file laporan itu?",
+        "speaker" : "P1"
+      },
+      {
+        "body" : "Iya, semua angka sudah benar.",
+        "speaker" : "SELF"
+      }
+    ]
+  },
+  "targetLanguage" : "pl",
+  "termination" : "returned",
+  "title" : "Omitted subject after a file check",
+  "tokensPerSecond" : 71.84566152734544,
+  "unknownMeasurements" : [
+
+  ]
+}
