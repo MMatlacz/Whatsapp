@@ -596,7 +596,10 @@ private struct NativeMessageBubble: View {
                 }
                 if let media = message.media {
                     NativeMediaAttachmentView(media: media, previewKey: mediaPreviewKey, preview: mediaPreview)
-                } else if message.body == nil, message.linkPreview == nil {
+                }
+                if let semanticPresentation {
+                    NativeSemanticMessageContentView(presentation: semanticPresentation)
+                } else if message.body == nil, message.linkPreview == nil, message.media == nil {
                     Text("Message content is unavailable")
                 }
                 HStack(spacing: 4) {
@@ -616,6 +619,34 @@ private struct NativeMessageBubble: View {
         .containerRelativeFrame(.horizontal, count: 6, span: 5, spacing: 0)
         .frame(maxWidth: .infinity, alignment: message.fromMe ? .trailing : .leading)
         .accessibilityElement(children: .contain)
+    }
+
+    private var semanticPresentation: WhatsAppSemanticMessagePresentation? {
+        WhatsAppSemanticMessagePresenter.presentation(for: message.content)
+    }
+}
+
+private struct NativeSemanticMessageContentView: View {
+    let presentation: WhatsAppSemanticMessagePresentation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(presentation.title, systemImage: presentation.systemImage)
+                .font(.subheadline.weight(.medium))
+            if let detail = presentation.detail {
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(Array(presentation.items.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("\(index + 1).")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Text(item).font(.caption)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(presentation.accessibilityLabel)
     }
 }
 
