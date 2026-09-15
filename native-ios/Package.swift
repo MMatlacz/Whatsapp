@@ -37,8 +37,10 @@ let package = Package(
                 "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
+                "SQLiteTranslationContextSource.swift",
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
+                "TranslationContextAssembly.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
                 "WhatsAppBridge.js",
@@ -54,7 +56,7 @@ let package = Package(
         ),
         .target(
             name: "WhatsAppBridgeCore",
-            dependencies: ["WhatsAppDomainCore", "PersistenceCore"],
+            dependencies: ["WhatsAppDomainCore", "PersistenceCore", "TranslationCore"],
             path: "WhatsAppTranslator",
             exclude: [
                 "NativeTranslationView.swift",
@@ -64,6 +66,7 @@ let package = Package(
                 "SQLitePersistence.swift",
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
+                "TranslationContextAssembly.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppDomain.swift",
                 "TranslationCore.swift",
@@ -77,6 +80,7 @@ let package = Package(
                 "WhatsAppTransportCore.swift",
                 "WhatsAppTransportDomainMapper.swift",
                 "WhatsAppWebTransportCore.swift",
+                "SQLiteTranslationContextSource.swift",
                 "NativeChatModel.swift",
                 "NativeTranslationModel.swift",
             ]
@@ -93,6 +97,7 @@ let package = Package(
                 "WhatsAppRootView.swift",
                 "SQLiteContextPersistence.swift",
                 "SQLitePersistence.swift",
+                "SQLiteTranslationContextSource.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppDomain.swift",
@@ -106,6 +111,7 @@ let package = Package(
             sources: [
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
+                "TranslationContextAssembly.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
             ]
@@ -122,8 +128,10 @@ let package = Package(
                 "WhatsAppRootView.swift",
                 "TranslationBenchmarkFixtures.swift",
                 "QwenFunctionalTranslationFixtures.swift",
+                "TranslationContextAssembly.swift",
                 "TranslationCore.swift",
                 "TranslationEngineCore.swift",
+                "SQLiteTranslationContextSource.swift",
                 "WhatsAppBridge.js",
                 "WhatsAppBridgeSupport.swift",
                 "WhatsAppDomain.swift",
@@ -146,7 +154,7 @@ let package = Package(
         ),
         .testTarget(
             name: "WhatsAppBridgeCoreTests",
-            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore", "PersistenceCore"],
+            dependencies: ["WhatsAppBridgeCore", "WhatsAppDomainCore", "PersistenceCore", "TranslationCore"],
             path: "WhatsAppTranslatorTests"
         ),
         .testTarget(
