@@ -36,6 +36,18 @@ public struct TranslationModelDescriptor: Equatable, Hashable, Sendable {
     }
 }
 
+public struct TranslationRevisionGuidance: Equatable, Sendable {
+    public let previousTranslation: String
+    public let instruction: String
+    public let userInitiated: Bool
+
+    public init(previousTranslation: String, instruction: String, userInitiated: Bool) {
+        self.previousTranslation = previousTranslation
+        self.instruction = instruction
+        self.userInitiated = userInitiated
+    }
+}
+
 public struct TranslationRequest: Equatable, Sendable {
     public let id: TranslationRequestID
     public let revision: Int
@@ -48,13 +60,15 @@ public struct TranslationRequest: Equatable, Sendable {
     /// requests with `invalidRequest` rather than guessing from serialized
     /// prompt data.
     public let sourceText: String?
+    public let revisionGuidance: TranslationRevisionGuidance?
 
     public init?(
         id: TranslationRequestID,
         revision: Int,
         languages: TranslationLanguagePair,
         prompt: TranslationPrompt,
-        sourceText: String? = nil
+        sourceText: String? = nil,
+        revisionGuidance: TranslationRevisionGuidance? = nil
     ) {
         guard revision > 0 else { return nil }
         self.id = id
@@ -67,6 +81,7 @@ public struct TranslationRequest: Equatable, Sendable {
         } else {
             self.sourceText = sourceText
         }
+        self.revisionGuidance = revisionGuidance
     }
 }
 

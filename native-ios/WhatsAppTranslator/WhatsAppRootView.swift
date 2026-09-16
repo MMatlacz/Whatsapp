@@ -40,15 +40,18 @@ struct WhatsAppRootView: View {
     @State private var runtime: WhatsAppWebKitBridgeRuntime
     @State private var model: NativeChatModel
     @State private var translationModelStatus = "Not loaded"
-    private let translationProvider: TranslateGemmaChatRetranslator
+    private let translationProvider: EngineBackedNativeRetranslator
+    private let translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
 
     init() {
         let runtime = WhatsAppWebKitBridgeRuntime()
-        let translationProvider = TranslateGemmaChatRetranslator.applicationProvider()
+        let provider = TranslateGemmaApplicationProvider.make()
+        let translationProvider = provider.retranslator
         self.translationProvider = translationProvider
+        self.translateGemmaModel = provider.localModel
         _runtime = State(initialValue: runtime)
         _model = State(initialValue: NativeChatModel.applicationModel(
             transport: WhatsAppWebTransport(runtime: runtime),
@@ -148,7 +151,7 @@ struct WhatsAppRootView: View {
         }
         translationModelStatus = "Loading and verifying…"
         do {
-            try await translationProvider.preload()
+            try await translateGemmaModel.preload()
             translationModelStatus = "Loaded · resident"
         } catch {
             model.translations.ownerApprovedExperimentalProvider = false

@@ -31,6 +31,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "NativeTranslationModel.swift",
+                "EngineBackedNativeRetranslator.swift",
                 "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
@@ -87,6 +88,7 @@ let package = Package(
                 "SQLiteTranslationContextSource.swift",
                 "NativeChatModel.swift",
                 "NativeTranslationModel.swift",
+                "EngineBackedNativeRetranslator.swift",
             ]
         ),
         .target(
@@ -95,6 +97,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "NativeTranslationModel.swift",
+                "EngineBackedNativeRetranslator.swift",
                 "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
@@ -128,6 +131,7 @@ let package = Package(
             path: "WhatsAppTranslator",
             exclude: [
                 "NativeTranslationModel.swift",
+                "EngineBackedNativeRetranslator.swift",
                 "NativeTranslationView.swift",
                 "NativeChatModel.swift",
                 "DiagnosticsView.swift",
