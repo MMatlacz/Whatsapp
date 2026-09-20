@@ -13,6 +13,7 @@
 		C30000000000000000000003 /* NativeChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000004 /* NativeChatModel.swift */; };
 		C30000000000000000000001 /* WhatsAppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000002 /* WhatsAppRootView.swift */; };
 		E50000000000000000000001 /* WhatsAppSemanticMessagePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000002 /* WhatsAppSemanticMessagePresentation.swift */; };
+		F60000000000000000000001 /* AutomaticTranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60000000000000000000002 /* AutomaticTranslationSettings.swift */; };
 		A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* WhatsAppTranslatorApp.swift */; };
 		A10000000000000000000002 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* DiagnosticsView.swift */; };
 		A10000000000000000000003 /* WhatsAppWebProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* WhatsAppWebProbeView.swift */; };
@@ -38,6 +39,7 @@
 		C30000000000000000000004 /* NativeChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeChatModel.swift; sourceTree = "<group>"; };
 		C30000000000000000000002 /* WhatsAppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppRootView.swift; sourceTree = "<group>"; };
 		E50000000000000000000002 /* WhatsAppSemanticMessagePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppSemanticMessagePresentation.swift; sourceTree = "<group>"; };
+		F60000000000000000000002 /* AutomaticTranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomaticTranslationSettings.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* WhatsAppTranslator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhatsAppTranslator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000011 /* WhatsAppTranslatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsAppTranslatorApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				A10000000000000000000011 /* WhatsAppTranslatorApp.swift */,
 				C30000000000000000000002 /* WhatsAppRootView.swift */,
 				E50000000000000000000002 /* WhatsAppSemanticMessagePresentation.swift */,
+				F60000000000000000000002 /* AutomaticTranslationSettings.swift */,
 				C30000000000000000000004 /* NativeChatModel.swift */,
 				C30000000000000000000006 /* NativeTranslationModel.swift */,
 				C30000000000000000000008 /* NativeTranslationView.swift */,
@@ -221,6 +224,7 @@
 				A10000000000000000000001 /* WhatsAppTranslatorApp.swift in Sources */,
 				C30000000000000000000001 /* WhatsAppRootView.swift in Sources */,
 				E50000000000000000000001 /* WhatsAppSemanticMessagePresentation.swift in Sources */,
+				F60000000000000000000001 /* AutomaticTranslationSettings.swift in Sources */,
 				C30000000000000000000003 /* NativeChatModel.swift in Sources */,
 				C30000000000000000000005 /* NativeTranslationModel.swift in Sources */,
 				C30000000000000000000007 /* NativeTranslationView.swift in Sources */,
