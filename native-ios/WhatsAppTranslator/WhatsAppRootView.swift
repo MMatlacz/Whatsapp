@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 import WebKit
 import ImageIO
 import NaturalLanguage
@@ -42,9 +43,16 @@ struct WhatsAppRootView: View {
     @State private var translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var translationModelStatus = "Not loaded"
     @State private var preparingAppleTranslation = false
+    @State private var translationPreparationConfiguration: TranslationSession.Configuration?
+    @State private var translationPreparationStep: TranslationPreparationStep?
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
+
+    private enum TranslationPreparationStep {
+        case indonesianToEnglish
+        case englishToPolish
+    }
 
     init() {
         let runtime = WhatsAppWebKitBridgeRuntime()
@@ -105,24 +113,12 @@ struct WhatsAppRootView: View {
                                 Button(preparingAppleTranslation
                                        ? "Preparing Apple Translation languages…"
                                        : "Prepare Apple Translation languages") {
-                                    Task {
-                                        preparingAppleTranslation = true
-                                        defer { preparingAppleTranslation = false }
-                                        do {
-                                            switch try await translateGemmaModel.prepareAppleTranslationFallback() {
-                                            case .loaded:
-                                                translationModelStatus = "Loaded · resident"
-                                            case .fallback:
-                                                translationModelStatus = "Unavailable · Apple Translation fallback"
-                                            case .unavailable:
-                                                translationModelStatus = "Could not prepare Apple Translation languages"
-                                            }
-                                        } catch is CancellationError {
-                                            translationModelStatus = "Language preparation cancelled"
-                                        } catch {
-                                            translationModelStatus = "Could not prepare Apple Translation languages"
-                                        }
-                                    }
+                                    preparingAppleTranslation = true
+                                    translationPreparationStep = .indonesianToEnglish
+                                    translationPreparationConfiguration = .init(
+                                        source: Locale.Language(identifier: "id"),
+                                        target: Locale.Language(identifier: "en")
+                                    )
                                 }
                                 .disabled(preparingAppleTranslation)
                                 Button("Retry TranslateGemma load") {
@@ -144,6 +140,13 @@ struct WhatsAppRootView: View {
             }
         }
         .tint(.green)
+        .translationTask(
+            translationPreparationConfiguration,
+            action: Self.makeTranslationPreparationAction(
+                onSuccess: { await self.appleTranslationPreparationSucceeded() },
+                onFailure: { self.appleTranslationPreparationFailed($0) }
+            )
+        )
         .background {
             HiddenTransportHost(runtime: runtime)
                 .frame(width: 1, height: 1).opacity(0)
@@ -181,6 +184,62 @@ struct WhatsAppRootView: View {
         #endif
         .sheet(isPresented: $showingSamples) { NativeSampleBrowser() }
         .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
+    }
+
+    private func appleTranslationPreparationSucceeded() async {
+        guard preparingAppleTranslation, let step = translationPreparationStep else { return }
+        switch step {
+        case .indonesianToEnglish:
+            translationPreparationStep = .englishToPolish
+            translationPreparationConfiguration = .init(
+                source: Locale.Language(identifier: "en"),
+                target: Locale.Language(identifier: "pl")
+            )
+        case .englishToPolish:
+            let result = await translateGemmaModel.appleFallbackStatus()
+            finishAppleTranslationPreparation()
+            switch result {
+            case .loaded:
+                translationModelStatus = "Loaded · resident"
+            case .fallback:
+                translationModelStatus = "Unavailable · Apple Translation fallback"
+            case .unavailable:
+                translationModelStatus = "Could not prepare Apple Translation languages"
+            }
+        }
+    }
+
+    private func appleTranslationPreparationFailed(_ error: Error) {
+        guard preparingAppleTranslation else { return }
+        finishAppleTranslationPreparation()
+        if error is CancellationError {
+            translationModelStatus = "Language preparation cancelled"
+        } else if let translationError = error as? TranslationError,
+                  TranslationError.unsupportedLanguagePairing ~= translationError {
+            translationModelStatus = "Apple Translation language pair unsupported"
+        } else {
+            translationModelStatus = "Could not prepare Apple Translation languages"
+        }
+    }
+
+    private nonisolated static func makeTranslationPreparationAction(
+        onSuccess: @escaping @MainActor () async -> Void,
+        onFailure: @escaping @MainActor (Error) -> Void
+    ) -> (TranslationSession) async -> Void {
+        { session in
+            do {
+                try await session.prepareTranslation()
+                await onSuccess()
+            } catch {
+                await onFailure(error)
+            }
+        }
+    }
+
+    private func finishAppleTranslationPreparation() {
+        preparingAppleTranslation = false
+        translationPreparationStep = nil
+        translationPreparationConfiguration = nil
     }
 
     private func updateTranslateGemmaState() async {
