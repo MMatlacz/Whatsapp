@@ -39,23 +39,20 @@ struct WhatsAppRootView: View {
     @AppStorage("translation.ownerApprovedTranslateGemma") private var ownerApprovedTranslateGemma = false
     @State private var runtime: WhatsAppWebKitBridgeRuntime
     @State private var model: NativeChatModel
+    @State private var translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var translationModelStatus = "Not loaded"
-    private let translationProvider: EngineBackedNativeRetranslator
-    private let translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
 
     init() {
         let runtime = WhatsAppWebKitBridgeRuntime()
-        let provider = TranslateGemmaApplicationProvider.make()
-        let translationProvider = provider.retranslator
-        self.translationProvider = translationProvider
-        self.translateGemmaModel = provider.localModel
+        let provider = TranslateGemmaApplicationProvider.shared
         _runtime = State(initialValue: runtime)
+        _translateGemmaModel = State(initialValue: provider.localModel)
         _model = State(initialValue: NativeChatModel.applicationModel(
             transport: WhatsAppWebTransport(runtime: runtime),
-            retranslator: translationProvider,
+            retranslator: provider.retranslator,
             identityProvider: runtime))
     }
 
@@ -89,10 +86,25 @@ struct WhatsAppRootView: View {
                             Toggle("Translate messages", isOn: $translationEnabled)
                             Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
                             Text("TranslateGemma: \(translationModelStatus)")
-                            Text(translationEnabled
-                                 ? "Translation stays enabled. TranslateGemma remains resident while this app process is running."
-                                 : "Translation is turned off.")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            if translationEnabled && translationModelStatus.contains("Apple Translation") {
+                                Text("TranslateGemma is unavailable. Installed Apple Translation languages are used as a local fallback; no model download is started.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else {
+                                Text(translationEnabled
+                                     ? "Translation stays enabled. TranslateGemma remains resident while this app process is running."
+                                     : "Translation is turned off.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            if ownerApprovedTranslateGemma,
+                               translationModelStatus != "Loaded · resident",
+                               translationEnabled {
+                                Button("Retry TranslateGemma load") {
+                                    Task {
+                                        await translateGemmaModel.resetLoadState()
+                                        await updateTranslateGemmaState()
+                                    }
+                                }
+                            }
                         }
                         Section("Interface testing") {
                             Button("Open local sample chats") { showingSamples = true }
@@ -151,11 +163,18 @@ struct WhatsAppRootView: View {
         }
         translationModelStatus = "Loading and verifying…"
         do {
-            try await translateGemmaModel.preload()
-            translationModelStatus = "Loaded · resident"
+            switch try await translateGemmaModel.preload() {
+            case .loaded:
+                translationModelStatus = "Loaded · resident"
+            case .fallback:
+                translationModelStatus = "Unavailable · Apple Translation fallback"
+            case .unavailable:
+                translationModelStatus = "Could not load · provision model artifacts"
+            }
+        } catch is CancellationError {
+            translationModelStatus = "Load cancelled"
         } catch {
-            model.translations.ownerApprovedExperimentalProvider = false
-            translationModelStatus = "Could not load"
+            translationModelStatus = "Could not load · retry"
         }
     }
 }

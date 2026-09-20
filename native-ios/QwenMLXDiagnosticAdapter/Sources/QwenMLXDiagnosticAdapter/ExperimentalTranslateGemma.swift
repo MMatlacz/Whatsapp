@@ -28,6 +28,21 @@ public actor ExperimentalTranslateGemma {
         self.manifestURL = manifestURL
     }
 
+    /// Returns quickly when the explicitly provisioned local snapshot is absent.
+    ///
+    /// The app must never turn a missing local model into an implicit network
+    /// download. This lightweight check lets the translation router skip MLX and
+    /// use an installed system-language fallback instead.
+    public func isProvisioned() -> Bool {
+        guard FileManager.default.fileExists(atPath: manifestURL.path),
+              FileManager.default.fileExists(atPath: directory.path) else {
+            return false
+        }
+        return ["config.json", "tokenizer.json", "model.safetensors"].allSatisfy {
+            FileManager.default.fileExists(atPath: directory.appendingPathComponent($0).path)
+        }
+    }
+
     /// Loads and verifies the model once, then keeps the container resident for
     /// subsequent translations while the application process remains alive.
     public func preload() async throws {

@@ -7,7 +7,8 @@ import TranslationCore
 /// All actual model execution goes through the shared TranslationEngine contract.
 actor EngineBackedNativeRetranslator: NativeRetranslator {
     nonisolated let isValidated: Bool
-    private let engine: any TranslationEngine
+    private let engine: (any TranslationEngine)?
+    private let router: TranslationEngineRouter?
     private let promptBuilder: TranslationPromptBuilder
     private var inferenceActive = false
 
@@ -17,6 +18,18 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
         promptBuilder: TranslationPromptBuilder = TranslationPromptBuilder()
     ) {
         self.engine = engine
+        self.router = nil
+        self.isValidated = isValidated
+        self.promptBuilder = promptBuilder
+    }
+
+    init(
+        router: TranslationEngineRouter,
+        isValidated: Bool = false,
+        promptBuilder: TranslationPromptBuilder = TranslationPromptBuilder()
+    ) {
+        self.engine = nil
+        self.router = router
         self.isValidated = isValidated
         self.promptBuilder = promptBuilder
     }
@@ -59,21 +72,31 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
             )
         ) else { throw NativeRetranslationFailure.invalidInput }
 
-        switch await engine.availability(for: engineRequest) {
-        case .available:
-            break
-        case .unavailable:
-            throw NativeRetranslationFailure.unavailable
-        }
-
         do {
-            let result = try await engine.translate(engineRequest)
+            let result: TranslationResult
+            if let router {
+                result = try await router.translate(engineRequest)
+            } else if let engine {
+                switch await engine.availability(for: engineRequest) {
+                case .available:
+                    break
+                case .unavailable:
+                    throw NativeRetranslationFailure.unavailable
+                }
+                result = try await engine.translate(engineRequest)
+            } else {
+                throw NativeRetranslationFailure.unavailable
+            }
             return [.init(
                 id: "engine-\(request.revision)",
                 source: nil,
                 translation: result.translatedText
             )]
+        } catch let failure as NativeRetranslationFailure {
+            throw failure
         } catch let failure as TranslationEngineFailure {
+            throw Self.nativeFailure(failure)
+        } catch let failure as TranslationRoutingError {
             throw Self.nativeFailure(failure)
         } catch is CancellationError {
             throw NativeRetranslationFailure.cancelled
@@ -103,6 +126,19 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
             return .integrity
         case .cancelled:
             return .cancelled
+        }
+    }
+
+    private static func nativeFailure(_ failure: TranslationRoutingError) -> NativeRetranslationFailure {
+        switch failure {
+        case .cancelled:
+            return .cancelled
+        case .terminalFailure(_, let underlying):
+            return nativeFailure(underlying)
+        case .contractViolation(_, _), .duplicateModelDescriptor(_), .noEnginesConfigured:
+            return .integrity
+        case .exhausted:
+            return .unavailable
         }
     }
 }
