@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 import WebKit
 import ImageIO
 import NaturalLanguage
@@ -39,23 +40,28 @@ struct WhatsAppRootView: View {
     @AppStorage("translation.ownerApprovedTranslateGemma") private var ownerApprovedTranslateGemma = false
     @State private var runtime: WhatsAppWebKitBridgeRuntime
     @State private var model: NativeChatModel
+    @State private var translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var translationModelStatus = "Not loaded"
-    private let translationProvider: EngineBackedNativeRetranslator
-    private let translateGemmaModel: TranslateGemmaLocalModelAdapter
+    @State private var preparingAppleTranslation = false
+    @State private var translationPreparationConfiguration: TranslationSession.Configuration?
+    @State private var translationPreparationStep: TranslationPreparationStep?
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
 
+    private enum TranslationPreparationStep {
+        case indonesianToEnglish
+        case englishToPolish
+    }
+
     init() {
         let runtime = WhatsAppWebKitBridgeRuntime()
-        let provider = TranslateGemmaApplicationProvider.make()
-        let translationProvider = provider.retranslator
-        self.translationProvider = translationProvider
-        self.translateGemmaModel = provider.localModel
+        let provider = TranslateGemmaApplicationProvider.shared
         _runtime = State(initialValue: runtime)
+        _translateGemmaModel = State(initialValue: provider.localModel)
         _model = State(initialValue: NativeChatModel.applicationModel(
             transport: WhatsAppWebTransport(runtime: runtime),
-            retranslator: translationProvider,
+            retranslator: provider.retranslator,
             identityProvider: runtime))
     }
 
@@ -89,10 +95,46 @@ struct WhatsAppRootView: View {
                             Toggle("Translate messages", isOn: $translationEnabled)
                             Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
                             Text("TranslateGemma: \(translationModelStatus)")
-                            Text(translationEnabled
-                                 ? "Translation stays enabled. TranslateGemma remains resident while this app process is running."
-                                 : "Translation is turned off.")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            if translationEnabled && translationModelStatus == "Apple Translation fallback ready" {
+                                Text("TranslateGemma is unavailable. Apple Translation fallback is ready on this iPhone.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus == "Apple Translation language pair unsupported" {
+                                Text("Apple Translation does not support Indonesian → English → Polish on this iPhone.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus.contains("Apple Translation") {
+                                Text("TranslateGemma is unavailable. Apple Translation can be prepared explicitly as a local fallback; no download starts automatically.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus.contains("Could not") {
+                                Text("TranslateGemma is unavailable. You can explicitly prepare Apple Translation languages as a local fallback.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else {
+                                Text(translationEnabled
+                                     ? "Translation stays enabled. TranslateGemma remains resident while this app process is running."
+                                     : "Translation is turned off.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            if ownerApprovedTranslateGemma,
+                               translationModelStatus != "Loaded · resident",
+                               translationModelStatus != "Apple Translation fallback ready",
+                               translationEnabled {
+                                Button(preparingAppleTranslation
+                                       ? "Preparing Apple Translation languages…"
+                                       : "Prepare Apple Translation languages") {
+                                    preparingAppleTranslation = true
+                                    translationPreparationStep = .indonesianToEnglish
+                                    translationPreparationConfiguration = .init(
+                                        source: Locale.Language(identifier: "id"),
+                                        target: Locale.Language(identifier: "en")
+                                    )
+                                }
+                                .disabled(preparingAppleTranslation)
+                                Button("Retry TranslateGemma load") {
+                                    Task {
+                                        await translateGemmaModel.resetLoadState()
+                                        await updateTranslateGemmaState()
+                                    }
+                                }
+                            }
                         }
                         Section("Interface testing") {
                             Button("Open local sample chats") { showingSamples = true }
@@ -105,6 +147,13 @@ struct WhatsAppRootView: View {
             }
         }
         .tint(.green)
+        .translationTask(
+            translationPreparationConfiguration,
+            action: Self.makeTranslationPreparationAction(
+                onSuccess: { await self.appleTranslationPreparationSucceeded() },
+                onFailure: { self.appleTranslationPreparationFailed($0) }
+            )
+        )
         .background {
             HiddenTransportHost(runtime: runtime)
                 .frame(width: 1, height: 1).opacity(0)
@@ -127,9 +176,11 @@ struct WhatsAppRootView: View {
         }
         .onChange(of: translationEnabled) { _, enabled in
             model.translations.experimentalTranslationEnabled = enabled
+            if !enabled { finishAppleTranslationPreparation() }
         }
         .onChange(of: ownerApprovedTranslateGemma) { _, enabled in
             model.translations.ownerApprovedExperimentalProvider = enabled
+            if !enabled { finishAppleTranslationPreparation() }
             Task { await updateTranslateGemmaState() }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -144,6 +195,62 @@ struct WhatsAppRootView: View {
         .sheet(isPresented: $showingPairing) { NativePairingView(runtime: runtime, model: model) }
     }
 
+    private func appleTranslationPreparationSucceeded() async {
+        guard preparingAppleTranslation, let step = translationPreparationStep else { return }
+        switch step {
+        case .indonesianToEnglish:
+            translationPreparationStep = .englishToPolish
+            translationPreparationConfiguration = .init(
+                source: Locale.Language(identifier: "en"),
+                target: Locale.Language(identifier: "pl")
+            )
+        case .englishToPolish:
+            let result = await translateGemmaModel.appleFallbackStatus()
+            finishAppleTranslationPreparation()
+            switch result {
+            case .loaded:
+                translationModelStatus = "Loaded · resident"
+            case .fallback:
+                translationModelStatus = "Apple Translation fallback ready"
+            case .unavailable:
+                translationModelStatus = "Could not prepare Apple Translation languages"
+            }
+        }
+    }
+
+    private func appleTranslationPreparationFailed(_ error: Error) {
+        guard preparingAppleTranslation else { return }
+        finishAppleTranslationPreparation()
+        if error is CancellationError {
+            translationModelStatus = "Language preparation cancelled"
+        } else if let translationError = error as? TranslationError,
+                  TranslationError.unsupportedLanguagePairing ~= translationError {
+            translationModelStatus = "Apple Translation language pair unsupported"
+        } else {
+            translationModelStatus = "Could not prepare Apple Translation languages"
+        }
+    }
+
+    private nonisolated static func makeTranslationPreparationAction(
+        onSuccess: @escaping @MainActor () async -> Void,
+        onFailure: @escaping @MainActor (Error) -> Void
+    ) -> (TranslationSession) async -> Void {
+        { session in
+            do {
+                try await session.prepareTranslation()
+                await onSuccess()
+            } catch {
+                await onFailure(error)
+            }
+        }
+    }
+
+    private func finishAppleTranslationPreparation() {
+        preparingAppleTranslation = false
+        translationPreparationStep = nil
+        translationPreparationConfiguration = nil
+    }
+
     private func updateTranslateGemmaState() async {
         guard translationEnabled, ownerApprovedTranslateGemma else {
             translationModelStatus = "Not loaded"
@@ -151,11 +258,18 @@ struct WhatsAppRootView: View {
         }
         translationModelStatus = "Loading and verifying…"
         do {
-            try await translateGemmaModel.preload()
-            translationModelStatus = "Loaded · resident"
+            switch try await translateGemmaModel.preload() {
+            case .loaded:
+                translationModelStatus = "Loaded · resident"
+            case .fallback:
+                translationModelStatus = "Apple Translation fallback ready"
+            case .unavailable:
+                translationModelStatus = "Could not load · provision model artifacts"
+            }
+        } catch is CancellationError {
+            translationModelStatus = "Load cancelled"
         } catch {
-            model.translations.ownerApprovedExperimentalProvider = false
-            translationModelStatus = "Could not load"
+            translationModelStatus = "Could not load · retry"
         }
     }
 }

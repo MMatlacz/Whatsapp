@@ -1,43 +1,108 @@
 import SwiftUI
+import Translation
 import QwenMLXDiagnosticAdapter
+
+enum TranslateGemmaPreloadResult: Sendable {
+    case loaded
+    case fallback
+    case unavailable
+}
 
 actor TranslateGemmaLocalModelAdapter: MultilingualLocalModel {
     nonisolated let identifier = "mlx-community/translategemma-4b-it-4bit"
     static let revision = "5788ec08c047f3f2e17808101b8d9566ac930d58"
+    private enum State { case unknown, loaded, unavailable }
     private let runtime: ExperimentalTranslateGemma
+    private let fallback: TwoStepTranslationProvider
+    private var state: State = .unknown
 
-    init(documentsDirectory: URL) {
+    init(
+        documentsDirectory: URL,
+        fallback: TwoStepTranslationProvider
+    ) {
         let probeDirectory = documentsDirectory.appendingPathComponent("TranslationProbe", isDirectory: true)
         runtime = ExperimentalTranslateGemma(
             directory: probeDirectory.appendingPathComponent("model", isDirectory: true),
             manifestURL: probeDirectory.appendingPathComponent("input.json")
         )
+        self.fallback = fallback
     }
 
-    func preload() async throws {
-        do { try await runtime.preload() }
-        catch is CancellationError { throw TranslationEngineFailure.cancelled }
-        catch let failure as ExperimentalTranslateGemma.Failure { throw Self.engineFailure(failure) }
-        catch { throw TranslationEngineFailure.unavailable }
+    func preload() async throws -> TranslateGemmaPreloadResult {
+        if state == .loaded { return .loaded }
+        if state == .unavailable { return await fallbackResult() }
+        guard await runtime.isProvisioned() else {
+            state = .unavailable
+            return await fallbackResult()
+        }
+        do {
+            try await runtime.preload()
+            state = .loaded
+            return .loaded
+        } catch is CancellationError {
+            throw TranslationEngineFailure.cancelled
+        } catch {
+            // Keep the app usable when the optional local snapshot is absent,
+            // corrupt, or too large for the device's current memory budget.
+            state = .unavailable
+            return await fallbackResult()
+        }
+    }
+
+    func resetLoadState() {
+        state = .unknown
+    }
+
+    /// Reports whether Apple's two-hop fallback is ready after the UI has
+    /// explicitly prepared its language resources through `translationTask`.
+    func appleFallbackStatus() async -> TranslateGemmaPreloadResult {
+        return await fallbackResult()
     }
 
     func availability(sourceLanguage: String, targetLanguage: String) async -> TranslationEngineAvailability {
-        sourceLanguage == "id" && targetLanguage == "pl"
-            ? .available : .unavailable(.unsupportedLanguagePair)
+        guard sourceLanguage == "id", targetLanguage == "pl" else {
+            return .unavailable(.unsupportedLanguagePair)
+        }
+        guard state != .unavailable, await runtime.isProvisioned() else {
+            state = .unavailable
+            return .unavailable(.notInstalled)
+        }
+        return .available
     }
 
     func translate(_ request: TranslationRequest) async throws -> String {
         guard request.languages.sourceLanguage == "id", request.languages.targetLanguage == "pl",
               let sourceText = request.sourceText else { throw TranslationEngineFailure.invalidRequest }
+        if state == .unavailable {
+            return try await fallback.translate(
+                text: sourceText,
+                sourceLanguage: "id",
+                targetLanguage: "pl"
+            )
+        }
         do {
-            return try await runtime.translate(
+            let output = try await runtime.translate(
                 sourceText,
                 comment: Self.guidance(for: request),
                 vocabularyHints: Self.vocabularyHints
             )
+            state = .loaded
+            return output
         } catch is CancellationError { throw TranslationEngineFailure.cancelled }
-        catch let failure as ExperimentalTranslateGemma.Failure { throw Self.engineFailure(failure) }
-        catch { throw TranslationEngineFailure.unavailable }
+        catch let failure as ExperimentalTranslateGemma.Failure {
+            if case .integrity = failure { state = .unavailable }
+            throw Self.engineFailure(failure)
+        } catch {
+            state = .unavailable
+            throw TranslationEngineFailure.unavailable
+        }
+    }
+
+    private func fallbackResult() async -> TranslateGemmaPreloadResult {
+        switch await fallback.availability(sourceLanguage: "id", targetLanguage: "pl") {
+        case .available: return .fallback
+        case .unavailable: return .unavailable
+        }
     }
 
     private static func guidance(for request: TranslationRequest) -> String {
@@ -86,18 +151,102 @@ actor TranslateGemmaLocalModelAdapter: MultilingualLocalModel {
     }
 }
 
+struct AppleTranslationTextProvider: TranslationTextProvider {
+    let identifier = "apple-translation-framework"
+
+    func availability(
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async -> TranslationEngineAvailability {
+        guard let pair = TranslationLanguagePair(
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage
+        ) else {
+            return .unavailable(.unsupportedLanguagePair)
+        }
+
+        let status = await LanguageAvailability().status(
+            from: Locale.Language(identifier: pair.sourceLanguage),
+            to: Locale.Language(identifier: pair.targetLanguage)
+        )
+        return status == .installed
+            ? .available
+            : .unavailable(status == .unsupported ? .unsupportedLanguagePair : .notInstalled)
+    }
+
+    func translate(
+        text: String,
+        sourceLanguage: String,
+        targetLanguage: String
+    ) async throws -> String {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let pair = TranslationLanguagePair(
+                  sourceLanguage: sourceLanguage,
+                  targetLanguage: targetLanguage
+              ) else {
+            throw TranslationEngineFailure.invalidRequest
+        }
+        guard !Task.isCancelled else { throw TranslationEngineFailure.cancelled }
+
+        let session = TranslationSession(
+            installedSource: Locale.Language(identifier: pair.sourceLanguage),
+            target: Locale.Language(identifier: pair.targetLanguage)
+        )
+        guard await session.isReady else {
+            throw session.canRequestDownloads
+                ? TranslationEngineFailure.unavailable
+                : TranslationEngineFailure.transient
+        }
+
+        do {
+            return try await session.translate(text).targetText
+        } catch is CancellationError {
+            throw TranslationEngineFailure.cancelled
+        } catch let error as TranslationError {
+            if TranslationError.unsupportedLanguagePairing ~= error {
+                throw TranslationEngineFailure.unsupported
+            }
+            throw TranslationEngineFailure.transient
+        } catch {
+            throw TranslationEngineFailure.transient
+        }
+    }
+
+}
+
 struct TranslateGemmaApplicationProvider {
     let localModel: TranslateGemmaLocalModelAdapter
     let retranslator: EngineBackedNativeRetranslator
 
+    static let shared = make()
+
     static func make() -> TranslateGemmaApplicationProvider {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let localModel = TranslateGemmaLocalModelAdapter(documentsDirectory: documents)
+        let apple = AppleTranslationTextProvider()
+        guard let fallback = TwoStepTranslationProvider(
+            intermediateLanguage: "en",
+            sourceToIntermediate: apple,
+            intermediateToTarget: apple,
+            identifier: "apple-translation-two-step"
+        ),
+        let fallbackEngine = TwoStepTranslationEngine(
+            provider: fallback,
+            version: "system-v1"
+        ) else {
+            preconditionFailure("Invalid Apple Translation fallback configuration")
+        }
+        let localModel = TranslateGemmaLocalModelAdapter(
+            documentsDirectory: documents,
+            fallback: fallback
+        )
         guard let engine = LocalMultilingualModelEngine(
             localModel: localModel, version: TranslateGemmaLocalModelAdapter.revision
-        ) else { preconditionFailure("Invalid bundled TranslateGemma model descriptor") }
-        return .init(localModel: localModel, retranslator: EngineBackedNativeRetranslator(engine: engine))
+        ),
+        let router = try? TranslationEngineRouter(engines: [engine, fallbackEngine]) else {
+            preconditionFailure("Invalid translation engine configuration")
+        }
+        return .init(localModel: localModel, retranslator: EngineBackedNativeRetranslator(router: router))
     }
 }
 
