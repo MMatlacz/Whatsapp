@@ -95,7 +95,13 @@ struct WhatsAppRootView: View {
                             Toggle("Translate messages", isOn: $translationEnabled)
                             Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
                             Text("TranslateGemma: \(translationModelStatus)")
-                            if translationEnabled && translationModelStatus.contains("Apple Translation") {
+                            if translationEnabled && translationModelStatus == "Apple Translation fallback ready" {
+                                Text("TranslateGemma is unavailable. Apple Translation fallback is ready on this iPhone.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus == "Apple Translation language pair unsupported" {
+                                Text("Apple Translation does not support Indonesian → English → Polish on this iPhone.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus.contains("Apple Translation") {
                                 Text("TranslateGemma is unavailable. Apple Translation can be prepared explicitly as a local fallback; no download starts automatically.")
                                     .font(.footnote).foregroundStyle(.secondary)
                             } else if translationEnabled && translationModelStatus.contains("Could not") {
@@ -109,6 +115,7 @@ struct WhatsAppRootView: View {
                             }
                             if ownerApprovedTranslateGemma,
                                translationModelStatus != "Loaded · resident",
+                               translationModelStatus != "Apple Translation fallback ready",
                                translationEnabled {
                                 Button(preparingAppleTranslation
                                        ? "Preparing Apple Translation languages…"
@@ -169,9 +176,11 @@ struct WhatsAppRootView: View {
         }
         .onChange(of: translationEnabled) { _, enabled in
             model.translations.experimentalTranslationEnabled = enabled
+            if !enabled { finishAppleTranslationPreparation() }
         }
         .onChange(of: ownerApprovedTranslateGemma) { _, enabled in
             model.translations.ownerApprovedExperimentalProvider = enabled
+            if !enabled { finishAppleTranslationPreparation() }
             Task { await updateTranslateGemmaState() }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -202,7 +211,7 @@ struct WhatsAppRootView: View {
             case .loaded:
                 translationModelStatus = "Loaded · resident"
             case .fallback:
-                translationModelStatus = "Unavailable · Apple Translation fallback"
+                translationModelStatus = "Apple Translation fallback ready"
             case .unavailable:
                 translationModelStatus = "Could not prepare Apple Translation languages"
             }
@@ -253,7 +262,7 @@ struct WhatsAppRootView: View {
             case .loaded:
                 translationModelStatus = "Loaded · resident"
             case .fallback:
-                translationModelStatus = "Unavailable · Apple Translation fallback"
+                translationModelStatus = "Apple Translation fallback ready"
             case .unavailable:
                 translationModelStatus = "Could not load · provision model artifacts"
             }
