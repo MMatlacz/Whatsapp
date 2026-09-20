@@ -41,6 +41,7 @@ struct WhatsAppRootView: View {
     @State private var model: NativeChatModel
     @State private var translateGemmaModel: TranslateGemmaLocalModelAdapter
     @State private var translationModelStatus = "Not loaded"
+    @State private var preparingAppleTranslation = false
     @State private var showingSamples = false
     @State private var showingPairing = false
     @State private var connectionDiagnostic: String?
@@ -87,7 +88,10 @@ struct WhatsAppRootView: View {
                             Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
                             Text("TranslateGemma: \(translationModelStatus)")
                             if translationEnabled && translationModelStatus.contains("Apple Translation") {
-                                Text("TranslateGemma is unavailable. Installed Apple Translation languages are used as a local fallback; no model download is started.")
+                                Text("TranslateGemma is unavailable. Apple Translation can be prepared explicitly as a local fallback; no download starts automatically.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else if translationEnabled && translationModelStatus.contains("Could not") {
+                                Text("TranslateGemma is unavailable. You can explicitly prepare Apple Translation languages as a local fallback.")
                                     .font(.footnote).foregroundStyle(.secondary)
                             } else {
                                 Text(translationEnabled
@@ -98,6 +102,29 @@ struct WhatsAppRootView: View {
                             if ownerApprovedTranslateGemma,
                                translationModelStatus != "Loaded · resident",
                                translationEnabled {
+                                Button(preparingAppleTranslation
+                                       ? "Preparing Apple Translation languages…"
+                                       : "Prepare Apple Translation languages") {
+                                    Task {
+                                        preparingAppleTranslation = true
+                                        defer { preparingAppleTranslation = false }
+                                        do {
+                                            switch try await translateGemmaModel.prepareAppleTranslationFallback() {
+                                            case .loaded:
+                                                translationModelStatus = "Loaded · resident"
+                                            case .fallback:
+                                                translationModelStatus = "Unavailable · Apple Translation fallback"
+                                            case .unavailable:
+                                                translationModelStatus = "Could not prepare Apple Translation languages"
+                                            }
+                                        } catch is CancellationError {
+                                            translationModelStatus = "Language preparation cancelled"
+                                        } catch {
+                                            translationModelStatus = "Could not prepare Apple Translation languages"
+                                        }
+                                    }
+                                }
+                                .disabled(preparingAppleTranslation)
                                 Button("Retry TranslateGemma load") {
                                     Task {
                                         await translateGemmaModel.resetLoadState()
