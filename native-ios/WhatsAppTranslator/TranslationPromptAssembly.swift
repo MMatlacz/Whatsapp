@@ -21,6 +21,10 @@ public struct TranslationPromptContextMetadata: Equatable, Sendable {
         self.summaryVersion = summaryVersion
         self.summarySourceMessageCount = summarySourceMessageCount
     }
+
+    public var contextMessageCount: Int {
+        recentTurnCount + (hasQuotedTurn ? 1 : 0)
+    }
 }
 
 public struct TranslationPromptContract: Equatable, Sendable {
@@ -28,17 +32,29 @@ public struct TranslationPromptContract: Equatable, Sendable {
     public let sourceLanguage: String
     public let targetLanguage: String
     public let contextMetadata: TranslationPromptContextMetadata
+    public let contextHash: String
 
     public init(
         prompt: TranslationPrompt,
         sourceLanguage: String,
         targetLanguage: String,
-        contextMetadata: TranslationPromptContextMetadata
+        contextMetadata: TranslationPromptContextMetadata,
+        contextHash: String? = nil
     ) {
         self.prompt = prompt
         self.sourceLanguage = sourceLanguage
         self.targetLanguage = targetLanguage
         self.contextMetadata = contextMetadata
+        self.contextHash = contextHash ?? Self.stableHash(prompt.untrustedInput)
+    }
+
+    private static func stableHash(_ value: String) -> String {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in value.utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        return String(format: "fnv1a-%016llx", hash)
     }
 }
 
@@ -74,6 +90,10 @@ public struct TranslationPromptContractBuilder: Sendable {
 }
 
 public struct PersistenceBackedTranslationPromptAssembler: Sendable {
+    public static let productionRecentTurnLimit = 6
+    public static let maximumRecentContextUTF8Bytes = 2_400
+    public static let maximumQuotedTurnUTF8Bytes = 800
+
     private let contextAssembler: TranslationContextAssembler
     private let contractBuilder: TranslationPromptContractBuilder
 
@@ -91,7 +111,7 @@ public struct PersistenceBackedTranslationPromptAssembler: Sendable {
         messageID: WhatsAppMessageID,
         sourceLanguage: String,
         targetLanguage: String,
-        recentTurnLimit: Int = TranslationContextBuilder.defaultRecentTurnLimit
+        recentTurnLimit: Int = Self.productionRecentTurnLimit
     ) async throws -> TranslationPromptContract {
         let context = try await contextAssembler.assemble(
             chatID: chatID,
@@ -101,7 +121,52 @@ public struct PersistenceBackedTranslationPromptAssembler: Sendable {
         return try contractBuilder.build(
             sourceLanguage: sourceLanguage,
             targetLanguage: targetLanguage,
-            context: context
+            context: Self.applyProductionBudget(context)
         )
+    }
+
+    private static func applyProductionBudget(_ context: TranslationContext) -> TranslationContext {
+        var remainingRecentBytes = maximumRecentContextUTF8Bytes
+        var boundedRecent: [TranslationContextTurn] = []
+        boundedRecent.reserveCapacity(context.recentTurns.count)
+
+        for turn in context.recentTurns.reversed() {
+            guard remainingRecentBytes > 0 else { break }
+            let body = clippedUTF8(turn.body, maxBytes: remainingRecentBytes)
+            guard !body.isEmpty else { continue }
+            boundedRecent.append(TranslationContextTurn(speaker: turn.speaker, body: body))
+            remainingRecentBytes -= body.utf8.count
+        }
+        boundedRecent.reverse()
+
+        let boundedQuoted = context.quotedTurn.map {
+            TranslationQuotedTurn(
+                speaker: $0.speaker,
+                body: clippedUTF8($0.body, maxBytes: maximumQuotedTurnUTF8Bytes)
+            )
+        }
+
+        return TranslationContext(
+            target: context.target,
+            recentTurns: boundedRecent,
+            quotedTurn: boundedQuoted,
+            summary: context.summary
+        )
+    }
+
+    private static func clippedUTF8(_ value: String, maxBytes: Int) -> String {
+        guard maxBytes > 0 else { return "" }
+        guard value.utf8.count > maxBytes else { return value }
+
+        var result = ""
+        var usedBytes = 0
+        for character in value {
+            let fragment = String(character)
+            let fragmentBytes = fragment.utf8.count
+            guard usedBytes + fragmentBytes <= maxBytes else { break }
+            result.append(character)
+            usedBytes += fragmentBytes
+        }
+        return result
     }
 }
