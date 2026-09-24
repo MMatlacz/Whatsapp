@@ -2,6 +2,7 @@ import Foundation
 import Observation
 #if SWIFT_PACKAGE
 import PersistenceCore
+import TranslationCore
 import WhatsAppDomainCore
 #endif
 
@@ -24,17 +25,47 @@ struct NativeTranslationPart: Equatable, Codable, Identifiable, Sendable {
     let id: String
     let source: String?
     var translation: String
-    let provenance: NativeTranslationProvenance? = nil
+    let provenance: NativeTranslationProvenance?
+
+    init(
+        id: String,
+        source: String?,
+        translation: String,
+        provenance: NativeTranslationProvenance? = nil
+    ) {
+        self.id = id
+        self.source = source
+        self.translation = translation
+        self.provenance = provenance
+    }
 }
 
 struct NativeTranslationRecord: Equatable, Codable, Sendable {
     let original: String
     var parts: [NativeTranslationPart]
-    var revision = 1
-    var manuallyEdited = false
-    var comment = ""
-    var isSample = false
-    var provenance: NativeTranslationProvenance? = nil
+    var revision: Int
+    var manuallyEdited: Bool
+    var comment: String
+    var isSample: Bool
+    var provenance: NativeTranslationProvenance?
+
+    init(
+        original: String,
+        parts: [NativeTranslationPart],
+        revision: Int = 1,
+        manuallyEdited: Bool = false,
+        comment: String = "",
+        isSample: Bool = false,
+        provenance: NativeTranslationProvenance? = nil
+    ) {
+        self.original = original
+        self.parts = parts
+        self.revision = revision
+        self.manuallyEdited = manuallyEdited
+        self.comment = comment
+        self.isSample = isSample
+        self.provenance = provenance
+    }
 
     var translatedText: String { parts.map(\.translation).joined() }
 }
@@ -46,7 +77,25 @@ struct NativeRetranslationRequest: Equatable, Sendable {
     let comment: String
     let revision: Int
     let userInitiated: Bool
-    let promptContract: TranslationPromptContract? = nil
+    let promptContract: TranslationPromptContract?
+
+    init(
+        key: NativeTranslationKey,
+        original: String,
+        previousTranslation: String,
+        comment: String,
+        revision: Int,
+        userInitiated: Bool,
+        promptContract: TranslationPromptContract? = nil
+    ) {
+        self.key = key
+        self.original = original
+        self.previousTranslation = previousTranslation
+        self.comment = comment
+        self.revision = revision
+        self.userInitiated = userInitiated
+        self.promptContract = promptContract
+    }
 }
 
 enum NativeRetranslationFailure: Error, Equatable, Sendable {
