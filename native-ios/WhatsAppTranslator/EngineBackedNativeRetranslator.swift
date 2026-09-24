@@ -10,7 +10,6 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
     private let engine: (any TranslationEngine)?
     private let router: TranslationEngineRouter?
     private let promptBuilder: TranslationPromptBuilder
-    private var inferenceActive = false
 
     init(
         engine: any TranslationEngine,
@@ -35,8 +34,6 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
     }
 
     func retranslate(_ request: NativeRetranslationRequest) async throws -> [NativeTranslationPart] {
-        try await acquireInferenceSlot(waitIfBusy: request.userInitiated)
-        defer { inferenceActive = false }
         guard
             let requestID = TranslationRequestID(rawValue: "\(request.key.chatID):\(request.key.messageID):\(request.revision)"),
             let languages = TranslationLanguagePair(
@@ -132,15 +129,6 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
             targetLanguage: languages.targetLanguage,
             context: context
         )
-    }
-
-    private func acquireInferenceSlot(waitIfBusy: Bool) async throws {
-        while inferenceActive {
-            guard waitIfBusy else { throw NativeRetranslationFailure.busy }
-            try Task.checkCancellation()
-            try await Task.sleep(nanoseconds: 100_000_000)
-        }
-        inferenceActive = true
     }
 
     private static func nativeFailure(_ failure: TranslationEngineFailure) -> NativeRetranslationFailure {
