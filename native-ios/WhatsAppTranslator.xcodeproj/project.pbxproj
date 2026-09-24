@@ -29,6 +29,9 @@
 		A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* SQLiteContextPersistence.swift */; };
 		A1000000000000000000000E /* TranslationEngineCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* TranslationEngineCore.swift */; };
 		A1000000000000000000000F /* EngineBackedNativeRetranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* EngineBackedNativeRetranslator.swift */; };
+		G70000000000000000000001 /* TranslationContextAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = G70000000000000000000011 /* TranslationContextAssembly.swift */; };
+		G70000000000000000000002 /* TranslationPromptAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = G70000000000000000000012 /* TranslationPromptAssembly.swift */; };
+		G70000000000000000000003 /* SQLiteTranslationContextSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = G70000000000000000000013 /* SQLiteTranslationContextSource.swift */; };
 		B20000000000000000000070 /* QwenMLXDiagnosticAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = B20000000000000000000071; };
 /* End PBXBuildFile section */
 
@@ -56,6 +59,9 @@
 		A1000000000000000000001D /* SQLiteContextPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteContextPersistence.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* TranslationEngineCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationEngineCore.swift; sourceTree = "<group>"; };
 		A1000000000000000000001F /* EngineBackedNativeRetranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineBackedNativeRetranslator.swift; sourceTree = "<group>"; };
+		G70000000000000000000011 /* TranslationContextAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationContextAssembly.swift; sourceTree = "<group>"; };
+		G70000000000000000000012 /* TranslationPromptAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationPromptAssembly.swift; sourceTree = "<group>"; };
+		G70000000000000000000013 /* SQLiteTranslationContextSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteTranslationContextSource.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +109,9 @@
 				A10000000000000000000015 /* TranslationCore.swift */,
 				A1000000000000000000001E /* TranslationEngineCore.swift */,
 				A1000000000000000000001F /* EngineBackedNativeRetranslator.swift */,
+				G70000000000000000000011 /* TranslationContextAssembly.swift */,
+				G70000000000000000000012 /* TranslationPromptAssembly.swift */,
+				G70000000000000000000013 /* SQLiteTranslationContextSource.swift */,
 			);
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
@@ -241,6 +250,9 @@
 				A1000000000000000000000A /* WhatsAppWebKitBridgeRuntime.swift in Sources */,
 				A1000000000000000000000C /* SQLitePersistence.swift in Sources */,
 				A1000000000000000000000D /* SQLiteContextPersistence.swift in Sources */,
+				G70000000000000000000001 /* TranslationContextAssembly.swift in Sources */,
+				G70000000000000000000002 /* TranslationPromptAssembly.swift in Sources */,
+				G70000000000000000000003 /* SQLiteTranslationContextSource.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
