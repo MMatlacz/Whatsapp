@@ -102,6 +102,81 @@ final class PersistenceBackedTranslationPromptTests: XCTestCase {
         XCTAssertFalse(persisted.prompt.untrustedInput.contains("Display name must not enter prompt"))
     }
 
+    func testProductionAssemblerBoundsRecentAndQuotedUTF8Context() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("persisted-prompt-budget-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let store = try SQLiteContextStore(path: url.path)
+        let chatID = try XCTUnwrap(WhatsAppChatID("budget@g.us"))
+        let participant = try XCTUnwrap(WhatsAppParticipantID("participant"))
+        let targetTimestamp = try XCTUnwrap(WhatsAppTimestamp(millisecondsSince1970: 9_000))
+        try store.core.upsert(chat: try XCTUnwrap(WhatsAppChat(
+            id: chatID,
+            title: "Budget fixture",
+            kind: .group,
+            unreadCount: 0,
+            lastMessageAt: targetTimestamp
+        )))
+
+        let quote = try message(
+            id: "m01",
+            chatID: chatID,
+            senderID: participant,
+            timestamp: 1_000,
+            body: String(repeating: "q", count: 1_000)
+        )
+        try store.core.upsert(message: quote)
+
+        for index in 2...8 {
+            let value = try message(
+                id: String(format: "m%02d", index),
+                chatID: chatID,
+                senderID: participant,
+                timestamp: Int64(index * 1_000),
+                body: "turn-\(index)-" + String(repeating: "r", count: 600)
+            )
+            try store.core.upsert(message: value)
+        }
+
+        let target = WhatsAppMessage(
+            id: try XCTUnwrap(WhatsAppMessageID("m09")),
+            chatID: chatID,
+            senderID: participant,
+            timestamp: targetTimestamp,
+            body: "target",
+            fromMe: false,
+            quote: WhatsAppQuote(messageID: quote.id, senderID: participant, body: nil),
+            media: nil,
+            translation: nil
+        )
+        try store.core.upsert(message: target)
+
+        let contract = try await PersistenceBackedTranslationPromptAssembler(
+            source: SQLiteTranslationContextSource(store: store)
+        ).assemble(
+            chatID: chatID,
+            messageID: target.id,
+            sourceLanguage: "id",
+            targetLanguage: "pl"
+        )
+
+        let data = try XCTUnwrap(contract.prompt.untrustedInput.data(using: .utf8))
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let recentTurns = try XCTUnwrap(root["recentTurns"] as? [[String: Any]])
+        let recentBodies = recentTurns.compactMap { $0["body"] as? String }
+        let recentBytes = recentBodies.reduce(0) { $0 + $1.utf8.count }
+        let quoted = try XCTUnwrap(root["quotedTurn"] as? [String: Any])
+        let quotedBody = try XCTUnwrap(quoted["body"] as? String)
+
+        XCTAssertLessThanOrEqual(recentTurns.count, PersistenceBackedTranslationPromptAssembler.productionRecentTurnLimit)
+        XCTAssertLessThanOrEqual(recentBytes, PersistenceBackedTranslationPromptAssembler.maximumRecentContextUTF8Bytes)
+        XCTAssertLessThanOrEqual(quotedBody.utf8.count, PersistenceBackedTranslationPromptAssembler.maximumQuotedTurnUTF8Bytes)
+        XCTAssertEqual(contract.contextMetadata.recentTurnCount, recentTurns.count)
+        XCTAssertTrue(contract.contextMetadata.hasQuotedTurn)
+        XCTAssertFalse(contract.contextHash.isEmpty)
+    }
+
     private func message(
         id: String,
         chatID: WhatsAppChatID,
