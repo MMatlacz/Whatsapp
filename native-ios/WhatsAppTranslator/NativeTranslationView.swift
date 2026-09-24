@@ -42,16 +42,16 @@ struct NativeTranslationCard: View {
                     Button("Translate now", systemImage: "character.bubble") {
                         Task { await model.translate(key: key, original: original) }
                     }
-                    .disabled(model.running.contains(key))
+                    .disabled(automaticRequestPending)
                 }
             }
-            if model.running.contains(key) { ProgressView("Translating locally…") }
+            executionStatus
             ViewThatFits(in: .horizontal) {
                 HStack { correctionButton; wordsButton }
                 VStack(alignment: .leading) { correctionButton; wordsButton }
             }
             Button("Retranslate with comment", systemImage: "arrow.clockwise") { sheet = .retranslate }
-                .font(.caption).disabled(model.running.contains(key))
+                .font(.caption)
             if let notice = model.notices[key] { Text(notice).font(.caption).foregroundStyle(.secondary) }
             if let error = model.storageError { Text(error).font(.caption).foregroundStyle(.red) }
         }
@@ -66,6 +66,43 @@ struct NativeTranslationCard: View {
             case .retranslate: NativeRetranslationEditor(model: model, key: key, original: original)
             case .vocabulary: NativeKnownWordsEditor(model: model, key: key, original: original)
             }
+        }
+    }
+
+    private var automaticRequestPending: Bool {
+        guard let state = model.executionStates[key] else { return false }
+        return state == .queuedAutomatic || state == .runningAutomatic
+    }
+
+    @ViewBuilder
+    private var executionStatus: some View {
+        switch model.executionStates[key] {
+        case .queuedManual:
+            ProgressView("Retranslation queued…")
+        case .queuedAutomatic:
+            ProgressView("Translation queued…")
+        case .runningManual:
+            ProgressView("Applying comment locally…")
+        case .runningAutomatic:
+            ProgressView("Translating locally…")
+        case .cancelled:
+            Text("Automatic translation cancelled.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .superseded:
+            Text("An older queued retranslation was superseded.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .failed:
+            Label("Translation failed", systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .queueFull:
+            Text("Automatic translation queue is full.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .completed, .none:
+            EmptyView()
         }
     }
 
@@ -154,13 +191,13 @@ private struct NativeRetranslationEditor: View {
                     Text("Your comment is saved locally and applied to the revised Polish output. Ask for a brief explanation when a term needs context.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                if model.running.contains(key) { ProgressView("Applying comment locally…") }
+                executionStatus
                 if let notice = model.notices[key] { Text(notice).font(.footnote) }
                 if let error = model.storageError { Text(error).foregroundStyle(.red) }
                 Button("Retranslate with comment") {
                     Task { await model.retranslate(key: key, original: original, comment: comment) }
                 }
-                .disabled(comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.running.contains(key))
+                .disabled(comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .navigationTitle("Retranslate")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
@@ -169,6 +206,30 @@ private struct NativeRetranslationEditor: View {
                 comment = model.record(for: key, original: original)?.comment ?? ""
                 loaded = true
             }
+        }
+    }
+
+    @ViewBuilder
+    private var executionStatus: some View {
+        switch model.executionStates[key] {
+        case .queuedManual:
+            ProgressView("Retranslation queued…")
+        case .runningManual:
+            ProgressView("Applying comment locally…")
+        case .superseded:
+            Text("An older queued retranslation was superseded.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .cancelled:
+            Text("Retranslation cancelled.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .failed:
+            Label("Retranslation failed", systemImage: "exclamationmark.triangle")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .queuedAutomatic, .runningAutomatic, .queueFull, .completed, .none:
+            EmptyView()
         }
     }
 }
