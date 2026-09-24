@@ -17,7 +17,7 @@ permissions:
 jobs:
   closing-issue-reference:
     name: closing-issue-reference
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Require exactly one issue reference
