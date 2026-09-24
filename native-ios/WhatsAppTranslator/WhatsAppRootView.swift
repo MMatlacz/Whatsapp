@@ -2,36 +2,9 @@ import SwiftUI
 import Translation
 import WebKit
 import ImageIO
-import NaturalLanguage
 #if canImport(UIKit)
 import UIKit
 #endif
-
-private enum NativeAutomaticTranslationEligibility {
-    private static let shortIndonesianTokens: Set<String> = [
-        "aku", "kamu", "dia", "iya", "ya", "nggak", "gak", "ga", "udah", "sudah",
-        "belum", "mau", "nanti", "bisa", "boleh", "makasih", "wkwk", "mager", "baper"
-    ]
-
-    static func allows(message: WhatsAppTransportMessage, body: String) -> Bool {
-        guard !message.fromMe else { return false }
-        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.unicodeScalars.contains(where: CharacterSet.letters.contains),
-              !isURLOnly(trimmed) else { return false }
-        if NLLanguageRecognizer.dominantLanguage(for: trimmed) == .indonesian { return true }
-        let tokens = trimmed.lowercased().split { !$0.isLetter }.map(String.init)
-        return tokens.contains(where: shortIndonesianTokens.contains)
-    }
-
-    private static func isURLOnly(_ text: String) -> Bool {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
-            return false
-        }
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = detector.matches(in: text, range: range)
-        return matches.count == 1 && matches[0].range == range
-    }
-}
 
 @MainActor
 struct WhatsAppRootView: View {
@@ -614,9 +587,17 @@ private struct NativeConversation: View {
                         .font(.caption).foregroundStyle(.secondary).padding(.vertical)
                     ForEach(model.messages[chatID] ?? [], id: \.id) { message in
                         let previewKey = model.mediaPreviewKey(for: message)
-                        NativeMessageBubble(message: message, translations: model.translations,
-                                            translationKey: model.translationKey(chatID: chatID, messageID: message.id),
-                                            senderName: senderName(for: message),
+                        NativeMessageBubble(
+                            message: message,
+                            translations: model.translations,
+                            translationKey: model.translationKey(chatID: chatID, messageID: message.id),
+                            manualTranslationKey: model.translationKey(
+                                chatID: chatID,
+                                messageID: message.id,
+                                forceIndonesian: true
+                            ),
+                            automaticTranslationEnabled: model.automaticTranslationEnabled(for: chatID),
+                            senderName: senderName(for: message),
                                             senderIdentity: senderIdentity(for: message),
                                             quoteSenderName: quoteSenderName(for: message),
                                             mediaPreviewKey: previewKey,
@@ -700,6 +681,8 @@ private struct NativeMessageBubble: View {
     let message: WhatsAppTransportMessage
     let translations: NativeTranslationModel
     let translationKey: NativeTranslationKey
+    let manualTranslationKey: NativeTranslationKey
+    let automaticTranslationEnabled: Bool
     let senderName: String?
     let senderIdentity: NativeContactIdentity?
     let quoteSenderName: String?
@@ -731,10 +714,10 @@ private struct NativeMessageBubble: View {
                     NativeTranslationCard(
                         model: translations,
                         key: translationKey,
+                        manualOverrideKey: manualTranslationKey,
                         original: body,
-                        automaticTranslationEligible: NativeAutomaticTranslationEligibility.allows(
-                            message: message, body: body
-                        )
+                        automaticTranslationEligible: automaticTranslationEnabled
+                            && NativeAutomaticTranslationEligibility.allows(message: message, body: body)
                     )
                 }
                 if let linkPreview = message.linkPreview {
