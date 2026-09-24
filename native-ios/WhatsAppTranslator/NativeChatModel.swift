@@ -25,6 +25,7 @@ final class NativeChatModel {
     }
 
     let translations: NativeTranslationModel
+    let automaticTranslationSettings: AutomaticTranslationSettingsStore
     enum Filter { case all, unread, groups }
     private(set) var chats: [WhatsAppTransportChat] = []
     private(set) var visibleChats: [WhatsAppTransportChat] = []
@@ -63,9 +64,11 @@ final class NativeChatModel {
 
     init(transport: (any WhatsAppTransport)? = nil, translations: NativeTranslationModel? = nil,
          store: SQLiteWhatsAppStore? = nil,
-         identityProvider: (any NativeContactIdentityProvider)? = nil) {
+         identityProvider: (any NativeContactIdentityProvider)? = nil,
+         automaticTranslationSettings: AutomaticTranslationSettingsStore? = nil) {
         self.transport = transport
         self.translations = translations ?? NativeTranslationModel()
+        self.automaticTranslationSettings = automaticTranslationSettings ?? AutomaticTranslationSettingsStore()
         self.store = store
         self.identityProvider = identityProvider
         if let transport {
@@ -147,11 +150,13 @@ final class NativeChatModel {
             #endif
             return NativeChatModel(transport: transport,
                                    translations: .applicationStore(retranslator: retranslator), store: store,
-                                   identityProvider: identityProvider)
+                                   identityProvider: identityProvider,
+                                   automaticTranslationSettings: .applicationStore())
         } catch {
             let model = NativeChatModel(transport: transport,
                                         translations: .applicationStore(retranslator: retranslator),
-                                        identityProvider: identityProvider)
+                                        identityProvider: identityProvider,
+                                        automaticTranslationSettings: .applicationStore())
             model.storageNotice = "Local storage is unavailable. Drafts will not survive closing the app."
             return model
         }
@@ -235,6 +240,22 @@ final class NativeChatModel {
 
     func encodedMediaPreviewCacheStats() async -> ByteCostLRUCacheStats {
         await mediaPreviewLoader?.encodedCacheStats() ?? .init(entryCount: 0, totalCostBytes: 0)
+    }
+
+    func setGlobalAutomaticTranslationEnabled(_ enabled: Bool) {
+        automaticTranslationSettings.setGlobalEnabled(enabled)
+    }
+
+    func automaticTranslationOverride(for chatID: String) -> AutomaticTranslationOverride {
+        automaticTranslationSettings.override(for: chatID)
+    }
+
+    func setAutomaticTranslationOverride(_ value: AutomaticTranslationOverride, for chatID: String) {
+        automaticTranslationSettings.setOverride(value, for: chatID)
+    }
+
+    func automaticTranslationEnabled(for chatID: String) -> Bool {
+        automaticTranslationSettings.effectiveEnabled(for: chatID)
     }
 
     subscript(draft chatID: String) -> String {

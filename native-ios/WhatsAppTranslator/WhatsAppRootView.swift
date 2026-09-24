@@ -92,7 +92,13 @@ struct WhatsAppRootView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Section("Translation") {
-                            Toggle("Translate messages", isOn: $translationEnabled)
+                            Toggle("Automatically translate incoming Indonesian messages", isOn: Binding(
+                                get: { model.automaticTranslationSettings.globalEnabled },
+                                set: { model.setGlobalAutomaticTranslationEnabled($0) }
+                            ))
+                            Text("Individual chats can override this default without changing existing translations.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            Toggle("Translation features", isOn: $translationEnabled)
                             Toggle("Use TranslateGemma on this iPhone", isOn: $ownerApprovedTranslateGemma)
                             Text("TranslateGemma: \(translationModelStatus)")
                             if translationEnabled && translationModelStatus == "Apple Translation fallback ready" {
@@ -653,6 +659,29 @@ private struct NativeConversation: View {
                                      photo: model.identities[chatID]?.photo)
                         Text(model.title(for: chatID)).font(.headline).lineLimit(1)
                     }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button { model.setAutomaticTranslationOverride(.inherit, for: chatID) } label: {
+                            Label("Use global setting", systemImage:
+                                model.automaticTranslationOverride(for: chatID) == .inherit ? "checkmark" : "circle")
+                        }
+                        Button { model.setAutomaticTranslationOverride(.enabled, for: chatID) } label: {
+                            Label("Always automatic", systemImage:
+                                model.automaticTranslationOverride(for: chatID) == .enabled ? "checkmark" : "circle")
+                        }
+                        Button { model.setAutomaticTranslationOverride(.disabled, for: chatID) } label: {
+                            Label("Never automatic", systemImage:
+                                model.automaticTranslationOverride(for: chatID) == .disabled ? "checkmark" : "circle")
+                        }
+                    } label: {
+                        Label(
+                            model.automaticTranslationEnabled(for: chatID)
+                                ? "Automatic translation on" : "Automatic translation off",
+                            systemImage: "translate"
+                        )
+                    }
+                    .accessibilityLabel("Automatic translation setting")
                 }
             }
             .task(id: model.connectionState) {
