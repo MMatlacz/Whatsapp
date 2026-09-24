@@ -7,8 +7,14 @@ on:
       - apple
     paths:
       - ".github/workflows/qwen-functional-ci.yml"
-      - "native-ios/**"
-      - "docs/native/**"
+      - "native-ios/QwenMLXDiagnosticAdapter/**"
+      - "native-ios/QwenDeviceBenchmarkHarness/**"
+      - "native-ios/QwenDeviceBenchmarkHarness.xcodeproj/**"
+      - "docs/native/p0.2-qwen3-local-model.md"
+      - "docs/native/qwen3-**"
+      - "docs/native/p0.2d3-bakeoff/**"
+      - "docs/native/p0.2d4-reference-controls/**"
+      - "docs/native/p0.2d5-larger-models/**"
 
 permissions:
   contents: read
