@@ -45,25 +45,18 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
             )
         else { throw NativeRetranslationFailure.invalidInput }
 
-        let context = TranslationContext(
-            target: TranslationTarget(speaker: .unknown, body: request.original),
-            recentTurns: [], quotedTurn: nil, summary: nil
-        )
-        let prompt: TranslationPrompt
+        let contract: TranslationPromptContract
         do {
-            prompt = try promptBuilder.build(
-                sourceLanguage: languages.sourceLanguage,
-                targetLanguage: languages.targetLanguage,
-                context: context
-            )
+            contract = try promptContract(for: request, languages: languages)
         } catch {
             throw NativeRetranslationFailure.invalidInput
         }
+
         guard let engineRequest = TranslationRequest(
             id: requestID,
             revision: request.revision,
             languages: languages,
-            prompt: prompt,
+            prompt: contract.prompt,
             sourceText: request.original,
             revisionGuidance: TranslationRevisionGuidance(
                 previousTranslation: request.previousTranslation,
@@ -87,10 +80,19 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
             } else {
                 throw NativeRetranslationFailure.unavailable
             }
+
+            let provenance = NativeTranslationProvenance(
+                contextHash: contract.contextHash,
+                promptVersion: result.promptVersion.rawValue,
+                modelIdentifier: "\(result.model.identifier)@\(result.model.version)",
+                contextMessageCount: contract.contextMetadata.contextMessageCount,
+                summaryVersion: contract.contextMetadata.summaryVersion
+            )
             return [.init(
                 id: "engine-\(request.revision)",
                 source: nil,
-                translation: result.translatedText
+                translation: result.translatedText,
+                provenance: provenance
             )]
         } catch let failure as NativeRetranslationFailure {
             throw failure
@@ -103,6 +105,33 @@ actor EngineBackedNativeRetranslator: NativeRetranslator {
         } catch {
             throw NativeRetranslationFailure.unavailable
         }
+    }
+
+    private func promptContract(
+        for request: NativeRetranslationRequest,
+        languages: TranslationLanguagePair
+    ) throws -> TranslationPromptContract {
+        if let contract = request.promptContract {
+            guard
+                contract.sourceLanguage == languages.sourceLanguage,
+                contract.targetLanguage == languages.targetLanguage
+            else {
+                throw NativeRetranslationFailure.invalidInput
+            }
+            return contract
+        }
+
+        let context = TranslationContext(
+            target: TranslationTarget(speaker: .unknown, body: request.original),
+            recentTurns: [],
+            quotedTurn: nil,
+            summary: nil
+        )
+        return try TranslationPromptContractBuilder(promptBuilder: promptBuilder).build(
+            sourceLanguage: languages.sourceLanguage,
+            targetLanguage: languages.targetLanguage,
+            context: context
+        )
     }
 
     private func acquireInferenceSlot(waitIfBusy: Bool) async throws {
