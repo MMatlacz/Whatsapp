@@ -164,7 +164,9 @@ actor TranslationInferenceScheduler {
     private var cancelledActiveIDs: Set<UUID> = []
     private var states: [NativeTranslationKey: NativeTranslationExecutionState] = [:]
 
-    init(maximumQueuedAutomaticJobs: Int = Self.defaultMaximumQueuedAutomaticJobs) {
+    init(
+        maximumQueuedAutomaticJobs: Int = TranslationInferenceScheduler.defaultMaximumQueuedAutomaticJobs
+    ) {
         precondition(maximumQueuedAutomaticJobs > 0)
         self.maximumQueuedAutomaticJobs = maximumQueuedAutomaticJobs
     }
