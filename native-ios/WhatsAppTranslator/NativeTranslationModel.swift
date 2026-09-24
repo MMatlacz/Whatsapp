@@ -12,10 +12,19 @@ struct NativeTranslationKey: Hashable, Codable, Sendable {
     let targetLanguage: String
 }
 
+struct NativeTranslationProvenance: Equatable, Codable, Sendable {
+    let contextHash: String
+    let promptVersion: String
+    let modelIdentifier: String
+    let contextMessageCount: Int
+    let summaryVersion: Int?
+}
+
 struct NativeTranslationPart: Equatable, Codable, Identifiable, Sendable {
     let id: String
     let source: String?
     var translation: String
+    let provenance: NativeTranslationProvenance? = nil
 }
 
 struct NativeTranslationRecord: Equatable, Codable, Sendable {
@@ -25,6 +34,7 @@ struct NativeTranslationRecord: Equatable, Codable, Sendable {
     var manuallyEdited = false
     var comment = ""
     var isSample = false
+    var provenance: NativeTranslationProvenance? = nil
 
     var translatedText: String { parts.map(\.translation).joined() }
 }
@@ -36,6 +46,7 @@ struct NativeRetranslationRequest: Equatable, Sendable {
     let comment: String
     let revision: Int
     let userInitiated: Bool
+    let promptContract: TranslationPromptContract? = nil
 }
 
 enum NativeRetranslationFailure: Error, Equatable, Sendable {
@@ -253,7 +264,8 @@ final class NativeTranslationModel {
         var updated = records
         updated[key] = NativeTranslationRecord(
             original: original, parts: parts, revision: expectedRevision + 1,
-            manuallyEdited: true, comment: current?.comment ?? "", isSample: current?.isSample ?? false
+            manuallyEdited: true, comment: current?.comment ?? "", isSample: current?.isSample ?? false,
+            provenance: current?.provenance
         )
         guard commit(records: updated, words: knownWords, changedKey: key, revisionKind: .manualEdit) else {
             return false
@@ -295,13 +307,15 @@ final class NativeTranslationModel {
         running.insert(key)
         defer { running.remove(key) }
         do {
+            let promptContract = try await productionPromptContract(for: key)
             let parts = try await retranslator.retranslate(.init(
                 key: key,
                 original: original,
                 previousTranslation: current.translatedText,
                 comment: trimmed,
                 revision: requestRevision,
-                userInitiated: userInitiated
+                userInitiated: userInitiated,
+                promptContract: promptContract
             ))
             let latest = record(for: key, original: original)
             guard (latest?.revision ?? 0) == baselineRevision else { return }
@@ -314,6 +328,7 @@ final class NativeTranslationModel {
             current.parts = parts
             current.manuallyEdited = false
             current.revision = requestRevision
+            current.provenance = parts.compactMap(\.provenance).first
             var updated = records
             updated[key] = current
             let kind: TranslationRevisionKind = hadTranslation ? .retranslation : .model
@@ -367,6 +382,23 @@ final class NativeTranslationModel {
             }
         }
         return commit(records: updated, words: knownWords)
+    }
+
+    private func productionPromptContract(for key: NativeTranslationKey) async throws -> TranslationPromptContract? {
+        guard let contextStore else { return nil }
+        guard let chatID = WhatsAppChatID(key.chatID),
+              let messageID = WhatsAppMessageID(key.messageID) else {
+            throw NativeRetranslationFailure.invalidInput
+        }
+
+        return try await PersistenceBackedTranslationPromptAssembler(
+            source: SQLiteTranslationContextSource(store: contextStore)
+        ).assemble(
+            chatID: chatID,
+            messageID: messageID,
+            sourceLanguage: key.sourceLanguage,
+            targetLanguage: key.targetLanguage
+        )
     }
 
     private func failureNotice(_ failure: NativeRetranslationFailure, userInitiated: Bool) -> String {
@@ -529,12 +561,13 @@ final class NativeTranslationModel {
             revisionKind: revisionKind,
             translatedBody: record.translatedText,
             sourceHash: Self.stableHash(record.original),
-            contextHash: Self.stableHash("\(key.chatID)\u{0}\(key.messageID)"),
-            promptVersion: "native-review-v1",
-            modelIdentifier: "native-translation",
+            contextHash: record.provenance?.contextHash
+                ?? Self.stableHash("\(key.chatID)\u{0}\(key.messageID)"),
+            promptVersion: record.provenance?.promptVersion ?? "native-review-v1",
+            modelIdentifier: record.provenance?.modelIdentifier ?? "native-translation",
             knownWordsVersion: knownWordsVersion,
-            contextMessageCount: 0,
-            summaryVersion: nil,
+            contextMessageCount: record.provenance?.contextMessageCount ?? 0,
+            summaryVersion: record.provenance?.summaryVersion,
             correctionComment: record.comment.isEmpty ? nil : record.comment,
             createdAt: Self.currentTimestamp(),
             sourceText: record.original,
@@ -607,7 +640,14 @@ final class NativeTranslationModel {
                 parts: parts,
                 revision: translation.revision,
                 manuallyEdited: translation.revisionKind == .manualEdit,
-                comment: translation.correctionComment ?? ""
+                comment: translation.correctionComment ?? "",
+                provenance: NativeTranslationProvenance(
+                    contextHash: translation.contextHash,
+                    promptVersion: translation.promptVersion,
+                    modelIdentifier: translation.modelIdentifier,
+                    contextMessageCount: translation.contextMessageCount,
+                    summaryVersion: translation.summaryVersion
+                )
             )
         }
         return result
