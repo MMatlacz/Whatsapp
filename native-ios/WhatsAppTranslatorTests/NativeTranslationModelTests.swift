@@ -313,8 +313,9 @@ final class NativeTranslationModelTests: XCTestCase {
         _ = await queued2.value
         _ = await queued3.value
 
+        let orderedEvents = await recorder.values()
         XCTAssertEqual(
-            await recorder.values(),
+            orderedEvents,
             ["auto-1-start", "auto-1-end", "manual", "auto-2", "auto-3"]
         )
     }
@@ -365,17 +366,22 @@ final class NativeTranslationModelTests: XCTestCase {
             return .completed
         }
         XCTAssertEqual(overflow, .queueFull)
-        XCTAssertEqual(await scheduler.queuedAutomaticCount(), 2)
+        let queuedCount = await scheduler.queuedAutomaticCount()
+        XCTAssertEqual(queuedCount, 2)
 
         for duplicate in duplicates {
-            XCTAssertEqual(await duplicate.value, .deduplicated)
+            let outcome = await duplicate.value
+            XCTAssertEqual(outcome, .deduplicated)
         }
 
         await gate.release()
         _ = await active.value
-        XCTAssertEqual(await firstDuplicate.value, .completed)
-        XCTAssertEqual(await other.value, .completed)
-        XCTAssertEqual(await recorder.values(), ["duplicate-executed", "other"])
+        let firstOutcome = await firstDuplicate.value
+        let otherOutcome = await other.value
+        let events = await recorder.values()
+        XCTAssertEqual(firstOutcome, .completed)
+        XCTAssertEqual(otherOutcome, .completed)
+        XCTAssertEqual(events, ["duplicate-executed", "other"])
     }
 
     func testSchedulerSupersedesOlderPendingManualRequest() async {
@@ -411,9 +417,12 @@ final class NativeTranslationModelTests: XCTestCase {
 
         await gate.release()
         _ = await active.value
-        XCTAssertEqual(await older.value, .superseded)
-        XCTAssertEqual(await newer.value, .completed)
-        XCTAssertEqual(await recorder.values(), ["newer"])
+        let olderOutcome = await older.value
+        let newerOutcome = await newer.value
+        let events = await recorder.values()
+        XCTAssertEqual(olderOutcome, .superseded)
+        XCTAssertEqual(newerOutcome, .completed)
+        XCTAssertEqual(events, ["newer"])
     }
 
     func testCancellingRunningAutomaticWorkCreatesNoTranslationRevisionOrNotice() async {
@@ -425,7 +434,8 @@ final class NativeTranslationModelTests: XCTestCase {
             await model.translate(key: key, original: "Aku minum kopi.")
         }
         await provider.waitForRequest()
-        XCTAssertEqual(await model.inferenceState(for: key), .runningAutomatic)
+        let runningState = await model.inferenceState(for: key)
+        XCTAssertEqual(runningState, .runningAutomatic)
 
         await model.cancelAutomaticTranslation(for: key)
         await provider.finish()
@@ -433,7 +443,8 @@ final class NativeTranslationModelTests: XCTestCase {
 
         XCTAssertNil(model.records[key])
         XCTAssertNil(model.notices[key])
-        XCTAssertEqual(await model.inferenceState(for: key), .cancelled)
+        let finalState = await model.inferenceState(for: key)
+        XCTAssertEqual(finalState, .cancelled)
     }
 
     private func schedulerKey(_ value: String) -> NativeTranslationKey {
