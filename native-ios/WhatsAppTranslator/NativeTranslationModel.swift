@@ -315,6 +315,7 @@ final class NativeTranslationModel {
     private(set) var records: [NativeTranslationKey: NativeTranslationRecord] = [:]
     private(set) var knownWords: Set<String> = []
     private(set) var running: Set<NativeTranslationKey> = []
+    private(set) var executionStates: [NativeTranslationKey: NativeTranslationExecutionState] = [:]
     private(set) var notices: [NativeTranslationKey: String] = [:]
     private(set) var storageError: String?
     var showKnownWords = false
@@ -518,15 +519,18 @@ final class NativeTranslationModel {
     }
 
     func inferenceState(for key: NativeTranslationKey) async -> NativeTranslationExecutionState? {
-        await inferenceScheduler.state(for: key)
+        executionStates[key]
     }
 
     func inferenceStates() async -> [NativeTranslationKey: NativeTranslationExecutionState] {
-        await inferenceScheduler.snapshot()
+        executionStates
     }
 
     func cancelAutomaticTranslation(for key: NativeTranslationKey) async {
         _ = await inferenceScheduler.cancelAutomatic(for: key)
+        if let state = await inferenceScheduler.state(for: key) {
+            executionStates[key] = state
+        }
     }
 
     private func performRetranslation(
@@ -554,6 +558,7 @@ final class NativeTranslationModel {
         }
 
         let kind: NativeTranslationExecutionKind = userInitiated ? .manual : .automatic
+        executionStates[key] = userInitiated ? .queuedManual : .queuedAutomatic
         let outcome = await inferenceScheduler.submit(key: key, kind: kind) { [weak self] in
             guard let self else { return .cancelled }
             return await self.executeRetranslation(
@@ -563,6 +568,10 @@ final class NativeTranslationModel {
                 userInitiated: userInitiated,
                 retranslator: retranslator
             )
+        }
+
+        if let state = await inferenceScheduler.state(for: key) {
+            executionStates[key] = state
         }
 
         switch outcome {
@@ -594,6 +603,7 @@ final class NativeTranslationModel {
         let baselineComment = current.comment
         let requestRevision = max(1, baselineRevision + 1)
 
+        executionStates[key] = userInitiated ? .runningManual : .runningAutomatic
         running.insert(key)
         defer { running.remove(key) }
 
