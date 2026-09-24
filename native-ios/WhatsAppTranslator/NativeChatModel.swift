@@ -1,9 +1,63 @@
 import Foundation
 import Observation
+#if canImport(NaturalLanguage)
+import NaturalLanguage
+#endif
 #if SWIFT_PACKAGE
 import PersistenceCore
 import WhatsAppDomainCore
 #endif
+
+enum NativeAutomaticTranslationEligibility {
+    private static let strongIndonesianTokens: Set<String> = [
+        "nggak", "gak", "udah", "belum", "nanti", "makasih", "wkwk", "mager", "baper",
+        "dong", "sih", "nih", "kok", "besok", "banget", "aja", "gimana", "kenapa",
+        "minum", "makan"
+    ]
+    private static let supportingIndonesianTokens: Set<String> = [
+        "aku", "kamu", "dia", "iya", "ya", "ga", "sudah", "mau", "bisa", "boleh",
+        "jadi", "kita", "kami", "mereka", "jangan", "lagi", "tolong", "terima", "kasih",
+        "jam", "dari", "untuk", "dengan", "kalau", "tapi", "juga"
+    ]
+
+    static func allows(message: WhatsAppTransportMessage, body: String) -> Bool {
+        guard !message.fromMe else { return false }
+        return allows(body: body)
+    }
+
+    static func allows(body: String) -> Bool {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.unicodeScalars.contains(where: CharacterSet.letters.contains),
+              !isURLOnly(trimmed) else { return false }
+
+        let tokens = trimmed.lowercased().split { !$0.isLetter }.map(String.init)
+        if tokens.contains(where: strongIndonesianTokens.contains) { return true }
+
+        let supportingCount = tokens.reduce(into: 0) { count, token in
+            if supportingIndonesianTokens.contains(token) { count += 1 }
+        }
+        if supportingCount >= 2 { return true }
+
+        #if canImport(NaturalLanguage)
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(trimmed)
+        if recognizer.dominantLanguage == .indonesian { return true }
+        let confidence = recognizer.languageHypotheses(withMaximum: 3)[.indonesian] ?? 0
+        if confidence >= 0.55 { return true }
+        #endif
+
+        return false
+    }
+
+    private static func isURLOnly(_ text: String) -> Bool {
+        let tokens = text.split(whereSeparator: { $0.isWhitespace })
+        guard !tokens.isEmpty else { return false }
+        return tokens.allSatisfy { token in
+            let value = token.lowercased()
+            return value.hasPrefix("https://") || value.hasPrefix("http://")
+        }
+    }
+}
 
 struct NativeContactIdentity: Equatable, Sendable {
     let name: String?
@@ -387,7 +441,8 @@ final class NativeChatModel {
                 connectionNotice = "Connection readiness could not be confirmed. Reconnect before sending."
             }
         case .message(let message), .messageUpdate(let message):
-            merge([message], in: message.chatID)
+            let durable = merge([message], in: message.chatID)
+            enqueueAutomaticTranslations(durable)
             if case .message = event {
                 updateChatLastMessage(for: message)
                 reconcilePendingSend(for: message.chatID, historyWasRefreshed: false)
@@ -401,7 +456,8 @@ final class NativeChatModel {
             connectionState = .disconnected
             connectionNotice = "Connection interrupted. Your drafts are kept; reconnect before sending."
         case .historySync(let chatID, let incoming, let cursor):
-            merge(incoming, in: chatID)
+            let durable = merge(incoming, in: chatID)
+            enqueueAutomaticTranslations(durable)
             historyCursors[chatID] = cursor
         }
     }
@@ -442,9 +498,29 @@ final class NativeChatModel {
         guard let chat = chats.first(where: { $0.id == chatID }) else { return "Chat" }
         return chat.isGroup ? chat.title : identities[chatID]?.name ?? chat.title
     }
-    func translationKey(chatID: String, messageID: String) -> NativeTranslationKey {
-        .init(chatID: chatID, messageID: messageID,
-              sourceLanguage: isSample && messageID == "\(chatID)-1" ? "id" : "und", targetLanguage: "pl")
+    func translationKey(
+        chatID: String,
+        messageID: String,
+        forceIndonesian: Bool = false
+    ) -> NativeTranslationKey {
+        let sourceLanguage: String
+        if isSample && messageID == "\(chatID)-1" {
+            sourceLanguage = "id"
+        } else if forceIndonesian {
+            sourceLanguage = "id"
+        } else if let message = messages[chatID]?.first(where: { $0.id == messageID }),
+                  let body = message.body,
+                  NativeAutomaticTranslationEligibility.allows(message: message, body: body) {
+            sourceLanguage = "id"
+        } else {
+            sourceLanguage = "und"
+        }
+        return .init(
+            chatID: chatID,
+            messageID: messageID,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: "pl"
+        )
     }
     func preview(for chatID: String) -> String {
         guard let message = messages[chatID]?.last, let body = message.body else {
@@ -468,7 +544,12 @@ final class NativeChatModel {
         if !older, !loadedCachedHistory.contains(chatID), let store, let id = WhatsAppChatID(chatID) {
             do {
                 let page = try store.messages(chatID: id, before: nil, limit: 100)
-                merge(page.messages.map(WhatsAppTransportDomainMapper.transportMessage), in: chatID, persist: false)
+                let cached = merge(
+                    page.messages.map(WhatsAppTransportDomainMapper.transportMessage),
+                    in: chatID,
+                    persist: false
+                )
+                enqueueAutomaticTranslations(cached)
                 loadedCachedHistory.insert(chatID)
             } catch { storageNotice = "Cached messages could not be loaded." }
         }
@@ -479,7 +560,8 @@ final class NativeChatModel {
         do {
             let page = try await transport.loadMessages(chatID: chatID,
                                                         cursor: older ? historyCursors[chatID] : nil, limit: 100)
-            merge(page.messages, in: chatID)
+            let durable = merge(page.messages, in: chatID)
+            enqueueAutomaticTranslations(durable)
             historyCursors[chatID] = page.nextCursor
             if !older { reconcilePendingSend(for: chatID, historyWasRefreshed: true) }
             if !uncertainSends.contains(chatID) { errors[chatID] = nil }
@@ -642,12 +724,23 @@ final class NativeChatModel {
         }
     }
 
-    private func merge(_ incoming: [WhatsAppTransportMessage], in chatID: String, persist: Bool = true) {
-        var byID = Dictionary((messages[chatID] ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, new in new })
-        for message in incoming where message.chatID == chatID { byID[message.id] = message }
+    @discardableResult
+    private func merge(
+        _ incoming: [WhatsAppTransportMessage],
+        in chatID: String,
+        persist: Bool = true
+    ) -> [WhatsAppTransportMessage] {
+        let matching = incoming.filter { $0.chatID == chatID }
+        var byID = Dictionary(
+            (messages[chatID] ?? []).map { ($0.id, $0) },
+            uniquingKeysWith: { _, new in new }
+        )
+        for message in matching { byID[message.id] = message }
+
+        var durableIDs: Set<String> = []
         if persist, !isSample, let store {
             do {
-                for message in incoming where message.chatID == chatID {
+                for message in matching {
                     if let id = WhatsAppChatID(chatID), try store.chat(id: id) == nil,
                        let timestamp = WhatsAppTimestamp(millisecondsSince1970: message.timestampMilliseconds),
                        let placeholder = WhatsAppChat(
@@ -660,12 +753,49 @@ final class NativeChatModel {
                         try store.upsert(chat: placeholder)
                     }
                     try store.upsert(message: WhatsAppTransportDomainMapper.message(message))
+                    durableIDs.insert(message.id)
                 }
-            } catch { storageNotice = "Some messages could not be cached. Keep the app connected to reload them." }
+            } catch {
+                storageNotice = "Some messages could not be cached. Keep the app connected to reload them."
+            }
+        } else if !persist, !isSample, store != nil {
+            // persist=false is used only for rows just read from SQLite; they
+            // are already durable and may safely enter automatic translation.
+            durableIDs.formUnion(matching.map(\.id))
         }
+
         messages[chatID] = byID.values.sorted {
             $0.timestampMilliseconds == $1.timestampMilliseconds
                 ? $0.id < $1.id : $0.timestampMilliseconds < $1.timestampMilliseconds
+        }
+        return matching.filter { durableIDs.contains($0.id) }
+    }
+
+    private func enqueueAutomaticTranslations(_ messages: [WhatsAppTransportMessage]) {
+        guard !isSample, translations.experimentalTranslationEnabled else { return }
+
+        for message in messages {
+            guard automaticTranslationEnabled(for: message.chatID),
+                  let body = message.body,
+                  NativeAutomaticTranslationEligibility.allows(message: message, body: body) else {
+                continue
+            }
+
+            let key = NativeTranslationKey(
+                chatID: message.chatID,
+                messageID: message.id,
+                sourceLanguage: "id",
+                targetLanguage: "pl"
+            )
+            if let existing = translations.record(for: key, original: body),
+               !existing.parts.isEmpty || !existing.comment.isEmpty {
+                continue
+            }
+
+            let translationModel = translations
+            Task { @MainActor in
+                await translationModel.translate(key: key, original: body)
+            }
         }
     }
 
