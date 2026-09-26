@@ -91,6 +91,13 @@ struct WhatsAppRootView: View {
                             Text("Your saved linking profile is preserved. This interface does not load an embedded web page.")
                                 .foregroundStyle(.secondary)
                         }
+                        if let storageDiagnostic = model.storageDiagnostic {
+                            Section("Local storage") {
+                                Text("Initialization failed: \(storageDiagnostic)")
+                                    .font(.footnote)
+                                    .textSelection(.enabled)
+                            }
+                        }
                         Section("Translation") {
                             Toggle("Automatically translate incoming Indonesian messages", isOn: Binding(
                                 get: { model.automaticTranslationSettings.globalEnabled },
@@ -169,9 +176,6 @@ struct WhatsAppRootView: View {
             if model.connectionState == .authenticating {
                 Button("Link WhatsApp to load your chats") { showingPairing = true }
                     .buttonStyle(.borderedProminent).padding()
-            }
-            if let notice = model.storageNotice {
-                Text(notice).font(.footnote).padding().background(.yellow.opacity(0.2))
             }
         }
         .task {
@@ -488,6 +492,11 @@ private struct NativeChatList: View {
                 }
             }
             .listStyle(.plain)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let notice = model.storageNotice {
+                    NativeStorageNotice(notice: notice)
+                }
+            }
             .navigationTitle("Chats")
             .searchable(text: $model.search, prompt: "Search chats")
             .overlay {
@@ -510,6 +519,18 @@ private struct NativeChatList: View {
                 NativeConversation(model: model, chatID: chatID)
             }
         }
+    }
+}
+
+private struct NativeStorageNotice: View {
+    let notice: String
+
+    var body: some View {
+        Text(notice)
+            .font(.footnote)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(.yellow.opacity(0.2))
     }
 }
 
@@ -646,6 +667,11 @@ private struct NativeConversation: View {
             .background(.green.opacity(0.035))
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let notice = model.storageNotice {
+                    NativeStorageNotice(notice: notice)
+                }
+            }
             .onChange(of: model.messages[chatID]?.last?.id) {
                 proxy.scrollTo("conversation-bottom", anchor: .bottom)
             }

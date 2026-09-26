@@ -268,6 +268,7 @@ public struct StoredConversationSummary: Equatable, Sendable {
 
 public enum SQLiteContextPersistenceError: Error, Equatable, Sendable {
     case openFailed(String)
+    case sqliteOpenFailed(code: Int32, message: String)
     case sqlite(code: Int32, message: String)
     case unsupportedSchemaVersion(Int32)
     case invalidArgument(String)
@@ -293,7 +294,7 @@ public final class SQLiteContextStore: @unchecked Sendable {
         guard result == SQLITE_OK, let handle else {
             let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
             if let handle { sqlite3_close(handle) }
-            throw SQLiteContextPersistenceError.openFailed(message)
+            throw SQLiteContextPersistenceError.sqliteOpenFailed(code: result, message: message)
         }
 
         db = handle

@@ -12,6 +12,7 @@ import CSQLite
 
 public enum SQLitePersistenceError: Error, Equatable, Sendable {
     case openFailed(String)
+    case sqliteOpenFailed(code: Int32, message: String)
     case sqlite(code: Int32, message: String)
     case unsupportedSchemaVersion(Int32)
     case invalidArgument(String)
@@ -52,7 +53,7 @@ public final class SQLiteWhatsAppStore: @unchecked Sendable {
         guard result == SQLITE_OK, let handle else {
             let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
             if let handle { sqlite3_close(handle) }
-            throw SQLitePersistenceError.openFailed(message)
+            throw SQLitePersistenceError.sqliteOpenFailed(code: result, message: message)
         }
 
         db = handle

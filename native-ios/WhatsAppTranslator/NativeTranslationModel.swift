@@ -438,15 +438,17 @@ final class NativeTranslationModel {
             .appendingPathComponent("chats.sqlite")
         guard let databaseURL else {
             let model = NativeTranslationModel(fileURL: legacyURL, retranslator: retranslator)
-            model.storageError = "SQLite translation storage is unavailable. Translation changes are disabled."
+            model.storageError = "SQLite translation storage is unavailable (application-support-directory-unavailable). Translation changes are disabled."
             return model
         }
 
+        var failedAt = "create-database-directory"
         do {
             try FileManager.default.createDirectory(
                 at: databaseURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
+            failedAt = "sqlite-open-or-migration"
             let contextStore = try SQLiteContextStore(path: databaseURL.path)
             return NativeTranslationModel(fileURL: legacyURL, retranslator: retranslator,
                                           contextStore: contextStore)
@@ -454,7 +456,7 @@ final class NativeTranslationModel {
             // Keep the legacy file available for recovery, but expose the
             // database failure instead of silently pretending SQLite opened.
             let model = NativeTranslationModel(fileURL: legacyURL, retranslator: retranslator)
-            model.storageError = "SQLite translation storage is unavailable. Translation changes are disabled."
+            model.storageError = "SQLite translation storage is unavailable (\(failedAt), \(NativeStorageDiagnostic.code(for: error))). Translation changes are disabled."
             return model
         }
     }

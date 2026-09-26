@@ -10,6 +10,49 @@ struct NativeContactIdentity: Equatable, Sendable {
     let photo: Data?
 }
 
+enum NativeStorageDiagnostic {
+    static func code(for error: Error) -> String {
+        if let error = error as? SQLitePersistenceError {
+            return code(for: error)
+        }
+        if let error = error as? SQLiteContextPersistenceError {
+            return code(for: error)
+        }
+
+        let error = error as NSError
+        switch error.domain {
+        case NSCocoaErrorDomain:
+            return "filesystem-cocoa-\(error.code)"
+        case NSPOSIXErrorDomain:
+            return "filesystem-posix-\(error.code)"
+        default:
+            return "storage-unexpected"
+        }
+    }
+
+    private static func code(for error: SQLitePersistenceError) -> String {
+        switch error {
+        case .sqliteOpenFailed(let code, _), .sqlite(let code, _): "sqlite-\(code)"
+        case .unsupportedSchemaVersion(let version): "sqlite-schema-version-\(version)"
+        case .openFailed: "sqlite-unavailable"
+        case .invalidArgument: "sqlite-invalid-argument"
+        case .invalidStoredValue: "sqlite-invalid-stored-value"
+        case .missingChat, .unsupportedTranslationMetadata: "sqlite-data-inconsistent"
+        }
+    }
+
+    private static func code(for error: SQLiteContextPersistenceError) -> String {
+        switch error {
+        case .sqliteOpenFailed(let code, _), .sqlite(let code, _): "sqlite-\(code)"
+        case .unsupportedSchemaVersion(let version): "sqlite-schema-version-\(version)"
+        case .openFailed: "sqlite-unavailable"
+        case .invalidArgument: "sqlite-invalid-argument"
+        case .invalidStoredValue: "sqlite-invalid-stored-value"
+        case .missingMessage, .missingTranslation: "sqlite-data-inconsistent"
+        }
+    }
+}
+
 protocol NativeContactIdentityProvider: Sendable {
     func identity(for id: String) async throws -> NativeContactIdentity
 }
@@ -42,6 +85,7 @@ final class NativeChatModel {
     private(set) var uncertainSends: Set<String> = []
     private(set) var historyCheckedAfterUncertainSends: Set<String> = []
     private(set) var storageNotice: String?
+    private(set) var storageDiagnostic: String?
     private(set) var identities: [String: NativeContactIdentity] = [:]
     private(set) var mediaPreviews: [MediaPreviewKey: WhatsAppTransportMediaPreview] = [:]
     @ObservationIgnored private var identityProvider: (any NativeContactIdentityProvider)?
@@ -130,21 +174,27 @@ final class NativeChatModel {
     static func applicationModel(transport: any WhatsAppTransport,
                                  retranslator: (any NativeRetranslator)? = nil,
                                  identityProvider: (any NativeContactIdentityProvider)? = nil) -> NativeChatModel {
+        var failedAt = "application-support-directory"
         do {
             var folder = try FileManager.default.url(for: .applicationSupportDirectory,
                 in: .userDomainMask, appropriateFor: nil, create: true)
                 .appendingPathComponent("NativeChats", isDirectory: true)
+            failedAt = "create-database-directory"
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             var values = URLResourceValues()
             values.isExcludedFromBackup = true
+            failedAt = "exclude-from-backup"
             try folder.setResourceValues(values)
             let databaseURL = folder.appendingPathComponent("chats.sqlite")
             #if os(iOS)
+            failedAt = "directory-file-protection"
             try FileManager.default.setAttributes(
                 [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: folder.path)
             #endif
+            failedAt = "database-open-or-migration"
             let store = try SQLiteWhatsAppStore(path: databaseURL.path)
             #if os(iOS)
+            failedAt = "database-file-protection"
             try FileManager.default.setAttributes(
                 [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: databaseURL.path)
             #endif
@@ -157,7 +207,9 @@ final class NativeChatModel {
                                         translations: .applicationStore(retranslator: retranslator),
                                         identityProvider: identityProvider,
                                         automaticTranslationSettings: .applicationStore())
-            model.storageNotice = "Local storage is unavailable. Drafts will not survive closing the app."
+            let code = NativeStorageDiagnostic.code(for: error)
+            model.storageDiagnostic = "\(failedAt) · \(code)"
+            model.storageNotice = "Local storage unavailable · \(code). Drafts may not persist."
             return model
         }
     }

@@ -6,6 +6,27 @@ import WhatsAppDomainCore
 @available(macOS 14, iOS 17, *)
 @MainActor
 final class NativeChatModelTests: XCTestCase {
+    func testStorageDiagnosticsExposeOnlySafeFailureCodes() async {
+        let privateDetail = "/private/Application Support/chats.sqlite: contact and message data"
+        let sqliteOpenFailure = SQLitePersistenceError.sqliteOpenFailed(code: 14, message: privateDetail)
+        let contextOpenFailure = SQLiteContextPersistenceError.sqliteOpenFailed(code: 14, message: privateDetail)
+        let schemaFailure = SQLiteContextPersistenceError.unsupportedSchemaVersion(9)
+        let fileFailure = NSError(
+            domain: NSCocoaErrorDomain,
+            code: 513,
+            userInfo: [NSFilePathErrorKey: privateDetail]
+        )
+
+        XCTAssertEqual(NativeStorageDiagnostic.code(for: sqliteOpenFailure), "sqlite-14")
+        XCTAssertEqual(NativeStorageDiagnostic.code(for: contextOpenFailure), "sqlite-14")
+        XCTAssertEqual(NativeStorageDiagnostic.code(for: schemaFailure), "sqlite-schema-version-9")
+        XCTAssertEqual(NativeStorageDiagnostic.code(for: fileFailure), "filesystem-cocoa-513")
+        XCTAssertEqual(NativeStorageDiagnostic.code(for: SQLitePersistenceError.openFailed(privateDetail)), "sqlite-unavailable")
+        XCTAssertFalse(NativeStorageDiagnostic.code(for: sqliteOpenFailure).contains("private"))
+        XCTAssertFalse(NativeStorageDiagnostic.code(for: contextOpenFailure).contains("contact"))
+        XCTAssertFalse(NativeStorageDiagnostic.code(for: fileFailure).contains("private"))
+    }
+
     func testCachedChatAndHistoryAreReadableWithoutConnectionButCannotSend() async throws {
         let store = try SQLiteWhatsAppStore(path: ":memory:")
         let chat = WhatsAppTransportChat(id: "cache@c.us", title: "Cached chat", isGroup: false,
