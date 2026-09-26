@@ -6,7 +6,7 @@ import WhatsAppDomainCore
 @available(macOS 14, iOS 17, *)
 @MainActor
 final class NativeChatModelTests: XCTestCase {
-    func testStorageDiagnosticsExposeOnlySafeFailureCodes() {
+    func testStorageDiagnosticsExposeOnlySafeFailureCodes() async {
         let privateDetail = "/private/Application Support/chats.sqlite: contact and message data"
         let sqliteOpenFailure = SQLitePersistenceError.sqliteOpenFailed(code: 14, message: privateDetail)
         let contextOpenFailure = SQLiteContextPersistenceError.sqliteOpenFailed(code: 14, message: privateDetail)
