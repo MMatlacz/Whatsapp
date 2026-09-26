@@ -265,6 +265,209 @@ final class NativeTranslationModelTests: XCTestCase {
         )
     }
 
+    func testSchedulerRunsManualBeforeQueuedAutomaticWork() async {
+        let scheduler = TranslationInferenceScheduler()
+        let gate = InferenceTestGate()
+        let recorder = InferenceEventRecorder()
+        let auto1 = schedulerKey("auto-1")
+        let auto2 = schedulerKey("auto-2")
+        let auto3 = schedulerKey("auto-3")
+        let manual = schedulerKey("manual")
+
+        let running = Task {
+            await scheduler.submit(key: auto1, kind: .automatic) {
+                await recorder.append("auto-1-start")
+                await gate.startAndWait()
+                await recorder.append("auto-1-end")
+                return .completed
+            }
+        }
+        await gate.waitUntilStarted()
+
+        let queued2 = Task {
+            await scheduler.submit(key: auto2, kind: .automatic) {
+                await recorder.append("auto-2")
+                return .completed
+            }
+        }
+        let queued3 = Task {
+            await scheduler.submit(key: auto3, kind: .automatic) {
+                await recorder.append("auto-3")
+                return .completed
+            }
+        }
+        await waitForSchedulerState(.queuedAutomatic, key: auto2, scheduler: scheduler)
+        await waitForSchedulerState(.queuedAutomatic, key: auto3, scheduler: scheduler)
+
+        let manualTask = Task {
+            await scheduler.submit(key: manual, kind: .manual) {
+                await recorder.append("manual")
+                return .completed
+            }
+        }
+        await waitForSchedulerState(.queuedManual, key: manual, scheduler: scheduler)
+
+        await gate.release()
+        _ = await running.value
+        _ = await manualTask.value
+        _ = await queued2.value
+        _ = await queued3.value
+
+        let orderedEvents = await recorder.values()
+        XCTAssertEqual(
+            orderedEvents,
+            ["auto-1-start", "auto-1-end", "manual", "auto-2", "auto-3"]
+        )
+    }
+
+    func testSchedulerDeduplicatesAutomaticWorkAndBoundsQueue() async {
+        let scheduler = TranslationInferenceScheduler(maximumQueuedAutomaticJobs: 2)
+        let gate = InferenceTestGate()
+        let recorder = InferenceEventRecorder()
+        let activeKey = schedulerKey("active")
+        let duplicateKey = schedulerKey("duplicate")
+        let otherKey = schedulerKey("other")
+        let overflowKey = schedulerKey("overflow")
+
+        let active = Task {
+            await scheduler.submit(key: activeKey, kind: .automatic) {
+                await gate.startAndWait()
+                return .completed
+            }
+        }
+        await gate.waitUntilStarted()
+
+        let firstDuplicate = Task {
+            await scheduler.submit(key: duplicateKey, kind: .automatic) {
+                await recorder.append("duplicate-executed")
+                return .completed
+            }
+        }
+        await waitForSchedulerState(.queuedAutomatic, key: duplicateKey, scheduler: scheduler)
+
+        let duplicates = (0..<20).map { _ in
+            Task {
+                await scheduler.submit(key: duplicateKey, kind: .automatic) {
+                    await recorder.append("must-not-run")
+                    return .completed
+                }
+            }
+        }
+        let other = Task {
+            await scheduler.submit(key: otherKey, kind: .automatic) {
+                await recorder.append("other")
+                return .completed
+            }
+        }
+        await waitForSchedulerState(.queuedAutomatic, key: otherKey, scheduler: scheduler)
+
+        let overflow = await scheduler.submit(key: overflowKey, kind: .automatic) {
+            await recorder.append("overflow")
+            return .completed
+        }
+        XCTAssertEqual(overflow, .queueFull)
+        let queuedCount = await scheduler.queuedAutomaticCount()
+        XCTAssertEqual(queuedCount, 2)
+
+        for duplicate in duplicates {
+            let outcome = await duplicate.value
+            XCTAssertEqual(outcome, .deduplicated)
+        }
+
+        await gate.release()
+        _ = await active.value
+        let firstOutcome = await firstDuplicate.value
+        let otherOutcome = await other.value
+        let events = await recorder.values()
+        XCTAssertEqual(firstOutcome, .completed)
+        XCTAssertEqual(otherOutcome, .completed)
+        XCTAssertEqual(events, ["duplicate-executed", "other"])
+    }
+
+    func testSchedulerSupersedesOlderPendingManualRequest() async {
+        let scheduler = TranslationInferenceScheduler()
+        let gate = InferenceTestGate()
+        let recorder = InferenceEventRecorder()
+        let activeKey = schedulerKey("active-manual-test")
+        let manualKey = schedulerKey("same-manual")
+
+        let active = Task {
+            await scheduler.submit(key: activeKey, kind: .automatic) {
+                await gate.startAndWait()
+                return .completed
+            }
+        }
+        await gate.waitUntilStarted()
+
+        let older = Task {
+            await scheduler.submit(key: manualKey, kind: .manual) {
+                await recorder.append("older")
+                return .completed
+            }
+        }
+        await waitForSchedulerState(.queuedManual, key: manualKey, scheduler: scheduler)
+
+        let newer = Task {
+            await scheduler.submit(key: manualKey, kind: .manual) {
+                await recorder.append("newer")
+                return .completed
+            }
+        }
+        for _ in 0..<20 { await Task.yield() }
+
+        await gate.release()
+        _ = await active.value
+        let olderOutcome = await older.value
+        let newerOutcome = await newer.value
+        let events = await recorder.values()
+        XCTAssertEqual(olderOutcome, .superseded)
+        XCTAssertEqual(newerOutcome, .completed)
+        XCTAssertEqual(events, ["newer"])
+    }
+
+    func testCancellingRunningAutomaticWorkCreatesNoTranslationRevisionOrNotice() async {
+        let provider = DelayedNativeRetranslator()
+        let model = NativeTranslationModel(retranslator: provider)
+        model.experimentalTranslationEnabled = true
+
+        let task = Task {
+            await model.translate(key: key, original: "Aku minum kopi.")
+        }
+        await provider.waitForRequest()
+        let runningState = await model.inferenceState(for: key)
+        XCTAssertEqual(runningState, .runningAutomatic)
+
+        await model.cancelAutomaticTranslation(for: key)
+        await provider.finish()
+        await task.value
+
+        XCTAssertNil(model.records[key])
+        XCTAssertNil(model.notices[key])
+        let finalState = await model.inferenceState(for: key)
+        XCTAssertEqual(finalState, .cancelled)
+    }
+
+    private func schedulerKey(_ value: String) -> NativeTranslationKey {
+        NativeTranslationKey(
+            chatID: "scheduler",
+            messageID: value,
+            sourceLanguage: "id",
+            targetLanguage: "pl"
+        )
+    }
+
+    private func waitForSchedulerState(
+        _ expected: NativeTranslationExecutionState,
+        key: NativeTranslationKey,
+        scheduler: TranslationInferenceScheduler
+    ) async {
+        for _ in 0..<1_000 {
+            if await scheduler.state(for: key) == expected { return }
+            await Task.yield()
+        }
+        XCTFail("Scheduler did not reach expected state \(expected) for \(key)")
+    }
+
     func testAutomaticBusyDoesNotCreateTranslationRevisionOrIntent() async throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("native-auto-busy-\(UUID().uuidString).sqlite")
@@ -483,6 +686,50 @@ final class NativeTranslationModelTests: XCTestCase {
         ]
         XCTAssertFalse(model.saveCorrection(key: key, original: "Aku minum kopi.", parts: invalid, expectedRevision: 0))
         XCTAssertNil(model.records[key])
+    }
+}
+
+private actor InferenceEventRecorder {
+    private var events: [String] = []
+
+    func append(_ value: String) {
+        events.append(value)
+    }
+
+    func values() -> [String] {
+        events
+    }
+}
+
+private actor InferenceTestGate {
+    private var started = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+    private var released = false
+
+    func startAndWait() async {
+        started = true
+        let waiters = startWaiters
+        startWaiters.removeAll()
+        for waiter in waiters { waiter.resume() }
+
+        guard !released else { return }
+        await withCheckedContinuation { continuation in
+            releaseContinuation = continuation
+        }
+    }
+
+    func waitUntilStarted() async {
+        if started { return }
+        await withCheckedContinuation { continuation in
+            startWaiters.append(continuation)
+        }
+    }
+
+    func release() {
+        released = true
+        releaseContinuation?.resume()
+        releaseContinuation = nil
     }
 }
 
