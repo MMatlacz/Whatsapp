@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D40000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D40000000000000000000003 /* Assets.xcassets */; };
 		C30000000000000000000009 /* generated runtime in Resources */ = {isa = PBXBuildFile; fileRef = C3000000000000000000000A; };
 		C30000000000000000000005 /* NativeTranslationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000006; };
 		C30000000000000000000007 /* NativeTranslationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000008; };
@@ -36,6 +37,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D40000000000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C3000000000000000000000A /* generated runtime */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../BridgeRuntime/generated; sourceTree = "<group>"; };
 		C30000000000000000000006 /* NativeTranslationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationModel.swift; sourceTree = "<group>"; };
 		C30000000000000000000008 /* NativeTranslationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTranslationView.swift; sourceTree = "<group>"; };
@@ -112,6 +114,7 @@
 				G70000000000000000000011 /* TranslationContextAssembly.swift */,
 				G70000000000000000000012 /* TranslationPromptAssembly.swift */,
 				G70000000000000000000013 /* SQLiteTranslationContextSource.swift */,
+				D40000000000000000000003 /* Assets.xcassets */,
 			);
 			path = WhatsAppTranslator;
 			sourceTree = "<group>";
@@ -195,6 +198,7 @@
 			files = (
 				A1000000000000000000000B /* WhatsAppBridge.js in Resources */,
 				C30000000000000000000009 /* generated runtime in Resources */,
+				D40000000000000000000002 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -301,6 +305,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8AQ98242AE;
 				GENERATE_INFOPLIST_FILE = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -323,6 +328,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8AQ98242AE;
 				GENERATE_INFOPLIST_FILE = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_KEY_CFBundleDisplayName = "WhatsApp Translator";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
